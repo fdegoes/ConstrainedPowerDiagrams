@@ -1,0 +1,151 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Incompressible Lagrangian flows}
+\label{sec:flow}
+
+We now turn the constrained power diagrams of \S\ref{sec:contributions} into a Lagrangian discretization of incompressible flows, in which each cell is a fluid parcel of fixed mass $\mass_i$ moving with velocity $\vel_i \!\in\! \R^d$.
+We collect masses into the diagonal matrix $\smash{\Mmat = \mathrm{diag}(\mass_i \Id_d)}$ and denote the time step by $\tstep$.
+
+\paragraph{Why volume constraints alone do not suffice.}
+In existing power-diagram fluid solvers \cite{deGoes2015PowerParticles}, particles are advected freely and the weights $\weight$ are then re-solved via \eqref{eq:volume-constrained} so that every cell recovers its prescribed volume $\pvol_i$.
+Since this weight solve succeeds for \emph{any} configuration of sites, the volume constraint never restricts the motion of the particles: the weights spend the freedom of the power diagram by reshaping the cells, and the centroids are then free to move almost anywhere.
+Incompressibility, instead, is a \emph{kinematic} constraint: the volume of each parcel must be a function of the particle positions, and its conservation must act on the particles' motion through a separate multiplier $\press_i$ per cell, namely the pressure.
+A tempting alternative is to use the joint dual $\jointdual$ of \S\ref{sec:joint-constraints} as a time step, prescribing both volumes and centroids.
+However, as shown by \citet{Bourne2025Inverting}, generic volume and centroid data are not realized by any power diagram, and the generators of a realized diagram are only determined up to translation, dilation, and a constant weight offset, so the Hessian of $\jointdual$ is degenerate.
+We therefore keep the two quantities in separate roles: centroids are the dynamical variables, and volumes become a constraint on them.
+Below, we first review a penalty formulation from prior work (\S\ref{sec:flow-penalty}), and then introduce our constrained formulation based on \S\ref{sec:centroid-constraints} (\S\ref{sec:flow-constrained}).
+
+\subsection{Sites as particles: a penalty formulation}
+\label{sec:flow-penalty}
+
+% NOTE: the details of Gallouet & Merigot 2018 below are reproduced from memory and should be checked against the paper
+% (in particular their exact scaling of the penalty and the time-step regime under which convergence to Euler is proven).
+\citet{Gallouet2018Lagrangian} proposed a Lagrangian scheme in which the particles are the sites $\qq$ and the cells are volume-constrained, \ie the power diagram given by the optimal weights of \eqref{eq:volume-dual}.
+Incompressibility is relaxed into a stiff penalty on the transport cost between the uniform measure on $\domain$ and the particles, which, for fixed volumes $\pvol_i$, equals $\smash{\max_\weight \dualenergy(\qq, \weight)}$.
+Assuming a uniform density $\rho$, so that $\smash{\mass_i = \rho\,\pvol_i}$, the resulting Lagrangian reads
+\begin{equation}
+  \lag(\qq, \dot\qq)
+    = \frac{1}{2} \sum_i \mass_i \norm{\dot\qq_i}^2
+    - \frac{\rho}{2\stiff^2} \max_{\weight} \dualenergy(\qq, \weight) ,
+  \label{eq:gm-lagrangian}
+\end{equation}
+where $\stiff \!>\! 0$ controls the stiffness of the penalty.
+By the envelope theorem and \eqref{eq:centroid-gradient}, the site gradient of the penalty is $\smash{2\,\pvol_i (\qq_i - \centroid_i)}$, where $\centroid_i$ is the centroid of the volume-constrained cell $\cell_i$.
+The equations of motion thus pull each site toward its own centroid,
+\begin{equation}
+  \ddot\qq_i = -\frac{1}{\stiff^2} \bigl( \qq_i - \centroid_i(\qq) \bigr) ,
+  \label{eq:gm-ode}
+\end{equation}
+so a centroidal power diagram with prescribed volumes is an equilibrium of the flow.
+Integrating \eqref{eq:gm-ode} with a symplectic Euler step yields
+\begin{subequations}
+  \label{eq:gm-step}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \vel^{k+1}_i &= \vel^k_i + \frac{\tstep}{\stiff^2} \bigl( \centroid^k_i - \qq^k_i \bigr) , \label{eq:gm-step-vel} \\[2mm]
+    \qq^{k+1}_i &= \qq^k_i + \tstep\, \vel^{k+1}_i . \label{eq:gm-step-pos}
+  \end{empheq}
+\end{subequations}
+Choosing the stiffness $\stiff \!=\! \tstep$, at the limit of what the explicit step resolves, and substituting \eqref{eq:gm-step-vel} into \eqref{eq:gm-step-pos} gives
+\begin{equation}
+  \qq^{k+1}_i = \centroid^k_i + \tstep\, \vel^k_i ,
+  \label{eq:gm-advection}
+\end{equation}
+which is \emph{exactly} the advection step of Power Particles \cite[Alg.~1, line~5]{deGoes2015PowerParticles}.
+In this light, the site-to-centroid gap $\smash{(\centroid^k_i - \qq^k_i)/\tstep}$ in \eqref{eq:gm-step-vel} plays the role of a pressure impulse, and the scaled gap $\smash{(\qq_i - \centroid_i)/\stiff^2}$ approximates the pressure gradient divided by the density.
+Power Particles discards this impulse from the velocity and replaces it by an explicit pressure projection, while \citet{Gallouet2018Lagrangian} keep it as the only pressure force.
+In both cases, however, the volumes are fixed by construction and incompressibility is enforced only softly: velocities become divergence-free only in the stiff limit $\stiff \!\to\! 0$.
+
+\subsection{Centroids as particles: a constrained formulation}
+\label{sec:flow-constrained}
+
+We now take the particles to be the cell \emph{centroids} $\centroid \!=\! \{\centroid_i\}$ themselves, and use the centroid-constrained problem of \S\ref{sec:centroid-constraints} to recover the cells from them.
+
+\paragraph{Cells from centroids.}
+Given particle positions $\centroid$, we define the partition $\cell(\centroid)$ as the maximizer of the centroidal dual $\barcentroiddual$ of \S\ref{sec:remarks}, \ie we set the sites and targets to the particles, $\smash{\qq_i \!=\! \tcentroid_i \!=\! \centroid_i}$, and fix all weights to zero, $\weight \!=\! 0$.
+By \eqref{eq:shifted-site}, the cells are then the power diagram of the shifted sites
+\begin{equation}
+  \dual_i = \centroid_i + \shift_i , \qquad \combweight_i = \norm{\shift_i}^2 ,
+  \label{eq:flow-shifted-site}
+\end{equation}
+where the shifts $\shift^\star(\centroid)$ maximize $\barcentroiddual$ and, by \eqref{eq:centroid-dual-gradient}, are characterized by the vanishing of the residuals
+\begin{equation}
+  \residual_i(\centroid, \shift) = \int_{\cell_i} (\xx - \centroid_i) \, d\xx = 0 \quad \forall i .
+  \label{eq:flow-residual}
+\end{equation}
+Each of these inner solves is a concave maximization, and the resulting cells have centroids exactly at the particles.
+Fixing $\weight \!=\! 0$ is a design choice: a power diagram has more degrees of freedom than its $n d$ centroid coordinates, and any rule that selects a smooth family of weights $\weight(\centroid)$ would serve the same purpose, as long as the weights are \emph{not} used to enforce the volumes, which would collapse the constraint again.
+Note also that \eqref{eq:flow-residual} is solvable only for centroids realized by some power diagram, so we rely on the implicit function theorem to stay on this set for small time steps.
+
+\paragraph{Volumes as constraints.}
+With the cells determined by the particles, each volume $\smash{\cellvol_i(\centroid)}$ is now a function of the positions only, and incompressibility becomes the holonomic constraint $\smash{\cellvol(\centroid) \!=\! \pvol}$.
+We denote by $\smash{\Dmat = \partial \cellvol / \partial \centroid \in \R^{n \times nd}}$ its Jacobian, which acts as the discrete divergence, and by $\smash{\Gmat = -\Dmat\tr}$ the corresponding discrete gradient.
+Introducing a multiplier $\press_i$ per volume constraint and external forces $\mathbf{f}$ deriving from a potential, the discrete Lagrangian of a time step reads
+\begin{equation}
+  \lag_\tstep(\centroid^k, \centroid^{k+1})
+    = \tstep \Bigl[ \sum_i \frac{\mass_i}{2} \Bigl\lVert \frac{\centroid^{k+1}_i - \centroid^k_i}{\tstep} \Bigr\rVert^2 - U(\centroid^k) + \sum_i \press_i^k \bigl( \cellvol_i(\centroid^k) - \pvol_i \bigr) \Bigr] ,
+  \label{eq:flow-discrete-lagrangian}
+\end{equation}
+where $U$ is the potential of the external forces, \ie $\mathbf{f} = -\nabla U$.
+Stationarity of the discrete action $\smash{\sum_k \lag_\tstep(\centroid^k, \centroid^{k+1})}$ with respect to $\centroid^k$ yields the constrained Verlet step
+\begin{subequations}
+  \label{eq:flow-shake}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \Mmat \bigl( \centroid^{k+1} - 2\centroid^k + \centroid^{k-1} \bigr) &= \tstep^2 \bigl( \mathbf{f}^k - \Gmat(\centroid^k)\, \press^k \bigr) , \label{eq:flow-shake-pos} \\[2mm]
+    \cellvol(\centroid^{k+1}) &= \pvol , \label{eq:flow-shake-cons}
+  \end{empheq}
+\end{subequations}
+which is the SHAKE scheme for the constraint $\cellvol(\centroid) \!=\! \pvol$, with the pressure $\press$ as its multiplier.
+In velocity form, with $\smash{\vel^{k+1/2} = (\centroid^{k+1} - \centroid^k)/\tstep}$ and the intermediate velocity $\smash{\vel^\ast = \vel^{k-1/2} + \tstep\,\Mmat^{-1} \mathbf{f}^k}$, the step reads $\smash{\vel^{k+1/2} = \vel^\ast - \tstep\,\Mmat^{-1} \Gmat \press^k}$ followed by $\smash{\centroid^{k+1} = \centroid^k + \tstep\,\vel^{k+1/2}}$.
+Differentiating the identity $\smash{\sum_i \cellvol_i(\centroid)\,\centroid_i = \domainVol\,\centroid_\domain}$ of \eqref{eq:partition-feasibility} shows that $\smash{\sum_i \centroid_i\,\Dmat_{ij} = -\cellvol_j \Id}$, so any velocity with $\Dmat \vel \!=\! 0$ also satisfies $\smash{\sum_i \pvol_i \vel_i = 0}$: both conservation identities in \eqref{eq:partition-feasibility} are preserved by the flow.
+
+\paragraph{The divergence operator.}
+Because the cells depend on $\centroid$ both directly and through the shifts $\shift^\star(\centroid)$, the divergence follows from implicit differentiation of \eqref{eq:flow-residual}:
+\begin{equation}
+  \Dmat
+    = \frac{\partial \cellvol}{\partial \centroid}\Big|_{\shift} + \frac{\partial \cellvol}{\partial \shift}\Big|_{\centroid} \frac{d \shift^\star}{d \centroid}
+    = \Dmat_\dual - \mathrm{U} \, \Kmat^{-1} \Bmat ,
+  \label{eq:flow-divergence}
+\end{equation}
+written as a Schur complement of four facet-based operators.
+First, $\smash{\Dmat_\dual = \partial \cellvol / \partial \dual}$ is the divergence of Power Particles evaluated at the shifted sites, with blocks $\smash{(\Dmat_\dual)_{ij} = \frac{\area_{ij}}{\norm{\dual_i - \dual_j}} (\dual_j - \centroid_{ij})\tr}$, where $\centroid_{ij}$ denotes the centroid of the facet $\face_{ij}$, and diagonal $\smash{(\Dmat_\dual)_{ii} = \sum_{j \sim i} \frac{\area_{ij}}{\norm{\dual_i - \dual_j}} (\centroid_{ij} - \dual_i)\tr}$.
+Second, $\smash{\Kmat = -\tfrac{1}{2} \nabla^2_{\shift\shift} \barcentroiddual}$ is the (positive definite) negated centroid Hessian of \eqref{eq:centroid-hessian}.
+Third, $\smash{\mathrm{U} = \partial \cellvol / \partial \shift}$ is the negated transpose of the mixed shift--weight block of \eqref{eq:joint-hessian} (with $\tcentroid \!=\! \centroid$), with entries $\smash{\mathrm{U}_{ij} = -\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \centroid_j)\tr \, dA}$ and $\smash{\mathrm{U}_{ii} = \sum_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \centroid_i)\tr \, dA}$.
+Finally, $\smash{\Bmat = \partial \residual / \partial \centroid |_{\shift}}$ is the derivative of the residuals at fixed shifts,
+\begin{subequations}
+  \label{eq:flow-B}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \Bmat_{ij} &= -\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \centroid_i)(\xx - \dual_j)\tr \, dA , \label{eq:flow-B-off} \\[2mm]
+    \Bmat_{ii} &= \sum_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \centroid_i)(\xx - \dual_i)\tr \, dA - \cellvol_i \Id . \label{eq:flow-B-diag}
+  \end{empheq}
+\end{subequations}
+These expressions simplify at a centroidal Voronoi configuration, where $\shift^\star \!=\! 0$ and thus $\dual \!=\! \centroid$.
+There, $\smash{\mathrm{U} = \Dmat_\dual}$ and $\smash{\Bmat = \Kmat - \mathbf{V}}$ with $\smash{\mathbf{V} = \mathrm{diag}(\cellvol_i \Id_d)}$, so \eqref{eq:flow-divergence} collapses to
+\begin{equation}
+  \Dmat = \Dmat_\dual \, \Jmat^{-1} , \qquad \Jmat = \mathbf{V}^{-1} \Kmat ,
+  \label{eq:flow-divergence-cvt}
+\end{equation}
+where $\Jmat$ is the Jacobian of the cell centroids with respect to the sites of the Voronoi diagram.
+In words, a centroid displacement $\delta\centroid$ is realized by moving the shifted sites by $\smash{\delta\dual = \Jmat^{-1} \delta\centroid}$, and the volumes then change as in Power Particles.
+
+\paragraph{Linearization and Power Particles.}
+Assume that the constraint holds at step $k$, \ie $\smash{\cellvol(\centroid^k) = \pvol}$.
+Linearizing \eqref{eq:flow-shake-cons} around $\centroid^k$ gives $\smash{\cellvol(\centroid^{k+1}) \approx \pvol + \tstep\,\Dmat\,\vel^{k+1/2}}$, so the constraint reduces to a zero discrete divergence, $\smash{\Dmat\,\vel^{k+1/2} = 0}$.
+Substituting the velocity form of \eqref{eq:flow-shake} yields the pressure Poisson equation
+\begin{equation}
+  \tstep\, \Lmat\, \press = \Dmat\, \vel^\ast , \qquad \Lmat = \Dmat \Mmat^{-1} \Gmat ,
+  \label{eq:flow-poisson}
+\end{equation}
+which has exactly the form of the pressure solve of Power Particles \cite[Eq.~(7)]{deGoes2015PowerParticles}, including its sign convention for $\press$.
+The two schemes differ only in the divergence operator: Power Particles differentiates the volumes with respect to the sites at fixed weights, while \eqref{eq:flow-divergence-cvt} differentiates them with respect to the centroids and therefore carries the extra factor $\Jmat^{-1}$.
+Since a global translation of the sites translates the cells and their centroids alike, $\Jmat$ fixes uniform velocities, and we expect the two operators to agree to leading order on flows that are smooth at the scale of the cells, although we have not quantified this approximation.
+Note also that Power Particles evaluates its operators on a centroidal power diagram with nonzero weights, whereas \eqref{eq:flow-divergence-cvt} is written at a centroidal Voronoi configuration; for general shifts, the full expression \eqref{eq:flow-divergence} applies.
+Power Particles can thus be read as a linearized, first-order version of \eqref{eq:flow-shake}, in which the factor $\Jmat^{-1}$ is approximated by the identity and the nonlinear volume error left by the linearization is removed by the weight solve \eqref{eq:volume-constrained}.
+In contrast, our formulation keeps $\weight \!=\! 0$ and enforces $\smash{\cellvol(\centroid^{k+1}) = \pvol}$ by iterating on $\press$, \eg by Newton steps on \eqref{eq:flow-shake-cons} with the linearized system \eqref{eq:flow-poisson}.
+
+\paragraph{Convexity.}
+Every evaluation of $\smash{\cellvol(\centroid)}$ and $\Dmat$ requires one concave maximization of $\barcentroiddual$, plus a linear solve with $\Kmat$ for each application of \eqref{eq:flow-divergence}.
+The time step as a whole, however, is not a concave problem: up to the evaluation point of $\Gmat$, \eqref{eq:flow-shake} computes the $\Mmat$-weighted projection of the predicted positions $\smash{2\centroid^k - \centroid^{k-1} + \tstep^2 \Mmat^{-1}\mathbf{f}^k}$ onto the constraint set $\smash{\{\centroid : \cellvol(\centroid) = \pvol\}}$, which is a nonlinear, non-convex manifold.
+
+\end{document}

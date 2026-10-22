@@ -1,0 +1,34 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Laguerre tessellation inversion.}
+\citet{Bourne2025Inverting} study the inverse problem of recovering a power diagram, also known as a Laguerre tessellation, from the volumes and centroids of its cells, motivated by the reconstruction of polycrystalline microstructures from diffraction data.
+They parametrize diagrams by their generators only, always solving for the weights that enforce the prescribed volumes by semi-discrete optimal transport, and maximize a concave helper function of the generators whose gradient is the centroid residual.
+They prove that a power diagram is uniquely determined by the volumes and centroids of its cells, that realizable data can be inverted by concave maximization, and that, for unrealizable data, local least-squares fits of the centroids can still be found by convex optimization.
+Their helper function coincides with our joint dual after eliminating the weights, so our joint formulation can be seen as a reparametrization of theirs by shifts and weights.
+Our formulation differs in three ways.
+First, it treats the volume and centroid constraints symmetrically as Lagrange multipliers, so it yields closed-form facet-based Hessians that expose the volume Laplacian and the pressure gradient of Power Particles \cite{deGoes2015PowerParticles} as its blocks, and a short duality proof of their uniqueness result.
+Second, it characterizes the full null-space of the joint problem geometrically, as the homotheties of the lifted shifted sites.
+Third, and most importantly, it includes the centroid-only problem, which fixes the weights instead of the volumes and has no counterpart in their work: its solutions persist under perturbations of the targets, and its degeneracy reduces to a coplanarity test on the pivots.
+
+\paragraph{Convex order.}
+\citet{Bourne2026ConvexOrder} revisit the same inverse problem from the viewpoint of convex order between probability measures.
+For fixed volumes, they consider the convex set of centroid configurations whose discrete measure is dominated in convex order by the uniform measure on the domain, and show that the centroids of power diagrams with these volumes are exactly its exposed points.
+This characterization explains the additional condition satisfied by realizable data, which lie on the relative boundary of a convex set, and it settles a question left open by \citet{Bourne2025Inverting}.
+They then recover diagrams whose centroids approximate given targets by projecting the targets, slightly dilated, onto this convex set, which reduces to a strongly convex problem solved by semi-discrete optimal transport.
+Their approach targets the joint problem with fixed volumes, while our centroid-only formulation lets the volumes adapt to the targets, a setting their characterization does not address.
+The convex-order condition nevertheless provides a sharper necessary test for our centroid-only problem than the conservation identities, since it requires volumes for which the targets are dominated in convex order by the domain.
+
+\paragraph{Shifted power diagrams.}
+\citet{Memari2012PrimalDual} introduced the displacement parametrization of power diagrams that we build on, in which each site carries a weight and a shift, to describe primal--dual triangulations whose dual edges need not be orthogonal to their facets.
+Special cases of this construction appeared earlier as the \emph{first-type Bregman diagrams} of \citet{Boissonnat2010Bregman}, which assign each point $\xx$ to the site $\qq_i$ minimizing the Bregman divergence $\smash{f(\xx) - f(\qq_i) - \nabla f(\qq_i)\tr(\xx - \qq_i)}$ of a convex function $f$.
+Since this divergence differs from $f(\xx)$ by an affine function of $\xx$, these cells are power cells of the shifted sites $\smash{\tfrac12 \nabla f(\qq_i)}$ with suitable weights, so a first-type Bregman diagram is a shifted power diagram whose shifts and weights all derive from a single convex function.
+\citet{Budninskiy2016OVT} exploited this connection for anisotropic meshing, coining the term \emph{shifted power diagram} and generating cell complexes whose anisotropy follows the Hessian of $f$.
+In both cases, the shifts are prescribed by $f$ to encode a metric.
+In contrast, our shifts are free variables, the Lagrange multipliers of centroid constraints, and are solved for so that the cells reach prescribed centroids.
+
+\end{document}

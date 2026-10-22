@@ -1,0 +1,77 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Site optimization}
+\label{sec:site-min}
+
+So far the sites $\qq$ have been fixed inputs to which the partition adapted.
+However, sites are parametric handles for the power diagram and do not carry direct geometric meaning, whereas the cell centroids encode the first-order position of each cell.
+It is therefore natural to express design objectives in terms of centroids rather than sites.
+As shown in \S\ref{sec:remarks}, the site gradient of the transport cost vanishes when $\qq_i = \tcentroid_i$, so optimizing over the sites at fixed targets places each site at its prescribed target; the sites thus coincide with the centroid coordinates at optimality.
+
+We introduce a distortion potential $\distortion \colon \R^{n \times d} \to \R$ measuring how far the target centroids deviate from a desired configuration.
+Combining it with the transport cost, we seek the sites, target centroids, and partition that jointly solve
+\begin{subequations}
+  \label{eq:site-full-problem}
+  \begin{alignat}{2}
+    & \min_{\qq,\, \tcentroid,\, \cell} \quad && \tau\,\distortion(\tcentroid) + \sum_{i} \int_{\cell_i} \norm{\xx - \qq_i}^2 \, d\xx \label{eq:site-full-problem-obj} \\
+    & \text{s.t.} \quad && \cellvol_i = \pvol_i, \ \ \int_{\cell_i} (\xx - \tcentroid_i) \, d\xx = 0 \ \ \forall i , \label{eq:site-full-problem-cons}
+  \end{alignat}
+\end{subequations}
+where $\tau > 0$ controls the strength of the distortion relative to the transport cost.
+Since $\distortion$ depends only on $\tcentroid$ and the site gradient of the transport cost vanishes at $\qq_i = \tcentroid_i$ (\S\ref{sec:remarks}), the optimal sites coincide with the targets.
+Setting $\tcentroid = \qq$ and invoking the centroidal joint dual $\barjointdual$ from \S\ref{sec:remarks}, problem~\eqref{eq:site-full-problem} reduces to the saddle-point problem
+\begin{equation}
+  \min_{\qq} \max_{\shift,\, \weight} \
+    \tau\,\distortion(\qq) + \barjointdual(\shift, \weight) ,
+  \label{eq:site-saddle}
+\end{equation}
+for given target volumes $\pvol_i$, coupling the outer minimization in $\qq$ with the concave inner maximization of \S\ref{sec:joint-constraints}.
+Since $\tcentroid_i = \qq_i$ and $\cellvol_i = \pvol_i$ at the inner optimum, the conservation identity~\eqref{eq:partition-feasibility-centroid} imposes a feasibility constraint on the sites,
+\begin{equation}
+  \sum_i \pvol_i \, \qq_i = \domainVol \, \centroid_\domain .
+  \label{eq:site-feasibility}
+\end{equation}
+Our final formulation is thus
+\begin{equation}
+  \min_{\qq} \max_{\shift,\, \weight} \
+    \tau\,\distortion(\qq) + \barjointdual(\shift, \weight)
+  \quad \text{s.t.} \quad
+    \sum_i \pvol_i \, \qq_i = \domainVol \, \centroid_\domain ,
+  \label{eq:site-saddle-feasible}
+\end{equation}
+a saddle-point problem that can be solved by alternating between the maximization over the multipliers $(\shift, \weight)$ for fixed sites and the constrained minimization over the sites $\qq$ for fixed multipliers.
+
+\paragraph{Gradient.}
+For the site minimization at fixed multipliers, the centroidal dual $\barjointdual$ depends on $\qq$ through the shifted sites $\dual_i = \qq_i + \shift_i$.
+Differentiating the centroidal Lagrangian at the inner-optimal partition gives the site gradient
+\begin{equation}
+  \partial_{\qq_i} \barjointdual
+    = -2 \int_{\cell_i} (\xx - \qq_i) \, d\xx + 2\,\pvol_i\,\shift_i
+    = 2\,\pvol_i\,\shift_i ,
+  \label{eq:site-centroidal-gradient}
+\end{equation}
+where the transport term vanishes by centroid feasibility ($\centroid_i = \qq_i$).
+Including the distortion and enforcing the feasibility constraint~\eqref{eq:site-feasibility} via a multiplier $\yy \!\in\! \R^d$, stationarity of the site minimization reads, per site,
+\begin{equation}
+  \tau\,\partial_{\qq_i} \distortion(\qq) + 2\,\pvol_i\,\shift_i - \pvol_i\,\yy = 0 .
+  \label{eq:site-stationarity}
+\end{equation}
+
+\paragraph{Quadratic distortion.}
+When $\distortion$ is a convex quadratic of the form
+\begin{equation}
+  \distortion(\qq)
+    = \tfrac{1}{2}\,\operatorname{tr}\!\bigl(\qq\tr \Amat\, \qq\bigr)
+    + \operatorname{tr}\!\bigl(\qq\tr \bmat\bigr) ,
+  \label{eq:site-quadratic}
+\end{equation}
+with $\Amat \!\in\! \R^{n \times n}$ symmetric positive semi-definite and $\bmat \!\in\! \R^{n \times d}$, the per-site gradient is $\partial_{\qq_i} \distortion = \sum_j \Amat_{ij}\, \qq_j + \bmat_i$, and \eqref{eq:site-stationarity} becomes
+\begin{equation}
+  \tau \Bigl( \sum_j \Amat_{ij}\, \qq_j + \bmat_i \Bigr) + 2\,\pvol_i\,\shift_i - \pvol_i\,\yy = 0 .
+  \label{eq:site-stationarity-quadratic}
+\end{equation}
+For fixed multipliers, this is a linear system in the sites $\qq$, coupling each site to its neighbors through $\Amat$.
+
+\end{document}

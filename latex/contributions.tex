@@ -1,0 +1,294 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Constrained power diagrams}
+\label{sec:contributions}
+
+We now depart from the centroidal power diagram of \S\ref{sec:background}, where each site sits at its own cell centroid, and instead \emph{prescribe} a target centroid $\smash{\tcentroid_i \!\in\! \R^d}$ per site, collected as $\smash{\tcentroid \!=\! \{\tcentroid_i\}_{i=1}^n}$.
+We show that partitions $\cell$ whose cell centroids match these targets can be characterized by unconstrained concave optimizations, both for the centroids alone and jointly with prescribed volumes.
+% Prescribing the volumes in addition to the centroids constrains the admissible targets by one more condition, which we lift in \S\ref{sec:regularized-joint} by regularizing the joint problem, and we relate these formulations to the work of \citet{Bourne2025Inverting} in \S\ref{sec:remarks}.
+
+\subsection{Centroid constraints}
+\label{sec:centroid-constraints}
+
+We first consider the construction of a partition $\cell$ associated with fixed weighted sites $(\qq, \weight)$ whose cells have prescribed centroids $\tcentroid$.
+Reusing the power distance of \eqref{eq:power-diagram}, we formulate this problem as
+\begin{subequations}
+\label{eq:centroid-constrained}
+\begin{alignat}{2}
+  & \min_{\cell} \quad && \sum_{i} \int_{\cell_i} \bigl( \pdist{\xx}{i} \bigr) \, d\xx \label{eq:centroid-constrained-obj} \\
+  & \text{s.t.} \quad && \int_{\cell_i} (\xx - \tcentroid_i) \, d\xx = 0 \ \ \forall i. \label{eq:centroid-constrained-cons}
+\end{alignat}
+\end{subequations}
+% 
+Introducing a vector multiplier $\shift_i \!\in\! \R^d$, which we call the \emph{shift}, for each centroid constraint \eqref{eq:centroid-constrained-cons} yields the Lagrangian
+\begin{equation}
+\lag(\cell, \shift)
+\!=\! 
+\sum_{i} \int_{\cell_i}\! \bigl( \pdist{\xx}{i} \bigr) d\xx - 2 \sum_{i} \shift_i\tr\! \int_{\cell_i}\! (\xx - \tcentroid_i) \, d\xx,
+\label{eq:centroid-lagrangian}
+\end{equation}
+% 
+where we indicate the collected shifts as $\smash{\shift\!=\!\{\shift_i\}_{i=1}^n}$ and scaled each shift $\shift_i$ by two to make our derivatives more concise.
+% 
+For fixed shifts, \eqref{eq:centroid-lagrangian} can be rearranged as
+\begin{equation}
+  \pdist{\xx}{i} - 2\,\shift_i\tr (\xx - \tcentroid_i)
+    = \norm{\xx - \dual_i}^2 - \combweight_i ,
+  \label{eq:complete-square}
+\end{equation}
+based on the \emph{shifted} weighted sites $(\dual_i, \combweight_i)$ of the form
+\begin{subequations}
+  \label{eq:shifted-site}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \dual_i &= \qq_i + \shift_i , \label{eq:shifted-site-pos} 
+    \\[2mm]
+    \combweight_i &= \weight_i + \norm{\shift_i}^2 + 2\,\shift_i\tr (\qq_i - \tcentroid_i). \label{eq:shifted-site-weight}
+  \end{empheq}
+\end{subequations}
+% 
+We can thus conclude that the minimization of \eqref{eq:centroid-lagrangian} over partitions is again a power diagram, but now deduced from the shift-induced weighted sites of \eqref{eq:shifted-site}.
+Following \S\ref{sec:background}, we restrict the shifts to configurations whose shifted sites $\dual_i$ are pairwise distinct with non-empty cells, which guarantees that this minimizer is a unique power diagram. % on which $\centroiddual$ is differentiable.
+Its optimal value defines the \emph{dual objective}
+\begin{equation}
+  \centroiddual(\shift)
+    = \min_{\cell} \lag(\cell, \shift)
+    = \energy\bigl( \dual(\shift), \combweight(\shift) \bigr).
+  \label{eq:centroid-dual}
+\end{equation}
+The constrained optimization in \eqref{eq:centroid-constrained} thus becomes the \emph{unconstrained} maximization of $\centroiddual$ over the space of power diagrams, parametrized by the shifts $\shift$.
+% 
+As detailed in Appendix~\ref{sec:appendix-centroid}, the gradient of $\centroiddual$ recovers the centroid constraint:
+\begin{equation}
+  \partial_{\shift_i} \centroiddual
+    = 2 \int_{\cell_i} (\tcentroid_i - \xx) \, d\xx
+    = 2 \, \cellvol_i \, (\tcentroid_i - \centroid_i) ,
+  \label{eq:centroid-dual-gradient}
+\end{equation}
+so a stationary shift is exactly one whose cells realize the prescribed centroids.
+The Hessian of $\centroiddual$ is a facet-based vector Laplacian coupling neighboring shifts through the facets $\face_{ij}$ of the power diagram with $d \!\times\! d$ blocks
+\begin{subequations}
+  \label{eq:centroid-hessian}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\shift_i \shift_j}
+    \centroiddual &= \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \tcentroid_i)(\xx - \tcentroid_j)\tr \, dA,
+    \label{eq:centroid-hessian-off}
+    \\[2mm]
+    \partial^2_{\shift_i \shift_i}
+    \centroiddual &= -\!\sum_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \tcentroid_i)(\xx - \tcentroid_i)\tr \, dA.
+    \label{eq:centroid-hessian-diag}
+  \end{empheq}
+\end{subequations}
+Appendix~\ref{sec:appendix-centroid} shows that this Hessian is \emph{negative semi-definite} and, hence, $\centroiddual$ is concave with respect to shifts.
+Therefore, the centroid-constrained problem is an \emph{unconstrained concave maximization}.
+
+However, the null-space of this Hessian is not always trivial and it may contain infinitesimal homotheties of the sites that the shifts can realize while keeping the weights fixed.
+To express these null-space modes explicitly, we associate each site with the scalar
+\begin{equation}
+  \gamma_i = \norm{\tcentroid_i}^2 - \bigl( \norm{\tcentroid_i - \qq_i}^2 - \weight_i \bigr),
+  \label{eq:pivot}
+\end{equation}
+which is the height at the target $\tcentroid_i$ for the hyperplane lifted from the weighted site $(\qq_i, \weight_i)$.
+As shown in Appendix~\ref{sec:appendix-centroid}, the null-space consists exactly of the perturbations $\smash{\delta\shift_i = \mu\,\dual_i + \translation}$ for which
+\begin{equation}
+  \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i + c = 0 \ \ \forall i
+  \label{eq:centroid-kernel}
+\end{equation}
+holds for some $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$. %, which dilate and translate the shifted sites.
+Geometrically, each shift $\shift_i$ tilts the lifted hyperplane of its site while keeping this height unchanged, \ie it rotates the hyperplane about the fixed {pivot} $\smash{\liftedtarget_i = (\tcentroid_i, \gamma_i)}$ and \eqref{eq:centroid-kernel} enforces that all pivots lie on a common hyperplane.
+{Hence, $\centroiddual$ is strictly concave if and only if its pivots are not coplanar.}
+% Since $n$ points in $\R^{d+1}$ always lie on a common hyperplane when $n \!\le\! d\!+\!1$, this requires $n \!>\! d\!+\!1$.
+% The pivots are also coplanar in two notable configurations of the targets: when the targets lie on a common hyperplane of $\R^d$, since the pivots then lie on a vertical hyperplane over it, and, in the special setting with $\qq_i \!=\! \tcentroid_i$ and $\weight_i \!=\! 0$, when the targets lie on a common sphere, since the pivots $\smash{(\tcentroid_i, \norm{\tcentroid_i}^2)}$ then lie on the paraboloid, which a hyperplane cuts along a sphere.
+When the pivots are not coplanar, the maximizing shifts $\shift$, if they exist, are unique; otherwise, they form an affine family along the modes of \eqref{eq:centroid-kernel}.
+% 
+We emphasize that this condition concerns the uniqueness of the \emph{shifts}, not of the \emph{cells}.
+In both cases, the resulting power diagram is unique.
+% any partition solving \eqref{eq:centroid-constrained} minimizes the Lagrangian \eqref{eq:centroid-lagrangian} at every maximizing shift, and this minimizer is unique.
+% We discuss the existence of maximizers, and of maximizers with distinct shifted sites, in \S\ref{sec:remarks}.
+
+\subsection{Volume + Centroid constraints}
+\label{sec:joint-constraints}
+
+Next, we consider the partition that enforces both prescribed volumes $\smash{\pvol_i}$ \emph{and} prescribed centroids $\smash{\tcentroid_i}$ simultaneously.
+Repeating the steps of \S\ref{sec:centroid-constraints}, we introduce a shift $\shift_i \!\in\! \R^d$ for each centroid constraint and a weight $\weight_i \!\in\! \R$ for each volume constraint, which together yield the Lagrangian
+\begin{equation}
+  \begin{aligned}
+    \lag(\cell, \shift, \weight)
+      ={}& \sum_{i} \int_{\cell_i} \norm{\xx - \qq_i}^2 \, d\xx \\
+        &- 2 \sum_{i} \shift_i\tr \int_{\cell_i} (\xx - \tcentroid_i) \, d\xx \\
+        &- \sum_{i} \weight_i \bigl( \cellvol_i - \pvol_i \bigr) .
+  \end{aligned}
+  \label{eq:joint-lagrangian}
+\end{equation}
+For fixed multipliers, the partition minimizer corresponds once again to a power diagram with shifted weighted sites $(\dual, \combweight)$ given in \eqref{eq:shifted-site}, under the same restriction to distinct generators with non-empty cells as in \S\ref{sec:background}.
+Its optimal value defines the \emph{dual objective}
+\begin{equation}
+  \jointdual(\shift, \weight)
+    \!=\! 
+    \min_{\cell} \lag(\cell, \shift, \weight)
+    \!=\!
+    \energy\bigl( \dual(\shift,\weight), \combweight(\shift,\weight) \bigr) \!+\! \sum_{i}\! \weight_i \pvol_i ,
+  \label{eq:joint-dual}
+\end{equation}
+and the constrained problem becomes the \emph{unconstrained} maximization of $\jointdual$ over the space of power diagrams, parametrized by both the shifts $\shift$ and weights $\weight$.
+
+Following Appendix~\ref{sec:appendix-joint}, the gradient of $\jointdual$ stacks the centroid and volume residuals
+\begin{subequations}
+  \label{eq:joint-gradient}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial_{\shift_i} \jointdual &= 2\,\cellvol_i\,(\tcentroid_i - \centroid_i) , \label{eq:joint-gradient-shift} 
+    \\[2mm]
+    \partial_{\weight_i} \jointdual &= \pvol_i - \cellvol_i , \label{eq:joint-gradient-weight}
+  \end{empheq}
+\end{subequations}
+so a stationary configuration is one whose cells realize both the prescribed centroids and volumes.
+% 
+The Hessian of $\jointdual$ is again a facet-based Laplacian, now assembled from the two multiplier types per site.
+Its \emph{diagonal} blocks are exactly the two Hessians we have already seen: the shift--shift block reproduces \eqref{eq:centroid-hessian} from \S\ref{sec:centroid-constraints}, and the weight--weight block reproduces \eqref{eq:newton-step} from \S\ref{sec:background}.
+The only new term is the mixed shift--weight block, which takes the form of:
+\begin{subequations}
+  \label{eq:joint-hessian}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\shift_i \weight_j} \jointdual
+      &= \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} (\xx - \tcentroid_i) \, dA,
+    \label{eq:joint-hessian-off}
+    \\[2mm]
+    \partial^2_{\shift_i \weight_i} \jointdual
+      &= -\!\sum_{j} \partial^2_{\shift_i \weight_j} \jointdual .
+    \label{eq:joint-hessian-diag}
+  \end{empheq}
+\end{subequations}
+
+Unlike $\centroiddual$, the Hessian of $\jointdual$ always has a nontrivial null-space.
+Since the weights are now free, each multiplier $\smash{(\shift_i, \weight_i)}$ moves its lifted site freely in $\R^{d+1}$, no longer pivoting about $\liftedtarget_i$.
+Every infinitesimal homothety of the shifted weighted sites is thus realized by some perturbation of the multipliers, whether or not the pivots are coplanar.
+Solving for $\smash{(\delta\shift_i, \delta\weight_i)}$, as detailed in Appendix~\ref{sec:appendix-joint}, the Hessian annihilates every perturbation of the form
+\begin{equation}
+  \delta\shift_i = \mu\,\dual_i + \translation , \qquad \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr \tcentroid_i + c ,
+  \label{eq:joint-nullspace}
+\end{equation}
+for any $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$, with $\gamma_i$ as in \eqref{eq:pivot}.
+Since the sites $\qq_i$ are fixed and only the shifts and weights vary, this $(d\!+\!2)$-dimensional family is precisely the infinitesimal version of the redundancy of the triplets $\smash{(\qq_i, \shift_i, \weight_i)}$ characterized by \citet[Lemma~1]{Memari2012PrimalDual}.
+Its weight update vanishes exactly under \eqref{eq:centroid-kernel}, recovering the null-space of $\centroiddual$, and for $\mu \!=\! 0$ and $\translation \!=\! 0$ it reduces to the additive constant spanning the null-space of \eqref{eq:newton-step}.
+Therefore, the Hessian of $\jointdual$ is negative definite away from the modes in \eqref{eq:joint-nullspace}.
+As in \S\ref{sec:centroid-constraints}, this non-uniqueness concerns the multipliers, not the diagram.
+Since every mode in \eqref{eq:joint-nullspace} leaves the cells unchanged, the maximizing multipliers $(\shift, \weight)$, when they exist, form a $(d+2)$-dimensional family that generates a \emph{single} power diagram.
+% When it exists, this power diagram is thus uniquely determined by the prescribed volumes and centroids, which provides an alternative proof of \citet[Theorem~4.5]{Bourne2025Inverting}.
+ % derived there from the uniqueness of optimal transport maps.
+
+\subsection{Softened Constraints}
+\label{sec:regularized-joint}
+
+Although the jointly constrained problem in \S\ref{sec:joint-constraints} has a unique solution whenever one exists, prescribing constraint values that correspond to a realizable power diagram is not always possible.
+% 
+% Since $\smash{\jointdual}$ is the minimum over partitions of the Lagrangian \eqref{eq:joint-lagrangian}, it varies linearly along the modes \eqref{eq:joint-nullspace} while also keeping the cells unchanged.
+% Its slope along the constant and translation modes vanishes exactly under \eqref{eq:partition-feasibility}, but its slope along the dilation mode does not: unless the targets are realized by a power diagram, $\jointdual$ is either unbounded above as the shifted sites dilate, or approaches its supremum only as they contract and merge \cite[Theorem~4.2]{Bourne2025Inverting}.
+% As characterized by \citet{Bourne2026ConvexOrder}, this condition fixes the overall spread of the target centroids relative to the prescribed volumes, but not the shape of their configuration.
+% In the unit interval with two cells of volume $\smash{\tfrac12}$, for instance, the targets $(0.3, 0.7)$ satisfy \eqref{eq:partition-feasibility} but must be spread by a factor $\smash{\tfrac54}$ about $\smash{\tfrac12}$, to $\smash{(\tfrac14, \tfrac34)}$, to be realized \cite[Example~4.7]{Bourne2025Inverting}.
+% 
+We therefore consider softening the constraints by penalizing the multipliers through the \emph{regularized energy}
+\begin{equation}
+  \jointdual_{\alpha\beta}(\shift, \weight) = \jointdual(\shift, \weight) - \frac{\alpha}{2} \sum_i \pvol_i \norm{\shift_i}^2 - \frac{\beta}{2} \sum_i \pvol_i \, \weight_i^2 ,
+  \label{eq:regularized-dual}
+\end{equation}
+with regularization parameters $\alpha, \beta \!\ge\! 0$.
+As detailed in Appendix~\ref{sec:appendix-regularized}, $\jointdual_{\alpha\beta}$ is the dual formulation in which the (hard) constraints are replaced by quadratic penalties:
+\begin{equation}
+  \begin{aligned}
+    \min_{\cell} \ {}& \sum_{i} \int_{\cell_i} \norm{\xx - \qq_i}^2 \, d\xx \\
+      &+ \frac{2}{\alpha} \sum_{i} \frac{1}{\pvol_i} \Bigl\lVert \int_{\cell_i} (\xx - \tcentroid_i) \, d\xx \Bigr\rVert^2 \\
+      &+ \frac{1}{2\beta} \sum_{i} \frac{1}{\pvol_i} \bigl( \cellvol_i - \pvol_i \bigr)^2 ,
+  \end{aligned}
+  \label{eq:regularized-primal}
+\end{equation}
+so that $\alpha$ and $\beta$ control how strictly the centroids and volumes are enforced, with $\alpha \!=\! 0$ and $\beta \!=\! 0$ meaning that the centroid and volume constraints remain exact, respectively.
+
+These penalty terms only modify the diagonal terms of the derivatives of $\jointdual$.
+The gradient \eqref{eq:joint-gradient} becomes
+\begin{subequations}
+  \label{eq:regularized-gradient}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial_{\shift_i} \jointdual_{\alpha\beta} &= 2\,\cellvol_i\,(\tcentroid_i - \centroid_i) - \alpha\,\pvol_i\,\shift_i , \label{eq:regularized-gradient-shift} \\[2mm]
+    \partial_{\weight_i} \jointdual_{\alpha\beta} &= \pvol_i - \cellvol_i - \beta\,\pvol_i\,\weight_i , \label{eq:regularized-gradient-weight}
+  \end{empheq}
+\end{subequations}
+so that, at a maximizer, the centroid and volume residuals are proportional to the shifts and weights instead of vanishing.
+The Hessian \eqref{eq:joint-hessian} keeps all its off-diagonal blocks, while each diagonal block is shifted by $\smash{-\alpha\,\pvol_i\,\Id}$ for the shifts and by $\smash{-\beta\,\pvol_i}$ for the weights.
+Since the Hessian of $\jointdual$ is negative semi-definite, the Hessian of $\jointdual_{\alpha\beta}$ is negative definite for $\alpha, \beta \!>\! 0$, and its null-space is trivial: the regularization removes all modes of \eqref{eq:joint-nullspace}.
+For $\beta \!=\! 0$, the penalty on the shifts removes every mode with a nonzero shift perturbation, \ie the translation and dilation modes, and only the additive constant on the weights remains, as in the volume-constrained problem \eqref{eq:newton-step}.
+
+As a result, $\jointdual_{\alpha\beta}$ is strongly concave for $\alpha, \beta \!>\! 0$ and admits a unique maximizer for any targets, without requiring the identities \eqref{eq:partition-feasibility} nor targets realized by a power diagram.
+For $\beta \!=\! 0$, which keeps the volumes exact, we show in Appendix~\ref{sec:appendix-regularized} that the shifted sites remain distinct whenever $\smash{\alpha > 4\operatorname{diam}(\domain) / \min_{i \neq j} \norm{\qq_i - \qq_j}}$.
+The parameter $\alpha$ thus interpolates from the jointly constrained dual $\jointdual$ when $\alpha\!=\!0$ towards the volume-constrained dual $\dualenergy$ as $\alpha \!\to\! \infty$.
+
+\subsection{Remarks}
+\label{sec:remarks}
+
+We close this section with four remarks on our formulations: we first relate them to prior work on Laguerre tessellation inversion, which lets us reuse existing results, then discuss the feasibility of the prescribed targets and the existence of solutions, and finally revisit centroidal power diagrams.
+
+\paragraph{Link to \citeauthor{Bourne2025Inverting}}
+Our joint problem in \S\ref{sec:joint-constraints} addresses the same inverse problem considered by \citet{Bourne2025Inverting}. % which recovers a power diagram from the volumes and centroids of its cells.
+However, the two formulations handle the volume and centroid constraints differently. %, and ours does not rest on a particular order of operations.
+\citet{Bourne2025Inverting} treat the sites $\qq$ of the diagram as the unknowns and enforce the volumes by solving a semi-discrete optimal transport problem for the weights, which is the dual maximization of $\dualenergy$ in \eqref{eq:volume-dual} for the current sites.
+The gradient of their objective equals the centroid residual only on the submanifold of weights that enforce the target volumes, so their characterization of solutions holds only once the volume constraints are satisfied, and every centroid update must be preceded by a weight solve.
+We instead impose both constraints on an equal footing through Lagrange multipliers, the weights for the volumes and the shifts for the centroids, keeping the sites fixed.
+For every value of the multipliers, the volume and centroid residuals are exactly the gradients of $\jointdual$ in \eqref{eq:joint-gradient}, so our characterization of solutions, as stationary points of a single concave function, holds without first satisfying either constraint.
+In particular, the centroid residual can be reduced with the weights held fixed, which is precisely the centroid-only problem of \S\ref{sec:centroid-constraints}.
+The two formulations, nevertheless, share the same solutions. % with their sites playing the role of our shifted sites $\dual$.
+Indeed, 
+% for fixed shifts, maximizing $\jointdual$ over the weights enforces the volumes of the shifted power diagram, which is exactly their weight update.
+at optimal weights, $\jointdual$ coincides with their objective (up to a factor of two and an additive constant), so maximizing it over the shifts is equivalent to their maximization over the sites.
+Therefore, their results on feasibility and existence transfer directly to our formulation.
+Our softened formulation in \S\ref{sec:regularized-joint} is likewise related to the follow-up work of \citet{Bourne2026ConvexOrder}: in the centroidal setting $\qq_i \!=\! \tcentroid_i$, maximizing $\jointdual_{\alpha 0}$ amounts 
+% to projecting the targets, dilated about $\centroid_\domain$ by a factor $\smash{1 \!+\! \tfrac{\alpha}{2}}$, onto the set of centroids achievable with the prescribed volumes, which is precisely 
+to their projection-dilation reconstruction method.
+% Our formulation contributes the explicit facet-based Hessian of the joint problem \eqref{eq:joint-hessian}, whose blocks expose the volume Laplacian \eqref{eq:newton-step} and, at a centroidal configuration with zero shifts, the discrete pressure gradient of Power Particles \cite{deGoes2015PowerParticles}, as well as the centroid-only problem of \S\ref{sec:centroid-constraints}, which fixes the weights instead of the volumes and has no counterpart in their work.
+
+\paragraph{Feasibility.}
+Both formulations in \S\ref{sec:centroid-constraints} and \S\ref{sec:joint-constraints} require targets compatible with the conservation identities \eqref{eq:partition-feasibility}, which give simple necessary conditions for feasibility.
+In the joint setting from \S\ref{sec:joint-constraints}, where both volumes and centroids are prescribed, this test amounts to substituting the data into \eqref{eq:partition-feasibility}.
+Since the cell partition must be a power diagram, \citet{Bourne2025Inverting} deduced additional necessary conditions validating the targets: each prescribed centroid must lie at a minimum distance from the domain boundary and from every other prescribed target, with bounds that depend on the prescribed volumes (their Lemmas~4.8 and~4.9).
+In the centroid-only case from \S\ref{sec:centroid-constraints}, the volumes are unknown and we must check whether (non-negative) volumes satisfying \eqref{eq:partition-feasibility} exist.
+Drawing inspiration from \citet{Hormann2008MaxEnt}, we recover these volumes by solving
+\begin{subequations}
+  \label{eq:maxent-feasibility}
+  \begin{alignat}{2}
+    & \min_{\{\cellvol_i\}} \quad && \sum_i \cellvol_i \, \log\bigl( \cellvol_i / \domainVol \bigr) \label{eq:maxent-feasibility-obj} \\
+    & \text{s.t.} \quad && \sum_i \cellvol_i \, \tcentroid_i = \domainVol \, \centroid_\domain , \quad \sum_i \cellvol_i = \domainVol , \label{eq:maxent-feasibility-cons}
+  \end{alignat}
+\end{subequations}
+which is equivalent to the \emph{unconstrained} convex minimization
+\begin{equation}
+  \min_{\yy \in \R^{d+1}} \
+    \domainVol \sum_i \exp\bigl( -\yy\tr \lift_i \bigr)
+    + \yy\tr \lift_\domain ,
+  \label{eq:maxent-dual}
+\end{equation}
+with the homogeneous lifts $\lift_i \!=\! [\tcentroid_i, 1]$ and $\lift_\domain \!=\! \domainVol\,[\centroid_\domain, 1]$, whose minimizer recovers the volumes as $\smash{\cellvol_i = \domainVol \exp(-\yy\tr \lift_i)}$.
+% Problem \eqref{eq:maxent-dual} attains a minimum exactly when $\centroid_\domain$ lies in the relative interior of the convex hull of $\{\tcentroid_i\}$.
+Note once again that, in both settings, these tests are only necessary, \ie a failure proves that the targets are infeasible, but a success does not guarantee that a power diagram realizes them.
+
+\paragraph{Existence.}
+Since we restrict the shifted sites to be distinct with non-empty cells, a solution exists if and only if the corresponding energy attains its maximum at such a configuration.
+Otherwise, the objective can either grow without bound or approach its supremum as shifted sites merge.
+Which targets admit a solution follows a natural progression, as each formulation prescribes more of the diagram (see Appendix~\ref{sec:appendix-existence} for details).
+For $\dualenergy$, any positive volumes summing to $\domainVol$ are realized for any distinct sites \cite{Aurenhammer1998Minkowski}.
+For $\centroiddual$, solutions persist under small perturbations of the targets whenever the pivots are not coplanar, but not every target is realizable.
+For $\jointdual$, the targets must satisfy, beyond \eqref{eq:partition-feasibility}, one additional scalar condition, which fixes the overall spread of the centroids relative to the prescribed volumes \cite{Bourne2025Inverting, Bourne2026ConvexOrder}.
+Finally, $\jointdual_{\alpha\beta}$ trades exact constraints for a solution with any targets.
+
+\paragraph{Centroidal power diagrams.}
+Recall from \eqref{eq:centroid-gradient} that a power diagram is \emph{centroidal} when each site coincides with its own cell centroid, $\qq_i \!=\! \centroid_i \, \forall i$.
+Our constrained formulations let us revisit this classical construction in two ways.
+First, suppose we also optimize a dual energy, either $\centroiddual$ or $\jointdual$, over the sites $\qq$ for fixed targets $\tcentroid$.
+The site gradient of both duals is exactly the residual \eqref{eq:centroid-gradient}, so a stationary configuration requires $\qq_i \!=\! \centroid_i \!=\! \tcentroid_i \, \forall i$.
+Therefore, there is no need to optimize over $\qq$, as the optimum simply places the sites at the prescribed targets.
+Conversely, we may set the targets to the sites themselves (\ie $\tcentroid_i \!=\! \qq_i \, \forall i$) which produces a centroidal power diagram for a prescribed $\qq$ whenever such a diagram exists; satisfying \eqref{eq:partition-feasibility} is necessary but, as discussed above, not sufficient.
+The softened energy $\jointdual_{\alpha\beta}$ of \S\ref{sec:regularized-joint} removes this restriction.
+Since its penalties do not depend on the sites, its site gradient is again the residual \eqref{eq:centroid-gradient}, but its maximizer now has centroids $\centroid_i$ that differ from the targets in proportion to the shifts \eqref{eq:regularized-gradient-shift}, so the optimal sites coincide with the targets only if the shifts vanish.
+With $\tcentroid_i \!=\! \qq_i$ and $\beta \!=\! 0$, $\jointdual_{\alpha 0}$ always yields a power diagram with the prescribed volumes whose centroids are pulled toward the sites without reaching them.
+Iteratively moving the sites, and thus the targets, to these centroids stops only when $\centroid_i \!=\! \qq_i \!=\! \tcentroid_i$, at which point \eqref{eq:regularized-gradient-shift} forces $\shift \!=\! 0$, so its fixed points are exactly the centroidal power diagrams with prescribed volumes as in \cite{deGoes2012BlueNoise,Xin2016CentroidalPower}.
+% For convenience, we denote by $\barcentroiddual$ and $\barjointdual$ the energies $\centroiddual$ and $\jointdual$ evaluated in this special setting of $\tcentroid_i \!=\! \qq_i \, \forall i$.
+
+\end{document}

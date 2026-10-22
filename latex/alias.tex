@@ -1,0 +1,95 @@
+% !TEX root = main.tex
+% alias.tex --- custom notation macros
+% Loaded by main.tex before any content file.
+
+% Domain
+\newcommand{\domain}{\mathcal{D}}            % domain in R^d
+\newcommand{\domainVolume}{D}                % total volume of the domain
+
+% Power-diagram primitives
+\newcommand{\xx}{\mathbf{x}}                 % point / integration variable
+\newcommand{\yy}{\mathbf{y}}                 % dual multiplier of the max-entropy feasibility program
+\newcommand{\qq}{\mathbf{q}}                 % site
+\newcommand{\dual}{\mathbf{p}}               % shifted / dual site
+\newcommand{\weight}{w}                      % weight
+\newcommand{\cell}{\mathcal{V}}              % cell
+\newcommand{\face}{\mathcal{A}}              % facet shared by two cells, \face_{ij}
+\newcommand{\volume}{\mathrm{vol}}           % volume operator, e.g. \volume(\cell_i)
+\newcommand{\cellvol}{V}  % volume of a cell, V (index added in text)
+\newcommand{\domainVol}{V_{\domain}}         % total domain volume
+\newcommand{\area}{A}                        % measure of a facet, \area_{ij}
+\newcommand{\basis}{\chi}                    % cell indicator / basis function, \basis_i
+\newcommand{\centroid}{\mathbf{c}}           % cell centroid, \centroid_i
+\newcommand{\domainCentroid}{\centroid_{\domain}} % centroid of the domain
+\newcommand{\centerProp}{C}                   % centroid-constraint residual, \centerProp_i
+\newcommand{\tcentroid}{\overline{\centroid}} % prescribed / target centroid, \tcentroid_i
+\newcommand{\lift}{\boldsymbol{\ell}}        % homogeneous lift (\tcentroid_i, 1), max-entropy feasibility
+\newcommand{\shift}{\mathbf{u}}              % centroid multiplier ("shift"), \shift_i
+\newcommand{\vmult}{\weight}                 % volume multiplier == weight w, \vmult_i
+\newcommand{\combweight}{\lambda}            % combined dual weight of a shifted site, \combweight_i
+\newcommand{\mult}{\mathbf{z}}               % stacked per-site multiplier, \mult_i = (\shift_i, \weight_i)
+\newcommand{\translation}{\mathbf{t}}       % global translation mode of the shifts, \delta\shift_i = \translation
+
+% Potentials
+\newcommand{\transport}{\mathcal{T}}         % partition potential (no weights), transport cost
+\newcommand{\energy}{\mathcal{E}}            % power-diagram energy (inner min), \energy(\qq,\weight)
+\newcommand{\dualenergy}{\mathcal{F}}        % dual objective of the volume-constrained problem, \dualenergy(\weight)
+\newcommand{\centroiddual}{\mathcal{G}}      % dual objective of the centroid-constrained problem, \centroiddual(\shift)
+\newcommand{\jointdual}{\mathcal{H}}         % dual objective of the joint volume+centroid problem, \jointdual(\vmult,\shift)
+\newcommand{\distortion}{\mathcal{D}}         % distortion potential, \distortion(\qq) or \distortion(\tcentroid)
+\newcommand{\barcentroiddual}{\overline{\centroiddual}} % centroidal centroid dual (\bar G), \tcentroid_i = \qq_i
+\newcommand{\barjointdual}{\overline{\jointdual}}       % centroidal joint dual (\bar H), \tcentroid_i = \qq_i
+\newcommand{\sitequad}{\mathcal{Q}}          % convex quadratic site energy, \sitequad(\qq)
+\newcommand{\Amat}{\mathrm{A}}               % symmetric n x n coupling matrix of \sitequad
+\newcommand{\bmat}{\mathbf{a}}               % n x d linear term of \sitequad (pairs with \Amat)
+\newcommand{\Id}{\mathrm{I}}                 % identity matrix (\Id_d for d x d)
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% Power distance from x to weighted site i:  \pdist{\xx}{i}
+\newcommand{\pdist}[2]{\norm{#1 - \qq_{#2}}^2 - \weight_{#2}}
+
+% Volume constraints
+\newcommand{\pvol}{\overline{V}}  % prescribed / target volume, \overline V (index added in text)
+\newcommand{\lag}{\mathcal{L}}               % Lagrangian
+\newcommand{\lmult}{\lambda}                 % Lagrange multiplier
+
+% Entropic regularization / Sinkhorn
+\newcommand{\eps}{\varepsilon}               % entropic regularization parameter
+\newcommand{\coupling}{P}                    % coupling matrix, P_{ik}
+\newcommand{\kernel}{K}                      % Gibbs kernel, K_{ik}
+\newcommand{\entropy}{\mathrm{Ent}}          % entropy functional (renamed from H, which now denotes the joint dual)
+\newcommand{\samplepot}{g}                   % log-domain sample (column) potential, \samplepot_k
+
+% Common shorthands
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\tr}{^{t}}                        % transpose, e.g. \shift_i\tr
+\newcommand{\ie}{i.e.\@\xspace}               % "i.e." with correct spacing (no comma)
+\newcommand{\eg}{e.g.\@\xspace}               % "e.g." with correct spacing (no comma)
+
+% Lagrangian flow (sec:flow)
+\newcommand{\press}{\pi}                     % pressure / incompressibility multiplier, \press_i
+\newcommand{\vel}{\mathbf{v}}                % particle velocity, \vel_i
+\newcommand{\tstep}{\Delta t}                % time step
+\newcommand{\mass}{m}                        % particle mass, \mass_i
+\newcommand{\Mmat}{\mathrm{M}}               % diagonal mass matrix, \Mmat = \mathrm{diag}(\mass_i \Id_d)
+\newcommand{\stiff}{\epsilon}                % stiffness parameter of the Gallouet--Merigot penalty
+\newcommand{\kinetic}{\mathcal{K}}           % kinetic energy
+\newcommand{\Dmat}{\mathrm{D}}               % discrete divergence, \Dmat = \partial \cellvol / \partial(\text{positions})
+\newcommand{\Gmat}{\mathrm{G}}               % discrete gradient, \Gmat = -\Dmat\tr
+\newcommand{\Lmat}{\mathrm{L}}               % pressure Laplacian, \Lmat = \Dmat \Mmat^{-1} \Gmat
+\newcommand{\Kmat}{\mathrm{K}}               % negated centroid Hessian, \Kmat = -\nabla^2_{\shift\shift} \centroiddual
+\newcommand{\Bmat}{\mathrm{B}}               % centroid-residual derivative w.r.t. particle positions at fixed shifts
+\newcommand{\Jmat}{\mathrm{J}}               % Jacobian of the cell centroids w.r.t. the sites, \Jmat = \partial \centroid / \partial \dual
+\newcommand{\residual}{\mathbf{g}}           % centroid residual, \residual_i = \int_{\cell_i} (\xx - \centroid_i) d\xx
+\newcommand{\softpot}{\Phi}                  % softened potential of the particles, \softpot_\alpha(\qq) = \max \jointdual_{\alpha 0}
+\newcommand{\achievable}{\mathcal{C}}        % convex set of centroids achievable with volumes \pvol (fractional partitions)
+\newcommand{\wlap}{\Delta}                  % negated volume Hessian (weight Laplacian), \wlap = -\nabla^2_{\weight\weight} \jointdual
+\newcommand{\pvolmat}{\overline{\mathrm{V}}}  % diagonal matrix of prescribed volumes, \mathrm{diag}(\pvol_i \Id_d)
+\newcommand{\dilation}{\theta}               % dilation factor 1 + \alpha/2 of the softened potential
+
+% Lifting of a power diagram (Background, shifted power diagrams)
+\newcommand{\liftedtarget}{\boldsymbol{\Gamma}} % pivot (\tcentroid_i, \gamma_i) in R^{d+1} of the lifted hyperplane of site i, \liftedtarget_i
+\newcommand{\height}{h}                      % lifted height of a weighted site, \height_i = \norm{\qq_i}^2 - \weight_i
+\newcommand{\sheight}{\tilde{\height}}       % lifted height of a shifted weighted site, \sheight_i = \norm{\dual_i}^2 - \combweight_i
