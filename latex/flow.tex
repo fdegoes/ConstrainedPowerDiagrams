@@ -6,7 +6,7 @@
 \label{sec:flow}
 
 The Power Particles method \cite{deGoes2015PowerParticles} discretizes incompressible flows as moving power diagrams with prescribed volumes.
-In this section, we revisit this discretization introducing an alternative formulation based on a variational principle, which we obtain by building on the constrained power diagrams of \S\ref{sec:contributions}.
+In this section, we revisit this discretization with an alternative formulation based on a variational principle, building on the constrained power diagrams of \S\ref{sec:contributions}.
 We first model the flow as a constrained Lagrangian system (\S\ref{sec:flow-dynamics}), together with its variational integrator (\S\ref{sec:flow-constrained}).
 We then propose a relaxation of the constraint that keeps the variational structure while making each time step an unconstrained optimization (\S\ref{sec:flow-penalty}).
 Finally, we discuss these results and relate them to prior work (\S\ref{sec:flow-discussion}).
@@ -14,11 +14,11 @@ Finally, we discuss these results and relate them to prior work (\S\ref{sec:flow
 \subsection{Constrained Dynamics}
 \label{sec:flow-dynamics}
 
-Following Power Particles \cite{deGoes2015PowerParticles}, we discretize the fluid into $n$ parcels, each one a cell $\cell_i$ of a power diagram with prescribed volume $\pvol_i$.
-For simplicity, we assume a uniform density of one so that each particle has mass $\pvol_i$.
+Following Power Particles \cite{deGoes2015PowerParticles}, we discretize the fluid into $n$ parcels, each one described by a cell $\cell_i$ of a power diagram with prescribed volume $\pvol_i$.
+For simplicity, we assume a uniform fluid density of one so that each parcel has mass $\pvol_i$.
 Unlike Power Particles, which attaches fluid particles to the sites of the power diagram, we represent each fluid parcel by a particle $\qq_i$ located \emph{exactly} at the centroid of its cell.
 % The flow thus tracks the centroids of the cells rather than the cells themselves.
-To this end, we introduce a potential $\cpot(\qq)$ given by the minimal quantization error of the particles among the partitions of $\domain$ with volumes $\pvol$ and centroids $\qq$, where the volume constraints make the flow preserve volume and the centroid constraints keep the particles at the cell centroids.
+To this end, we introduce a potential $\cpot(\qq)$ given by the minimal quantization error of the particles among the partitions of $\domain$ with volumes $\pvol$ and centroids $\qq$, where the volume constraints make the fluid incompressible and the centroid constraints keep the particles at the cell centroids.
 % We thus define this quantization potential as
 % \begin{subequations}
 %   \label{eq:flow-quantization-cost}
@@ -32,13 +32,13 @@ To this end, we introduce a potential $\cpot(\qq)$ given by the minimal quantiza
 %   \end{empheq}
 % \end{subequations}
 This potential is precisely the joint problem of \S\ref{sec:joint-constraints} with both the sites and the prescribed centroids set to the particles, \ie $\tcentroid_i = \qq_i$.
-We can thus express the potential induced by this discretization as
+We can thus express this potential as
 \begin{equation}
   \cpot(\qq) = \max_{\shift, \weight} \jointdual(\shift, \weight) ,
   \label{eq:flow-centroid-potential}
 \end{equation}
 whose maximum is attained only when the particles $\qq$ are realizable, generating a power diagram with centroids $\qq$ and volumes $\pvol$.
-In this case, the last two terms of \eqref{eq:regularized-decomposition} vanish, so $\cpot(\qq)$ is exactly the quantization error of the cells about their particles, which vanishes under refinement as the cells shrink to their centroids.
+In this case, the last two terms of \eqref{eq:regularized-decomposition} vanish, so $\cpot(\qq)$ is exactly the quantization error of the cells about their particles, which tends to zero under refinement as the cells shrink to their centroids.
 
 The motion of the particles is then governed by the Lagrangian
 \begin{equation}
@@ -96,10 +96,10 @@ and the new velocities follow as $\smash{\vel^{k+1} \!=\! (\qq^{k+1} \!-\! \qq^k
 Instead of a line search over the unknowns $(s, \translation)$ along $\dual^k$ until the new particles $\smash{\qq^{k+1}}$ are realizable, we recast the correction step as a single concave maximization of $\jointdual$ with sites $\qq^k$, prescribed volumes $\pvol$, and prescribed centroids $\smash{\pred^{k+1}}$, while handling the gauge variables via linear constraints on the shifts:
 \begin{subequations}
   \label{eq:flow-line-constraint}
-  \begin{alignat}{2}
-    & \max_{\shift, \weight} \quad && \jointdual(\shift, \weight) \label{eq:flow-line-constraint-obj} \\
-    & \text{s.t.} \quad && \sum\nolimits_i \pvol_i\,\shift_i\tr \dual^k_i = 0 , \label{eq:flow-line-constraint-dil} \\
-    & && \sum\nolimits_i \pvol_i\,\shift_i = 0 . \label{eq:flow-line-constraint-trans}
+  \begin{alignat}{3}
+    & \max_{\shift, \weight} \quad & & \jointdual(\shift, \weight) \label{eq:flow-line-constraint-obj} \\
+    & \text{s.t.} \quad & \constraintbrace{16pt}{8pt} & \sum\nolimits_i \pvol_i\,\shift_i\tr \dual^k_i = 0 , \label{eq:flow-line-constraint-dil} \\
+    & & & \sum\nolimits_i \pvol_i\,\shift_i = 0 . \label{eq:flow-line-constraint-trans}
   \end{alignat}
 \end{subequations}
 Introducing multipliers $2s$ and $2\translation$, the stationary condition of \eqref{eq:flow-line-constraint} is exactly the update \eqref{eq:flow-shake-step-corr}, with the new particles as centroids of the resulting power diagram.
@@ -135,7 +135,7 @@ Using $\jointdual_\alpha$ in place of $\jointdual$ in \eqref{eq:flow-centroid-po
 Since $\jointdual_\alpha$ admits a unique maximizer for any targets, the potential in \eqref{eq:flow-softened-potential} is feasible for any distinct particles, so the Lagrangian \eqref{eq:flow-lagrangian} with $\cpot_\alpha$ in place of $\cpot$ is unconstrained.
 
 By \eqref{eq:regularized-decomposition} with $\tcentroid = \qq$, the softened potential is the quantization error of the cells about their centroids plus the centroid residual $\smash{(1 + \alpha) \sum_i \pvol_i \norm{\centroid_i - \qq_i}^2}$, so $\alpha$ only sets the strength with which the particles are pulled towards the centroids of their cells.
-By \eqref{eq:regularized-projection}, the cells of the maximizer of \eqref{eq:flow-softened-potential} have centroids $\centroid$ at the projection onto $\achievable$ of the dilated particles $(1 + 1/\alpha)\,\qq$.
+By \eqref{eq:regularized-projection}, the cells of the maximizer of \eqref{eq:flow-softened-potential} have centroids $\centroid$ at the projection onto $\achievable$ of the dilated particles $(1 \!+\! 1/\alpha)\,\qq$.
 By \eqref{eq:regularized-gradient-shift}, the optimal shifts are then $\smash{\shift_i = \alpha\,(\qq_i - \centroid_i)}$, which vanish only when $\centroid = \qq$, so the particles are in general no longer the centroids of their cells.
 %
 The gradient of this potential relative to each site $\qq_i$ is
@@ -171,9 +171,9 @@ At convergence, the force \eqref{eq:softened-site-gradient} follows directly fro
 Note that, since $\alpha$ is a parameter of the Lagrangian, we cannot decrease it over time to enforce the bound \eqref{eq:regularized-distinct}, which is only a sufficient condition for the maximizer to be a power diagram.
 % TODO: behavior when the generators collide for large alpha; numerical validation in ../src.
 
-Finally, we note that, with $\tcentroid = \qq$, he Hessian of $\cpot_\alpha$ relative to the sites $\qq$ is bounded by $(1 \!+\! \alpha) \text{diag}(\pvol)$.
-As a consequence, our softened system has oscillatory modes of frequency up to $\smash{\sqrt{1 + \alpha}}$, for any configuration and number of particles.
-Since the Störmer--Verlet scheme is stable for frequencies below $2/\tstep$, we can conclude that the update \eqref{eq:flow-softened-step} is stable for
+Finally, we point out that the Hessian of $\cpot_\alpha$ with respect to the particles $\qq$ is bounded by $\smash{2\,(1 \!+\! \alpha)\,\mathrm{diag}(\pvol)}$.
+As a consequence, our softened system has oscillatory modes of frequency at most $\smash{\sqrt{1 + \alpha}}$, for any configuration and number of particles.
+Since the Störmer--Verlet scheme is stable for frequencies below $2/\tstep$, the update \eqref{eq:flow-softened-step} is thus stable for
 \begin{equation}
   \tstep < \frac{2}{\sqrt{1 + \alpha}} .
   \label{eq:softened-time-step}
@@ -206,22 +206,26 @@ In our settings, the RATTLE velocity correction reduces to a single projection o
 \paragraph{Link to \citet{Gallouet2018Lagrangian}}
 Our penalty-based integrator in \S\ref{sec:flow-penalty} generalizes the method of \citet{Gallouet2018Lagrangian}.
 In the limit $\alpha \!\to\! 0$, the potential \eqref{eq:flow-softened-potential} reduces to $\smash{\cpot_0(\qq) \!=\! \max_\weight \dualenergy(\weight)}$, which, by \eqref{eq:regularized-decomposition}, can be decomposed as the quantization error plus the centroid residual $\smash{\sum_i \pvol_i \norm{\centroid_i - \qq_i}^2}$.
-This is the potential of \citet{Gallouet2018Lagrangian} up to a constant factor, so their integrator gives exactly the update \eqref{eq:flow-softened-step} with $\alpha \!=\! 0$.
+This is the potential of \citet{Gallouet2018Lagrangian}, up to a constant factor, so their integrator gives exactly the update \eqref{eq:flow-softened-step} with $\alpha \!=\! 0$.
 % 
 However, their stiffness parameter scales both terms of the potential decomposition, so their scheme ties the particles to the centroids by also amplifying the quantization error.
 Instead, our parameter $\alpha$ only scales the centroid residual, keeping the quantization error at the unit strength induced by the discretization, and recovers the constrained integrator of \S\ref{sec:flow-constrained} as $\alpha \!\to\! \infty$.
 Matching their stiffness to the strength $1 \!+\! \alpha$ of our centroid residual, the time step restriction under which their flow converges towards smooth solutions of the Euler equations reads $\smash{\tstep \sqrt{1 + \alpha} \le 1}$, which lies within our stability bound \eqref{eq:softened-time-step}.
 
 \paragraph{Link to \citet{deGoes2015PowerParticles}}
-The Power Particles method \cite{deGoes2015PowerParticles} advances sites $\qq^k$ and velocities $\vel^k$ via an operator splitting scheme whose steps relate to our penalty-based integrator.
-First, they enforce the volumes by maximizing $\dualenergy$ of \eqref{eq:volume-dual} over the weights for the sites $\qq^k$, which is equivalent to maximizing $\jointdual_\alpha$ with zero shifts.
-Next, they project the velocities $\vel^k$ onto those that preserve the volumes to first order by solving a Poisson equation, which produces the new velocities $\smash{\vel^{k+1}}$ used in place of $\vel^k$ in the update \eqref{eq:flow-softened-step}.
-This projection resembles a single Newton step on $\jointdual_\alpha$ from zero shifts and converged weights, with target centroids $\smash{\tcentroid \!=\! \centroid^k \!+\! \tstep\,\vel^k/\alpha}$.
-In particular, the discrete divergence and gradient operators derived by \citet{deGoes2015PowerParticles} correspond to the shift--weight block \eqref{eq:joint-hessian} of the Hessian of $\jointdual_\alpha$.
-Their pressure projection is then reproduced by lumping the shift--shift block to the scaled mass matrix $\smash{\tfrac{2}{\alpha}\,\mathrm{diag}(\pvol_i)}$, \ie the penalty block of $\jointdual_\alpha$, and zeroing out the weight--weight block.
-The Schur complement of the resulting Newton system is the Poisson equation, in which the weight update plays the role of the pressure, while the shift update is the pressure correction that yields $\smash{\vel^{k+1}}$.
-Finally, for the particular stiffness $\smash{\alpha = 1/\tstep^2 - 1}$, \ie at the limit $\smash{\tstep \sqrt{1 + \alpha} = 1}$ of the restriction of \citet{Gallouet2018Lagrangian}, the velocity update \eqref{eq:flow-softened-step-vel} adds the Lloyd displacement $\smash{(\centroid^k - \qq^k)/\tstep}$ to $\vel^k$, so the position update \eqref{eq:flow-softened-step-pos} becomes $\smash{\qq^{k+1} = \centroid^k + \tstep\,\vel^k}$, \ie a full Lloyd step onto the centroids followed by advection.
-With the pressure-corrected velocities $\smash{\vel^{k+1}}$ in place of $\vel^k$, this is exactly their site update $\smash{\qq^{k+1} \!=\! \centroid^k \!+\! \tstep\,\vel^{k+1}}$.
+The Power Particles method \cite{deGoes2015PowerParticles} advances the sites $\qq^k$ and velocities $\vel^k$ via an operator splitting whose steps relate to our penalty-based integrator.
+First, they enforce the volumes by maximizing $\dualenergy$ of \eqref{eq:volume-dual} over the weights for the sites $\qq^k$, which is equivalent to maximizing $\jointdual_\alpha$ with zero shifts, and keep the resulting power diagram fixed for the rest of the time step.
+Next, they project the velocities $\vel^k$ onto those that preserve the volumes to first order, which yields the projected velocities $\smash{\vel^{k+1}}$.
+This projection resembles a single Newton step on $\jointdual_\alpha$ from zero shifts and the converged weights, with targets $\smash{\tcentroid \!=\! \centroid^k \!+\! \tstep\,\vel^k/\alpha}$, for which the shift gradient \eqref{eq:regularized-gradient-shift} is $\smash{\tfrac{2}{\alpha}\,\tstep\,\pvol_i\,\vel^k_i}$.
+In particular, the discrete divergence and gradient operators of \citet{deGoes2015PowerParticles} correspond to the shift--weight block \eqref{eq:joint-hessian} of the Hessian of $\jointdual_\alpha$.
+Lumping the shift--shift block to the penalty block $\smash{\tfrac{2}{\alpha}\,\mathrm{diag}(\pvol_i)}$ and zeroing out the weight--weight block, the factor $2/\alpha$ cancels with the one of the gradient, so the Schur complement of this Newton system is their Poisson equation for the pressure with the mass matrix $\mathrm{diag}(\pvol_i)$, and the shift step is $\smash{\tstep\,\vel^{k+1}}$.
+Finally, combining \eqref{eq:flow-softened-step-vel} and \eqref{eq:flow-softened-step-pos}, our position update reads
+\begin{equation}
+  \qq^{k+1}_i = \qq^k_i + \tstep\,\vel^k_i + (1 + \alpha)\,\tstep^2 \bigl( \centroid^k_i - \qq^k_i \bigr) .
+  \label{eq:flow-softened-combined}
+\end{equation}
+For the stiffness $(1 \!+\! \alpha)\,\tstep^2 \!=\! 1$, \ie at the limit of the restriction of \citet{Gallouet2018Lagrangian}, \eqref{eq:flow-softened-combined} becomes $\qq^{k+1} \!=\! \centroid^k \!+\! \tstep\,\vel^k$, \ie a full Lloyd step onto the centroids followed by advection.
+Their site update is exactly this one with $\vel^k$ replaced by the projected velocities $\smash{\vel^{k+1}}$, which they also store as the new velocities.
 Since this choice of stiffness is tied to the time step, the splitting does not discretize a Lagrangian, in contrast to our formulations.
 
 \end{document}
