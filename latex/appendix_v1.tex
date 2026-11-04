@@ -1,0 +1,636 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\appendix
+
+\section{Derivatives of $\energy$ and $(\dual,\combweight)$}
+\label{sec:appendix-prelim}
+
+Both our objectives $\centroiddual$ and $\jointdual$ are the plain power diagram energy $\energy$ in \eqref{eq:power-diagram} evaluated at the shifted weighted sites $(\dual, \combweight)$ of \eqref{eq:shifted-site}.
+We summarize here the ingredients shared by the next two sections: the Jacobian of \eqref{eq:shifted-site} and the derivatives of \eqref{eq:power-diagram}.
+
+The first-order Jacobian of the reparametrization \eqref{eq:shifted-site} are
+\begin{equation}
+  \partial_{\shift_i} \dual_i = \Id , \qquad
+  \partial_{\shift_i} \combweight_i = 2\,(\dual_i - \tcentroid_i) , \qquad
+  \partial_{\weight_i} \combweight_i = 1 ,
+  \label{eq:appendix-jac}
+\end{equation}
+and its only nonzero second-order part is $\smash{\partial^2_{\shift_i} \combweight_i = 2\,\Id}$.
+
+As detailed in \cite[\S2.4--2.5]{deGoes2014Thesis}, the first derivatives of the energy $\energy$ in \eqref{eq:power-diagram} are the standard weight and site gradients:
+\begin{equation}
+  \partial_{\dual_i} \energy = 2 \int_{\cell_i} (\dual_i - \xx) \, d\xx ,
+  \qquad
+  \partial_{\combweight_i} \energy = -\cellvol_i ,
+  \label{eq:appendix-energy-deriv}
+\end{equation}
+and its second derivatives are facet integrals with off-diagonals
+\begin{subequations}
+  \label{eq:appendix-energy-hess-off}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\dual_i \dual_j} \energy
+      &= \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i)(\xx - \dual_j)\tr \, dA , \label{eq:appendix-energy-hess-pp} \\
+    \partial^2_{\dual_i \combweight_j} \energy
+      &= \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i) \, dA , \label{eq:appendix-energy-hess-pl} \\
+    \partial^2_{\combweight_i \combweight_j} \energy
+      &= \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-energy-hess-ll}
+  \end{empheq}
+\end{subequations}
+and diagonals
+\begin{subequations}
+  \label{eq:appendix-energy-hess-diag}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\dual_i \dual_i} \energy
+      &= 2\,\cellvol_i\,\Id - \!\sum\nolimits_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i)(\xx - \dual_i)\tr \, dA , \label{eq:appendix-energy-hess-pp-diag} \\
+    \partial^2_{\dual_i \combweight_i} \energy
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i) \, dA , \label{eq:appendix-energy-hess-pl-diag} \\
+    \partial^2_{\combweight_i \combweight_i} \energy
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-energy-hess-ll-diag}
+  \end{empheq}
+\end{subequations}
+where the site--site diagonal carries an extra interior term $2\,\cellvol_i\,\Id$ from the explicit dependence of $\partial_{\dual_i}\energy$ on $\dual_i$, and otherwise each diagonal is the negated neighbor sum of its off-diagonal counterpart.
+
+\section{Derivatives and concavity of $\centroiddual$}
+\label{sec:appendix-centroid}
+
+For fixed weighted sites $(\qq, \weight)$, the energy $\centroiddual(\shift) = \energy(\dual, \combweight)$ in \eqref{eq:centroid-dual} depends on the shifts $\shift$ \emph{only} through the shifted sites $(\dual, \combweight)$ of \eqref{eq:shifted-site}.
+Applying the chain rule with the Jacobian \eqref{eq:appendix-jac} and the energy gradients \eqref{eq:appendix-energy-deriv}, we obtain the first derivative of $\centroiddual$:
+\begin{equation}
+  \begin{aligned}
+    \partial_{\shift_i} \centroiddual
+      &= (\partial_{\shift_i} \dual_i) \, (\partial_{\dual_i} \energy)
+         + (\partial_{\shift_i} \combweight_i) \, (\partial_{\combweight_i} \energy) \\
+      &= (\partial_{\dual_i} \energy) + 2\,(\dual_i - \tcentroid_i)\, (\partial_{\combweight_i} \energy)
+       = 2 \int_{\cell_i} (\tcentroid_i - \xx) \, d\xx ,
+  \end{aligned}
+  \label{eq:appendix-centroid-grad}
+\end{equation}
+thus recovering the gradient \eqref{eq:centroid-dual-gradient}.
+% 
+For its Hessian, we differentiate \eqref{eq:appendix-centroid-grad} once more, again via the chain rule.
+Letting $\alpha, \beta$ range over the shifted-site variables $\{\dual, \combweight\}$, this yields
+\begin{equation}
+  \partial^2_{\shift_i \shift_j} \centroiddual
+    = \sum\nolimits_{\alpha, \beta} (\partial_{\shift_i} \alpha_i)\,(\partial^2_{\alpha_i \beta_j} \energy)\,(\partial_{\shift_j} \beta_j)
+      + \delta_{ij}\,(\partial^2_{\shift_i} \combweight_i)\,(\partial_{\combweight_i} \energy) ,
+  \label{eq:appendix-centroid-hess-chain}
+\end{equation}
+with $\delta_{ij}$ indicating the Kronecker delta.
+Substituting the energy Hessian \eqref{eq:appendix-energy-hess-off}--\eqref{eq:appendix-energy-hess-diag} and the Jacobian \eqref{eq:appendix-jac}, 
+% and using $\smash{\xx - \tcentroid_i = (\xx - \dual_i) + (\dual_i - \tcentroid_i)}$, 
+the facet terms combine into $\smash{(\xx - \tcentroid_i)(\xx - \tcentroid_j)\tr}$, recovering the facet Laplacian in \eqref{eq:centroid-hessian}.
+
+% \paragraph{Negative semidefiniteness and null-space.}
+To read off the definiteness of \eqref{eq:centroid-hessian}, we introduce the auxiliary per-cell linear field $\varphi_i(\xx) = 2\,\shift_i\tr (\xx - \tcentroid_i)$, whose variation under a shift perturbation $\delta\shift_i$ is $\delta\varphi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i)$.
+Contracting the Hessian blocks with a perturbation $\smash{\delta\shift = \{\delta\shift_i\}}$ collapses each facet to a scalar square:
+\begin{equation*}
+  \delta\shift\tr \nabla^2 \centroiddual \, \delta\shift
+  \!=\! 
+  -\sum\nolimits_{i,j}\! \frac{1}{2\,\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\! \bigl( \delta\varphi_i(\xx) - \delta\varphi_j(\xx) \bigr)^2 \, dA
+  \le 0 ,
+  \label{eq:appendix-centroid-nsd}
+\end{equation*}
+so $\nabla^2 \centroiddual \preceq 0$ and $\centroiddual$ is concave.
+Being a sum of squares, this quadratic form vanishes only when $\delta\varphi_i(\xx) = \delta\varphi_j(\xx)$ on every shared facet $\face_{ij}$.
+Note that this condition does \emph{not} glue the affine fields $\delta\varphi_i$ into a single global affine function: two affine functions that agree on the $(d\!-\!1)$-dimensional facet $\face_{ij}$ only agree on its supporting hyperplane, and their difference may be any multiple of the affine function defining this hyperplane.
+To characterize the null-space, we name $a_i$ the affine function of the lifting in \S\ref{sec:background}, evaluated at the shifted weighted site of \eqref{eq:shifted-site}:
+\begin{equation}
+  a_i(\xx) = 2\,\dual_i\tr\xx - \norm{\dual_i}^2 + \combweight_i = 2\,\qq_i\tr\xx - \norm{\qq_i}^2 + 2\,\shift_i\tr(\xx - \tcentroid_i) + \weight_i ,
+  \label{eq:appendix-affine}
+\end{equation}
+so the facet $\face_{ij}$ lies on the hyperplane $\{a_i = a_j\}$ and a perturbation induces $\delta a_i = \delta\varphi_i$ for fixed weights.
+The null-space condition then reads $\smash{\delta a_i - \delta a_j = \kappa_{ij}\,(a_i - a_j)}$ for scalars $\kappa_{ij}$, \ie the perturbation keeps every facet hyperplane fixed to first order and, therefore, leaves the cells unchanged to first order.
+
+In terms of the lifting of \S\ref{sec:background}, we have $\smash{a_i(\xx) = 2\,\dual_i\tr\xx - \sheight_i}$, where the height $\smash{\sheight_i = \norm{\dual_i}^2 - \combweight_i}$ of the shifted weighted site is related to the height $\smash{\height_i = \norm{\qq_i}^2 - \weight_i}$ of the original one by $\smash{\sheight_i = \height_i + 2\,\tcentroid_i\tr\shift_i}$.
+Each shift thus moves the lifted point $\smash{(\dual_i, \sheight_i) = (\qq_i, \height_i) + (\shift_i, 2\,\tcentroid_i\tr\shift_i)}$ affinely, and \eqref{eq:appendix-affine} gives $\smash{a_i(\tcentroid_i) = 2\,\qq_i\tr\tcentroid_i - \height_i = \gamma_i}$ for every shift, with $\gamma_i$ as in \eqref{eq:pivot}.
+In other words, the shift $\shift_i$ pivots the lifted hyperplane of site $i$ about the fixed point $\smash{(\tcentroid_i, \gamma_i)}$.
+Applying the homotheties of \eqref{eq:lifted-homothety} to the lifted shifted sites and differentiating at $s \!=\! 1 \!+\! \mu$ with an infinitesimal offset $(\translation, -c)$ gives the infinitesimal homotheties
+\begin{equation}
+  \delta\dual_i = \mu\,\dual_i + \translation ,
+  \qquad
+  \delta\sheight_i = \mu\,\sheight_i - c ,
+  \label{eq:infinitesimal-homothety}
+\end{equation}
+\ie $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$, which always satisfy the null-space condition with $\kappa_{ij} \equiv \mu$.
+As is generic \cite{Bourne2025Inverting}, we assume that they are also the only solutions, \ie that the cells determine their lifted affine functions only up to these homotheties; this fails in special configurations, such as strips of parallel cells or a boundary cell with a single neighbor, whose affine function may rotate about their shared facet.
+
+With fixed weights, a shift perturbation changes each affine function by $\smash{\delta a_i = 2\,\delta\shift_i\tr(\xx - \tcentroid_i)}$, which vanishes at $\tcentroid_i$, so an infinitesimal homothety is realizable by the shifts exactly when it preserves all pivots.
+Matching the linear and constant parts of $\delta a_i = 2\,\delta\shift_i\tr(\xx - \tcentroid_i)$ with $\mu\,a_i + 2\,\translation\tr\xx + c$ gives
+\begin{equation}
+  \delta\shift_i = \mu\,\dual_i + \translation ,
+  \qquad
+  0 = \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i + c ,
+  \label{eq:appendix-centroid-kernel}
+\end{equation}
+where the second identity evaluates the first at $\smash{\xx = \tcentroid_i}$.
+Since $\delta\shift = 0$ forces $\mu = 0$ and $\translation = 0$ when the shifted sites are distinct, and then $c = 0$, the Hessian is \emph{negative definite} if and only if \eqref{eq:appendix-centroid-kernel} has only the trivial solution, \ie if and only if the vectors $\smash{(\gamma_i, \tcentroid_i, 1)}$ span $\R^{d+2}$.
+Equivalently, the pivots $\smash{(\tcentroid_i, \gamma_i) \in \R^{d+1}}$ do not lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
+Since $n$ points in $\R^{d+1}$ always lie on a common hyperplane when $n \!\le\! d\!+\!1$, this requires $n \!\ge\! d\!+\!2$.
+A vertical hyperplane ($\mu \!=\! 0$) corresponds to targets $\tcentroid_i$ lying on a common hyperplane of $\R^d$.
+In the centroidal setting $\qq_i \!=\! \tcentroid_i$ with $\weight_i \!=\! 0$, the pivots $\smash{(\tcentroid_i, \norm{\tcentroid_i}^2)}$ lie on the paraboloid, and a non-vertical hyperplane ($\mu \!\neq\! 0$) cuts it along a sphere, recovering the Delaunay degeneracy of targets on a common hyperplane or sphere.
+In general, $\gamma_i$ lowers the paraboloid by the power distance from $\tcentroid_i$ to its own weighted site, so the degeneracy is that of the regular triangulation of the targets weighted by these power distances.
+In particular, the condition that the targets affinely span $\R^d$ is not sufficient.
+
+\section{Derivatives and concavity of $\jointdual$}
+\label{sec:appendix-joint}
+
+The joint dual $\jointdual(\shift, \weight) = \energy(\dual, \combweight) + \sum\nolimits_i \weight_i \pvol_i$ defined in \eqref{eq:joint-dual} again depends on $(\shift, \weight)$ only through the shifted sites \eqref{eq:shifted-site}, plus the explicit term $\weight_i \pvol_i$.
+Relative to \S\ref{sec:appendix-centroid}, the only new ingredient is the weight reparametrization $\partial_{\weight_i} \combweight_i = 1$ from \eqref{eq:appendix-jac}.
+
+% \paragraph{Gradient.}
+The shift gradient of $\jointdual$ is identical to \eqref{eq:appendix-centroid-grad}, while for the weights the chain rule gives
+\begin{equation}
+  \partial_{\weight_i} \jointdual
+    = (\partial_{\weight_i} \combweight_i) \, (\partial_{\combweight_i} \energy) + \pvol_i
+    = (\partial_{\combweight_i} \energy) + \pvol_i
+    = -\bigl( \cellvol_i - \pvol_i \bigr) ,
+  \label{eq:appendix-joint-grad}
+\end{equation}
+so that stacking the two gradients recovers the joint gradient \eqref{eq:joint-gradient}.
+
+% \paragraph{Hessian.}
+Differentiating a second time, the diagonal $(\shift_i,\shift_i)$ and $(\weight_i,\weight_i)$ blocks are exactly the Hessians we have already computed --- the centroid Hessian of $\centroiddual$ in \eqref{eq:centroid-hessian} and the volume Hessian of $\dualenergy$ in \eqref{eq:newton-step} --- but the joint problem also produces the mixed shift--weight blocks of \eqref{eq:joint-hessian}.
+To handle all blocks at once, we introduced an auxliary variable that stacks the two multipliers of a site into $\mult_i = [\shift_i, \weight_i] \in \R^{d+1}$ and then define the affine field
+\begin{equation}
+  \psi_i(\xx) = 2\,\shift_i\tr (\xx - \tcentroid_i) + \weight_i = \mult_i\tr \phi_i(\xx) ,
+  \qquad
+  \phi_i(\xx) = \begin{bmatrix} 2(\xx - \tcentroid_i) \\ 1 \end{bmatrix} ,
+  \label{eq:appendix-potential}
+\end{equation}
+through which $\mult_i$ enters the shifted power distance $\norm{\xx - \qq_i}^2 - \psi_i(\xx)$.
+The Hessian is then the facet-based Laplacian assembled from $\phi_i$:
+\begin{subequations}
+  \label{eq:appendix-block}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\mult_i \mult_j} \jointdual
+      &= \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_j(\xx)\tr \, dA,
+    \label{eq:appendix-block-off}
+    \\[2mm]
+    \partial^2_{\mult_i \mult_i} \jointdual
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_i(\xx)\tr \, dA.
+    \label{eq:appendix-block-diag}
+  \end{empheq}
+\end{subequations}
+Expanding $\phi_i$ splits \eqref{eq:appendix-block} into shift--shift, shift--weight, and weight--weight coefficients, with off-diagonal blocks
+\begin{subequations}
+  \label{eq:appendix-blocks-off}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\shift_i \shift_j\tr} \jointdual
+      &= \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i)(\xx - \tcentroid_j)\tr \, dA , \label{eq:appendix-blocks-uu} \\
+    \partial^2_{\shift_i \weight_j} \jointdual
+      &= \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i) \, dA , \label{eq:appendix-blocks-uw} \\
+    \partial^2_{\weight_i \weight_j} \jointdual
+      &= \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-blocks-ww}
+  \end{empheq}
+\end{subequations}
+and diagonal blocks
+\begin{subequations}
+  \label{eq:appendix-blocks-diag}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\shift_i \shift_i\tr} \jointdual
+      &= -\!\sum\nolimits_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i)(\xx - \tcentroid_i)\tr \, dA , \label{eq:appendix-blocks-uu-diag} \\
+    \partial^2_{\shift_i \weight_i} \jointdual
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i) \, dA , \label{eq:appendix-blocks-uw-diag} \\
+    \partial^2_{\weight_i \weight_i} \jointdual
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-blocks-ww-diag}
+  \end{empheq}
+\end{subequations}
+whose shift--shift, shift--weight, and weight--weight parts recover, respectively, the centroid Hessian \eqref{eq:centroid-hessian}, the mixed block \eqref{eq:joint-hessian}, and the volume Hessian \eqref{eq:newton-step}.
+
+% \paragraph{Negative semidefiniteness and null space.}
+Contracting the Hessian with a perturbation $\smash{\delta\mult = \{ (\delta\shift_i, \delta\weight_i) \}}$, again collapses each facet to a scalar square of the form
+\begin{equation*}
+  \delta\mult\tr \nabla^2 \jointdual \, \delta\mult
+    = -\sum\nolimits_{i,j} \frac{1}{2\,\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \bigl( \delta\psi_i(\xx) - \delta\psi_j(\xx) \bigr)^2 \, dA
+    \;\le\; 0 ,
+  \label{eq:appendix-joint-nsd}
+\end{equation*}
+now with variations of the affine field $\smash{\delta\psi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i) + \delta\weight_i}$.
+Hence, $\nabla^2 \jointdual \preceq 0$ and $\jointdual$ is jointly concave.
+As in Appendix~\ref{sec:appendix-centroid}, this quadratic form vanishes exactly when $\smash{\delta\psi_i - \delta\psi_j = \kappa_{ij}\,(a_i - a_j)}$ on every facet, now with $\smash{\delta a_i = \delta\psi_i}$ since the weights also vary.
+The dilation and translation perturbation $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$ always satisfies this condition and produces the only solution.
+Matching the linear and constant parts as in \eqref{eq:appendix-centroid-kernel}, but now solving the constant part for the free weight perturbation, gives
+\begin{equation*}
+  \delta\shift_i = \mu\,\dual_i + \translation ,
+  \qquad
+  \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i + c ,
+\end{equation*}
+which is exactly the $(d\!+\!2)$-dimensional family in \eqref{eq:joint-nullspace}.
+One can verify directly that it lies in the null-space, since $\smash{\delta\psi_i - \delta\psi_j = \mu\,(a_i - a_j)}$ vanishes on $\face_{ij}$.
+There, $\mu$ scales the lifted shifted sites $\smash{(\dual_i, \sheight_i)}$, $\translation$ translates them horizontally, and $c$ translates them vertically, which together form the homotheties \eqref{eq:infinitesimal-homothety} that leave the power diagram unchanged (\S\ref{sec:background}).
+In contrast to $\centroiddual$, these modes are always present because the free weights absorb the weight changes they require.
+
+\section{Existence of solutions}
+\label{sec:appendix-existence}
+
+On the open set of distinct shifted sites with non-empty cells, the energies $\centroiddual$ and $\jointdual$ are differentiable and concave, and their stationary points are exactly the power diagrams that meet the constraints.
+We detail here which targets admit such a stationary point, for each formulation.
+
+\paragraph{Volume constraints.}
+The $n$ weights of $\dualenergy$, up to a common constant, match the $n$ volume constraints, up to their sum, and any positive volumes summing to $\domainVol$ are realized for any distinct sites \cite{Aurenhammer1998Minkowski}.
+
+\paragraph{Centroid constraints.}
+The $nd$ shifts of $\centroiddual$ likewise match the $nd$ centroid constraints, since the free volumes leave these constraints independent.
+When the pivots are not coplanar, the Hessian of $\centroiddual$ is negative definite (\S\ref{sec:centroid-constraints}), so by the inverse function theorem, solutions persist under small perturbations of the targets.
+Not every target is realizable, however.
+In $\domain = [0,1]$ with targets $\smash{\tcentroid = (0.3, 0.7)}$, the partition $[0.05, 0.55]$ and its complement realizes the targets, but no power diagram does, since its interval cells $[0,s]$ and $[s,1]$ would require both $s = 0.6$ and $s = 0.4$; the supremum of $\centroiddual$ is then approached as the two shifted sites merge.
+
+\paragraph{Volume and centroid constraints.}
+Since $\jointdual$ is the minimum over partitions of the Lagrangian \eqref{eq:joint-lagrangian}, which is affine in the multipliers for fixed cells, it varies linearly along the modes \eqref{eq:joint-nullspace}, which leave the cells unchanged.
+A maximizer therefore requires $\jointdual$ to be bounded along these modes.
+Along the constant and translation modes, the slope depends only on the data and vanishes exactly under the identities \eqref{eq:partition-feasibility}.
+Along the dilation mode, which scales the shifted sites by a factor $s \!>\! 0$, the slope instead depends on the configuration: once the volumes are enforced, it equals $\smash{2 \sum_i \pvol_i (\tcentroid_i - \centroid_i)\tr \dual_i}$ \cite[Theorem~4.2]{Bourne2025Inverting}.
+Maximizing $\jointdual$ over the weights gives $2\helper(\dual)$ up to a constant \eqref{eq:helper}, which is positively $1$-homogeneous in the shifted sites.
+Its supremum is therefore $+\infty$ if $\tcentroid \notin \achievable$, approached as the shifted sites dilate along a separating direction, and $0$ otherwise.
+This value is attained at distinct shifted sites exactly when $\dual$ is a normal of $\achievable$ at $\tcentroid$ with distinct sites, \ie when $\tcentroid$ is an exposed point of $\achievable$ (\S\ref{sec:background}); elsewhere in $\achievable$, it is only approached as the shifted sites merge.
+This additional condition requires the targets to be exposed points of $\achievable$, which lie on its relative boundary, a hypersurface of the affine subspace prescribed by \eqref{eq:partition-feasibility}, and thus fixes the overall spread of the target centroids relative to the prescribed volumes, but not the shape of their configuration.
+In the unit interval with two cells of volume $\smash{\tfrac12}$, for instance, the targets $(0.3, 0.7)$ satisfy \eqref{eq:partition-feasibility}, but must be spread by a factor $\smash{\tfrac54}$ about $\smash{\tfrac12}$, to $\smash{(\tfrac14, \tfrac34)}$, to be realized \cite[Example~4.7]{Bourne2025Inverting}.
+
+\section{Softened centroid constraints}
+\label{sec:appendix-regularized}
+
+\paragraph{Duality.}
+We introduce the shifts $\shift$ and weights $\weight$ as multipliers of the constraints \eqref{eq:regularized-primal-cons} and \eqref{eq:regularized-primal-vol}, scaling the shifts by two as in \S\ref{sec:centroid-constraints}.
+The Lagrangian of \eqref{eq:regularized-primal} is then the joint Lagrangian \eqref{eq:joint-lagrangian} augmented by the slack terms,
+\begin{equation*}
+  \lag_\alpha(\cell, \slack, \shift, \weight)
+    = \lag(\cell, \shift, \weight) + \sum\nolimits_i \pvol_i \bigl( \alpha \norm{\slack_i}^2 + 2\,\shift_i\tr \slack_i \bigr) .
+\end{equation*}
+The slack terms are decoupled from the partition and strictly convex in each $\slack_i$ for $\alpha \!>\! 0$, so their minimum is attained at $\smash{\slack_i = -\shift_i / \alpha}$ with value $\smash{-\tfrac{1}{\alpha} \pvol_i \norm{\shift_i}^2}$.
+Relaxing the partitions to fractional ones, \ie to cell indicator functions $\basis_i(\xx) \in [0,1]$ with $\sum_i \basis_i = 1$, the Lagrangian is linear in the partition and concave in the multipliers, so the minimization and maximization can be exchanged.
+Minimizing over partitions first then yields $\jointdual$ of \eqref{eq:joint-dual}, and adding the slack minimum gives $\jointdual_\alpha$ in \eqref{eq:regularized-dual}.
+Its derivatives follow from those of $\jointdual$ in Appendix~\ref{sec:appendix-joint}, with the extra term $\smash{-\tfrac{2}{\alpha}\pvol_i\,\shift_i}$ in the shift gradient and $\smash{-\tfrac{2}{\alpha}\pvol_i\,\Id}$ in the diagonal shift--shift blocks.
+
+\paragraph{Existence and bounds.}
+Let $\cell^\star$ be any partition with volumes $\smash{\pvol_i}$, and denote its centroid moments by $\smash{\mathbf{m}_i^\star = \int_{\cell^\star_i} (\xx - \tcentroid_i) \, d\xx}$.
+Since $\jointdual(\shift, \weight)$ is a minimum over partitions, evaluating the Lagrangian at $\cell^\star$ gives $\smash{\jointdual(\shift, \weight) \le C - 2\sum_i \shift_i\tr \mathbf{m}_i^\star}$ for a constant $C$ independent of the multipliers, so $\jointdual_{\alpha} \to -\infty$ as $\norm{\shift} \to \infty$, uniformly in the weights.
+For bounded shifts, $\jointdual_{\alpha}$ is, up to the additive constant on the weights, coercive in the weights whenever $\smash{\sum_i \pvol_i = \domainVol}$, as in the volume-constrained problem \eqref{eq:volume-dual}.
+Hence $\jointdual_{\alpha}$ attains its maximum for any targets.
+Since $\jointdual_{\alpha}$ is strongly concave in the shifts, two maximizers $\smash{(\shift^1, \weight^1)}$ and $\smash{(\shift^2, \weight^2)}$ would give at their midpoint a value exceeding the maximum by at least $\smash{\tfrac{1}{4\alpha}\sum_i \pvol_i \norm{\shift^1_i - \shift^2_i}^2}$, so the maximizing shifts are unique.
+At a maximizer, optimality in the weights enforces the volumes $\smash{\pvol_i}$, also for fractional partitions, and optimality in the shifts gives $\smash{\shift_i = \alpha\,(\tcentroid_i - \centroid_i)}$, where $\centroid_i$ is the centroid of the possibly fractional cell $i$.
+For targets in the convex hull of $\domain$, both centroids lie in this hull, so $\smash{\norm{\shift_i} \le \alpha \operatorname{diam}(\domain)}$.
+Therefore, $\smash{\norm{\dual_i - \dual_j} \ge \norm{\qq_i - \qq_j} - \norm{\shift_i} - \norm{\shift_j} > 0}$ whenever \eqref{eq:regularized-distinct} holds, in which case the optimal partition is the power diagram of the shifted weighted sites.
+
+\paragraph{Limits and projection.}
+The bound on the shifts shows that they vanish as $\alpha \!\to\! 0$, so $\jointdual_{\alpha}$ tends to $\jointdual(0, \weight) = \dualenergy(\weight)$, while $\jointdual_{\alpha} \to \jointdual$ as $\alpha \!\to\! \infty$.
+Moreover, expanding the transport cost of a partition with volumes $\smash{\pvol_i}$ as $\smash{\int_\domain \norm{\xx}^2 d\xx - 2 \sum_i \pvol_i\,\qq_i\tr\centroid_i + \sum_i \pvol_i \norm{\qq_i}^2}$ shows that the objective of \eqref{eq:regularized-primal}, after eliminating the slacks, equals
+\begin{equation*}
+  \alpha \sum\nolimits_i \pvol_i \norm{\centroid_i - \bigl( \tcentroid_i + \tfrac{1}{\alpha}\,\qq_i \bigr)}^2 + \text{const} ,
+\end{equation*}
+which depends on the partition only through its centroids.
+Its minimization over (fractional) partitions with volumes $\pvol$ is therefore the $\pvol$-weighted projection of $\smash{\tcentroid + \qq / \alpha}$ onto the set $\achievable$ of achievable centroids (\S\ref{sec:background}).
+The optimal shifted sites $\smash{\dual_i = \qq_i + \shift_i = \alpha \bigl( \tcentroid_i + \tfrac{1}{\alpha}\,\qq_i - \centroid_i \bigr)}$ are proportional to the difference between the projected point and its projection, as in \citet[Lemma~4.1]{Bourne2026ConvexOrder}.
+In the centroidal setting $\qq_i \!=\! \tcentroid_i$, the projected point is the dilation $\smash{(1 + \tfrac{1}{\alpha})\,\tcentroid}$, which recovers their projection-dilation method; it coincides with the dilation about $\centroid_\domain$, since both differ by a uniform translation orthogonal to the affine constraint $\smash{\sum_i \pvol_i \centroid_i = \domainVol\,\centroid_\domain}$.
+
+\paragraph{Equivalence of the dual objectives.}
+The same equivalence holds at the level of the dual objectives, and not only of their maximizers.
+Maximizing $\jointdual$ over the weights enforces the volumes $\pvol$ on the (fractional) minimizing partition, so the expansion of the transport cost above and the support function $\sigma_{\achievable}$ of $\achievable$ \cite[Prop.~3.5]{Bourne2026ConvexOrder} give
+\begin{equation*}
+  \max_{\weight} \jointdual(\shift, \weight)
+  = \int_\domain \norm{\xx}^2 d\xx + \sum\nolimits_i \pvol_i \norm{\qq_i}^2 + 2 \langle \shift, \tcentroid \rangle_{\pvol} - 2\,\sigma_{\achievable}(\dual) ,
+\end{equation*}
+with $\dual = \qq + \shift$.
+The function $\sigma_{\achievable}$ is convex and positively $1$-homogeneous, which explains the dilation mode of \eqref{eq:joint-nullspace} and the collapse of the generators discussed in Appendix~\ref{sec:appendix-existence}.
+Subtracting the penalty of \eqref{eq:regularized-dual} and substituting $\smash{\dual = \alpha\,\qq'}$ then yields
+\begin{equation*}
+  \max_{\weight} \jointdual_\alpha(\shift, \weight)
+  = -2\alpha\,\mathcal{J}(\qq') + \text{const} ,
+  \quad
+  \mathcal{J}(\qq') = \tfrac12 \sum\nolimits_i \pvol_i \norm{\qq'_i}^2 - \langle \qq', \mathbf{z} \rangle_{\pvol} + \sigma_{\achievable}(\qq') ,
+\end{equation*}
+with $\smash{\mathbf{z} = \tcentroid + \qq / \alpha}$, where the constant depends only on the data.
+The function $\mathcal{J}$ is exactly the dual objective of the projection $\smash{P_{\achievable}(\mathbf{z})}$ in \citet[Lemma~4.1]{Bourne2026ConvexOrder}.
+Hence maximizing $\jointdual_\alpha$ and minimizing $\mathcal{J}$ are the same problem up to the positive factor $2\alpha$, with the shifted sites related to their generators by the scaling $\smash{\dual = \alpha\,\qq'}$, which leaves the power diagram unchanged.
+For $\qq \!=\! \tcentroid$, this is their projection-dilation method with $\smash{\mathbf{z} = s\,\tcentroid}$ and $\smash{s = 1 + 1/\alpha}$.
+Conversely, since $\smash{\qq = \alpha\,(\mathbf{z} - \tcentroid)}$ is arbitrary, every projected point $\mathbf{z}$ is attained by some choice of sites, so the sites parametrize the same family of projections rather than enlarging it.
+In particular, for realizable targets, $\smash{P_{\achievable}(\mathbf{z}) = \tcentroid}$ holds if and only if $\qq$ lies in the normal cone of $\achievable$ at $\tcentroid$, \ie if $\qq$ is an outward normal of a supporting hyperplane touching $\achievable$ at $\tcentroid$. For distinct sites and $d \ge 2$, these normals are the homotheties of the realizing generators (\S\ref{sec:background}), so the softened problem returns the realizing diagram only when the sites already generate it up to a dilation and a translation.
+
+\paragraph{Proximal iteration.}
+After maximizing over the weights, the expression above gives $\smash{\max_\weight \jointdual(\shift, \weight) = 2\,\helper(\dual) + \text{const}}$ with $\smash{\helper(\dual) = \sum_i \pvol_i\,\dual_i\tr \tcentroid_i - \sigma_{\achievable}(\dual)}$ and $\dual = \qq + \shift$, where the constant depends only on the data.
+Subtracting the penalty, maximizing $\jointdual_\alpha$ with sites $\qq$ is thus the proximal step $\smash{\max_{\dual} 2\,\helper(\dual) - \tfrac{1}{\alpha} \sum_i \pvol_i \norm{\dual_i - \qq_i}^2}$ on the concave function $\helper$, whose optimality condition is $\smash{\dual = \qq + \alpha\,(\tcentroid - \centroid)}$, with $\centroid$ the centroids of the optimal (possibly fractional) partition, \ie \eqref{eq:regularized-generators}.
+
+\begin{lemma}
+  \label{lem:proximal}
+  Let the targets $\tcentroid$ be realizable, with generators $\dual^\star$ centered as $\smash{\sum_i \pvol_i\,\dual^\star_i = 0}$, and with the origin at $\domainCentroid$.
+  Starting from sites $\smash{\dual^0 = \qq}$, let $\smash{\dual^{k+1}}$ be the generators of the maximizer of $\jointdual_\alpha$ with sites $\smash{\dual^k}$ and targets $\tcentroid$, for a fixed $\alpha \!>\! 0$.
+  Then $\smash{\dual^k}$ converges to $\smash{s\,\dual^\star + \translation}$ for some $s \!\ge\! 0$ and $\smash{\translation \!\in\! \R^d}$, and $s \!>\! 0$ whenever $\smash{\sum_i \pvol_i\,(\dual^\star_i)\tr \qq_i > 0}$, which holds in particular for $\qq = \tcentroid$.
+\end{lemma}
+\begin{proof}
+  The iteration is the proximal point algorithm on the concave function $\helper$ in the volume-weighted norm, which converges to a maximizer of $\helper$ whenever one exists \cite{Rockafellar1976Proximal}.
+  Since $\tcentroid \!\in\! \achievable$, we have $\smash{\sigma_{\achievable}(\dual) \ge \sum_i \pvol_i\,\dual_i\tr \tcentroid_i}$, so $\helper \le 0$, with equality exactly when $\dual$ lies in the normal cone of $\achievable$ at $\tcentroid$.
+  Since $\tcentroid$ is realizable, this normal cone consists of the generators $\smash{s\,\dual^\star + \translation}$ with $s \!\ge\! 0$ (\S\ref{sec:background}), which proves convergence.
+  % 
+  To show that $s \!>\! 0$, note that $\tcentroid$ maximizes $\smash{\sum_i \pvol_i\,(\dual^\star_i)\tr \centroid_i}$ over $\achievable$, so each step verifies
+  \begin{equation*}
+    \sum\nolimits_i \pvol_i\,(\dual^\star_i)\tr \bigl( \dual^{k+1}_i - \dual^k_i \bigr) = \alpha \sum\nolimits_i \pvol_i\,(\dual^\star_i)\tr \bigl( \tcentroid_i - \centroid_i \bigr) \ge 0 .
+  \end{equation*}
+  The correlation with $\dual^\star$ is thus non-decreasing along the iterates, and in the limit it equals $\smash{s \sum_i \pvol_i \norm{\dual^\star_i}^2}$, since the centered $\dual^\star$ is orthogonal to translations in the volume-weighted sense.
+  Hence $s \!>\! 0$ whenever the initial correlation is positive.
+  For $\qq = \tcentroid$, the initial correlation is $\smash{\sigma_{\achievable}(\dual^\star) > 0}$, as shown in the proof of Lemma~\ref{lem:unachievable-prediction}.
+\end{proof}
+For targets that are not realizable, the generators need not converge, but the centroids still do.
+
+\begin{lemma}
+  \label{lem:proximal-any}
+  Let the targets $\tcentroid$ verify the identity \eqref{eq:partition-feasibility-centroid}, and let $\smash{\dual^k}$ be the iterates of Lemma~\ref{lem:proximal} from any initial sites, with $\smash{\centroid^{k+1}}$ the centroids of the optimal partition at iteration $k$.
+  Then $\smash{\centroid^k \to \proj(\tcentroid)}$, the projection of $\tcentroid$ onto $\achievable$ in the volume-weighted norm, and $\smash{\dual^{k+1} - \dual^k \to \alpha\,(\tcentroid - \proj(\tcentroid))}$.
+  In particular, the generators grow without bound along $\smash{\tcentroid - \proj(\tcentroid)}$ if $\tcentroid$ is unachievable, and the centroids converge to $\tcentroid$ if it is achievable.
+\end{lemma}
+\begin{proof}
+  The optimality condition of the proximal step above reads $\smash{\dual^{k+1} - \dual^k = \alpha\,(\tcentroid - \centroid^{k+1})}$ with $\smash{\centroid^{k+1} \in \partial\sigma_{\achievable}(\dual^{k+1})}$, so $\smash{\dual^{k+1}}$ is the resolvent of the maximal monotone operator $\smash{A(\dual) = \partial\sigma_{\achievable}(\dual) - \tcentroid}$ with step $\alpha$, applied to $\smash{\dual^k}$.
+  Since $\smash{\partial\sigma_{\achievable}(0) = \achievable}$ and every subgradient of $\sigma_{\achievable}$ belongs to $\achievable$, the range of $A$ is the closed convex set $\smash{\achievable - \tcentroid}$, whose element of minimal norm is $\smash{\proj(\tcentroid) - \tcentroid}$.
+  For the iterates of a resolvent, the displacements $\smash{\dual^{k+1} - \dual^k}$ converge to $-\alpha$ times this element \cite{Pazy1971Asymptotic, Bruck1977Resolvents}, which gives the second claim, and the first follows from $\smash{\centroid^{k+1} = \tcentroid - (\dual^{k+1} - \dual^k)/\alpha}$.
+  If $\tcentroid \!\notin\! \achievable$, the limit displacement is nonzero, so $\smash{\dual^k / k \to \alpha\,(\tcentroid - \proj(\tcentroid))}$ and the generators grow without bound.
+\end{proof}
+The power diagrams of the iterates thus converge to the one generated by the normal $\smash{\tcentroid - \proj(\tcentroid)}$, since dilating the generators does not change the diagram, provided this normal has pairwise distinct generators, and to a flat face of $\achievable$ otherwise.
+For achievable targets that are not realizable, the maximizers of $\helper$ only include normals with coinciding generators, to which the iterates converge.
+
+\paragraph{Algorithm.}
+Algorithm~\ref{alg:proximal} summarizes the proximal iteration of \S\ref{sec:regularized-joint}.
+Each maximization of $\jointdual_\alpha$ starts at zero shifts with the shifted weights of the previous iteration, which reproduces the previous power diagram, and is solved by Newton's method with the Hessian of \S\ref{sec:regularized-joint}.
+Since the centroids converge to $\smash{\proj(\tcentroid)}$ for any targets (Lemma~\ref{lem:proximal-any}), the iteration stops when the current centroids are certified as this projection.
+For a power diagram with volumes $\pvol$, the centroids $\centroid$ are the projection of $\tcentroid$ if and only if the residual $\smash{\mathbf{r} = \tcentroid - \centroid}$ is an outward normal of $\achievable$ at $\centroid$, \ie, relative to \eqref{eq:partition-feasibility-centroid}, a non-negative multiple of the centered generators $\smash{\hat{\dual} = \dual - \bar{\dual}}$, with $\bar{\dual}$ their volume-weighted mean (\S\ref{sec:background}); the residual is centered as well, since both $\tcentroid$ and $\centroid$ verify \eqref{eq:partition-feasibility-centroid}.
+We measure the deviation from this condition by the normalized misalignment
+\begin{equation}
+  \mu(\mathbf{r}, \hat{\dual}) = \min_{s \ge 0} \frac{\sum_i \pvol_i \norm{\mathbf{r}_i - s\,\hat{\dual}_i}^2}{\sum_i \pvol_i \norm{\hat{\dual}_i}^2 \, \operatorname{diam}(\domain)^2} ,
+  \label{eq:appendix-misalignment}
+\end{equation}
+whose minimizer is $\smash{s = \max\bigl(0, \sum_i \pvol_i\,\mathbf{r}_i\tr \hat{\dual}_i / \sum_i \pvol_i \norm{\hat{\dual}_i}^2\bigr)}$, so it costs two inner products.
+It vanishes exactly at the projection, for realizable targets with $\mathbf{r} = 0$ and for unachievable targets with $\mathbf{r}$ parallel to $\hat{\dual}$, and it is invariant under the dilation of the generators, which grow without bound in the latter case.
+The iterates make it vanish in the limit, since $\smash{\dual^{k+1} - \dual^k = \alpha\,\mathbf{r}^{k+1}}$ with $\smash{\mathbf{r}^{k+1} \to \tcentroid - \proj(\tcentroid)}$, so that the generators $\smash{\dual^k}$ align with the limit residual for unachievable targets, and converge to a positive dilation of $\dual^\star$ while the residual vanishes for realizable ones.
+The iteration thus stops when $\mu \!<\! \tau^2$, and the final residual distinguishes realizable targets, for which it vanishes, from unachievable ones.
+Before each maximization, the stiffness is halved until it verifies the bound \eqref{eq:regularized-distinct} for the current sites, which guarantees that every iterate is a power diagram, and the iteration stops with a failure if the stiffness falls below a threshold $\alpha_{\min}$.
+Lemma~\ref{lem:proximal-halving} shows that this safeguard does not affect the convergence results above, and that it detects the targets for which the generators collapse.
+
+\begin{lemma}
+  \label{lem:proximal-halving}
+  Let the targets $\tcentroid$ be pairwise distinct, lie in the convex hull of $\domain$, and verify \eqref{eq:partition-feasibility-centroid}, and denote by $\smash{\delta(\qq) = \min_{i \neq j} \norm{\qq_i - \qq_j}}$ the separation of the sites and by $D = \operatorname{diam}(\domain)$.
+  Then Algorithm~\ref{alg:proximal} verifies:
+  \begin{enumerate}
+    \item each halving loop terminates, every iterate is a power diagram, and the stiffness takes at most $\smash{\lceil \log_2(\alpha / \alpha_{\min}) \rceil + 1}$ distinct values;
+    \item a failure occurs at iteration $k$ only if $\smash{\delta(\dual^k) < 4 D \alpha_{\min}}$, and it occurs whenever $\smash{\delta(\dual^k) \le 2 D \alpha_{\min}}$;
+    \item if no failure occurs, the stiffness is eventually constant, and the conclusions of Lemmas~\ref{lem:proximal} and~\ref{lem:proximal-any} hold: for realizable targets, the generators converge to a positive dilation of the realizing generators, and, for any targets, the centroids converge to $\smash{\proj(\tcentroid)}$;
+    \item for achievable targets that are not realizable, a failure always occurs after finitely many iterations.
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  (1) The sites of each iteration are the generators of the previous power diagram, or the distinct targets initially, so $\smash{\delta(\qq) > 0}$, and halving eventually yields $\smash{\alpha < \delta(\qq)/(2D)}$, \ie \eqref{eq:regularized-distinct}, or $\alpha < \alpha_{\min}$.
+  Since the targets lie in the convex hull of $\domain$, the bound on the shifts of Appendix~\ref{sec:appendix-regularized} then applies, and the new generators are pairwise distinct.
+  The stiffness never increases and stays above $\alpha_{\min}$ without failure, so it takes at most the stated number of values.
+  % 
+  (2) If $\smash{\delta(\dual^k) \le 2 D \alpha_{\min}}$, every $\alpha \ge \alpha_{\min}$ violates \eqref{eq:regularized-distinct}, so halving continues below $\alpha_{\min}$.
+  Conversely, a failure occurs when halving yields $\alpha < \alpha_{\min}$ while $2\alpha$ violated the bound, \ie $\smash{2\alpha \ge \delta(\dual^k)/(2D)}$, so $\smash{\delta(\dual^k) \le 4 D \alpha < 4 D \alpha_{\min}}$.
+  % 
+  (3) By (1), the stiffness is constant from some iteration $k_0$ on, and the iteration from $k_0$ is the proximal point algorithm with a fixed step and initial sites $\smash{\dual^{k_0}}$, to which Lemma~\ref{lem:proximal-any} applies.
+  For realizable targets, Lemma~\ref{lem:proximal} applies as well, and its positive dilation requires $\smash{\sum_i \pvol_i\,(\dual^\star_i)\tr \dual^{k_0}_i > 0}$.
+  This holds since its proof shows that this correlation is non-decreasing for any positive steps, hence for the variable stiffness before $k_0$, and that it is positive at $\smash{\dual^0 = \tcentroid}$.
+  % 
+  (4) If no failure occurred, by (3) the generators would converge to a maximizer of $\helper$, which, for such targets, has coinciding generators, so $\smash{\delta(\dual^k) \to 0}$, and a failure would occur by (2).
+\end{proof}
+The threshold $\alpha_{\min}$ is thus a tolerance on the separation of the generators.
+For realizable targets, the limit has separation $\smash{s\,\delta(\dual^\star) > 0}$, so a failure can only occur transiently, when two generators approach each other before the iterates converge, and is avoided for $\alpha_{\min}$ small enough compared to the separation of all iterates, which we cannot bound a priori.
+A failure, therefore, certifies that the generators came within $\smash{4 D \alpha_{\min}}$ of each other, rather than that the targets are not realizable.
+Finally, the lemma assumes targets in the convex hull of $\domain$, as required by the bound on the shifts, which holds for the targets of \S\ref{sec:regularized-joint} but not for the line-constrained iteration of \S\ref{sec:flow-constrained}, whose targets move along the line; there, the halving only enforces \eqref{eq:regularized-distinct} heuristically.
+For the holonomic solver of \S\ref{sec:flow-constrained}, each maximization additionally imposes the linear constraints (\ref{eq:flow-line-constraint-dil}--\ref{eq:flow-line-constraint-trans}), which border its Newton system with $d \!+\! 1$ rows.
+
+\begin{algorithm}[h]
+  \caption{Proximal iteration of $\jointdual_\alpha$ (\S\ref{sec:regularized-joint}).}
+  \label{alg:proximal}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$, targets $\tcentroid$, stiffness $\alpha \!>\! 0$, minimum stiffness $\alpha_{\min}$, tolerance $\tau$
+    \State $\qq \gets \tcentroid$ \Comment{initial sites at the targets}
+    \State $\weight \gets \argmax_{\weight} \dualenergy(\weight)$ with sites $\qq$ \Comment{volume-constrained power diagram}
+    \State $\centroid \gets$ centroids of the power diagram of $(\qq, \weight)$
+    \Repeat
+      \While{$\alpha$ violates \eqref{eq:regularized-distinct} for the sites $\qq$}
+        \State $\alpha \gets \alpha / 2$
+        \If{$\alpha < \alpha_{\min}$} \Return failure \Comment{generators collapse: $\tcentroid$ is not realizable}
+        \EndIf
+      \EndWhile
+      \State $(\shift, \weight) \gets \argmax \jointdual_\alpha(\shift, \weight)$ with sites $\qq$ and targets $\tcentroid$, by Newton's method from $(0, \weight)$
+      \State $\dual \gets \qq + \shift$; \ $\combweight \gets$ shifted weights \eqref{eq:shifted-site-weight}
+      \State $\centroid \gets$ centroids of the power diagram of $(\dual, \combweight)$; \ $\mathbf{r} \gets \tcentroid - \centroid$
+      \State $\qq \gets \dual$; \ $\weight \gets \combweight$ \Comment{zero shifts reproduce this power diagram}
+    \Until{$\mu(\mathbf{r}, \dual - \bar{\dual}) < \tau^2$} \Comment{misalignment \eqref{eq:appendix-misalignment}: $\centroid$ is the projection of $\tcentroid$}
+    \State \Return generators $\dual$, weights $\combweight$, centroids $\centroid$, and residual $\smash{\sum_i \pvol_i \norm{\centroid_i - \tcentroid_i}^2}$
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Line-constrained iteration.}
+The solver of \S\ref{sec:flow-constrained} restricts the generators to an affine subspace.
+We place the origin at $\domainCentroid$, so that $\smash{\sum_i \pvol_i\,\centroid_i = 0}$ on $\achievable$, and we consider a direction $\mathbf{d}$ with $\smash{\sum_i \pvol_i\,\mathbf{d}_i = 0}$, sites $\qq$ with $\smash{\kappa = \sum_i \pvol_i\,\mathbf{d}_i\tr \qq_i > 0}$ and $\smash{\mathbf{m} = \sum_i \pvol_i\,\qq_i}$, and arbitrary targets $\pred$, with $\smash{\bar{\translation} = \sum_i \pvol_i\,\pred_i / \domainVol}$.
+
+The proximal variant of this solver starts from the sites $\smash{\dual^{0} = \qq}$, and its $m$-th iteration maximizes $\jointdual_\alpha$ with sites $\smash{\dual^{m}}$, targets $\pred$ and the two linear constraints below.
+This maximization returns the multipliers $\smash{(s^{m}, \translation^{m})}$ and the centroids $\smash{\centroid^{m}}$ of the resulting power diagram, from which the next sites follow explicitly as its generators,
+\begin{equation}
+  \dual^{m+1} = \dual^{m} + \alpha \bigl( \pred - s^{m}\,\mathbf{d} - \translation^{m} - \centroid^{m} \bigr) .
+  \label{eq:flow-line-proximal}
+\end{equation}
+Each maximization is strongly concave, and thus always has a unique solution, which remains a power diagram whenever $\alpha$ satisfies \eqref{eq:regularized-distinct} for the current sites.
+Its centroids are the projection of the pushed targets onto $\achievable$ by \eqref{eq:regularized-projection}, and thus differ from the solution of the constrained problem, which is only recovered in the limit.
+When the constrained problem has no solution, the generators grow without bound if the line misses $\achievable$, and collapse if it enters $\achievable$ through a flat face, so the failure is detected rather than leading to a breakdown.
+
+\begin{lemma}
+  \label{lem:line-constrained}
+  Consider the maximization of $\jointdual$ with sites $\qq$ and targets $\pred$ subject to $\smash{\sum_i \pvol_i\,\mathbf{d}_i\tr \shift_i = 0}$ and $\smash{\sum_i \pvol_i\,\shift_i = 0}$, with multipliers $s$ and $\translation$ moving the targets to $\smash{\pred - s\,\mathbf{d} - \translation}$.
+  \begin{enumerate}
+    \item Its dual is the minimization of $s$ over $(s, \translation)$ subject to $\smash{\pred - s\,\mathbf{d} - \translation \in \achievable}$, whose feasible translation is always $\smash{\translation = \bar{\translation}}$.
+    \item Let $s^\star$ be this minimum, and assume that the line $\smash{\pred - \bar{\translation} - s\,\mathbf{d}}$ meets $\achievable$ in a segment of positive length and that $\smash{\centroid^\star = \pred - \bar{\translation} - s^\star \mathbf{d}}$ is realizable, with generators $\dual^\star$.
+      Then $\smash{\sum_i \pvol_i\,\mathbf{d}_i\tr \dual^\star_i > 0}$, and the maximizing generators are $\smash{\lambda\,\dual^\star + \translation'}$, with the fixed dilation $\smash{\lambda = \kappa / \sum_i \pvol_i\,\mathbf{d}_i\tr \dual^\star_i > 0}$ and the fixed translation $\translation'$ such that $\smash{\sum_i \pvol_i\,(\lambda\,\dual^\star_i + \translation') = \mathbf{m}}$.
+    \item The proximal iteration \eqref{eq:flow-line-proximal} started at $\smash{\dual^0 = \qq}$ converges, for any $\alpha \!>\! 0$, to such generators, and its iterates are unbounded if the line misses $\achievable$.
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  As in the proximal iteration above, maximizing over the weights gives $\smash{2\,\helper(\dual) + \text{const}}$ with $\smash{\helper(\dual) = \sum_i \pvol_i\,\dual_i\tr \pred_i - \sigma_{\achievable}(\dual)}$, and the constraints read $\smash{\sum_i \pvol_i\,\mathbf{d}_i\tr \dual_i = \kappa}$ and $\smash{\sum_i \pvol_i\,\dual_i = \mathbf{m}}$ in terms of the generators $\dual = \qq + \shift$.
+  % 
+  (1) Dualizing the constraints with multipliers $2s$ and $2\translation$ gives $\smash{\max_{\dual} 2 \bigl( \sum_i \pvol_i\,\dual_i\tr (\pred_i - s\,\mathbf{d}_i - \translation) - \sigma_{\achievable}(\dual) \bigr) + 2s\kappa + 2\translation\tr\mathbf{m}}$.
+  Since $\sigma_{\achievable}$ is the support function of $\achievable$, the inner maximum is $0$ if $\smash{\pred - s\,\mathbf{d} - \translation \in \achievable}$ and $+\infty$ otherwise.
+  Every point of $\achievable$ verifies $\smash{\sum_i \pvol_i\,\centroid_i = 0}$, and $\mathbf{d}$ is centered, so this condition forces $\smash{\translation = \bar{\translation}}$ for every $s$, and the dual minimizes $\smash{2s\kappa + 2\bar{\translation}\tr\mathbf{m}}$ over the feasible $s$, and $\kappa \!>\! 0$ gives the claim.
+  % 
+  (2) For $s$ in the segment, $\smash{\pred - s\,\mathbf{d} \in \achievable}$, and the supporting hyperplane at $\centroid^\star$ with normal $\dual^\star$ gives $\smash{-(s - s^\star) \sum_i \pvol_i\,\mathbf{d}_i\tr \dual^\star_i \le 0}$, so the sum is non-negative.
+  It is positive, since otherwise the segment would lie in this hyperplane, which touches $\achievable$ only at the exposed point $\centroid^\star$.
+  For $\smash{\dual = \lambda\,\dual^\star + \translation'}$, both constraints hold, the first since $\mathbf{d}$ is centered and the second by the choice of $\translation'$, and $\smash{\sigma_{\achievable}(\dual) = \sum_i \pvol_i\,\dual_i\tr \centroid^\star_i}$, since $\dual$ is a normal at $\centroid^\star$, so $\smash{\helper(\dual) = \sum_i \pvol_i\,\dual_i\tr (s^\star\mathbf{d}_i + \bar{\translation}) = s^\star \kappa + \bar{\translation}\tr\mathbf{m}}$.
+  This value matches the dual bound, so these generators are maximizers.
+  Conversely, any maximizer attains the bound, hence is a normal of $\achievable$ at $\centroid^\star$, \ie of the form $\smash{\lambda'\dual^\star + \translation''}$ with $\lambda' \!\ge\! 0$ (\S\ref{sec:background}), and the constraints fix $\lambda' = \lambda$ and $\translation'' = \translation'$.
+  % 
+  (3) Since the sites $\qq$ verify the constraints and each iteration only changes the generators by constrained shifts, all iterates remain on the affine subspace, and the iteration is the proximal point algorithm on the concave function $\helper$ restricted to it.
+  It converges to a maximizer whenever one exists, and its iterates are unbounded otherwise \cite{Rockafellar1976Proximal}, which is the case when the line misses $\achievable$, since the dual is then infeasible and the primal unbounded.
+\end{proof}
+In terms of partitions, the dual in (1) reads
+\begin{subequations}
+  \label{eq:flow-line-primal}
+  \begin{alignat}{2}
+    & \min_{\cell, s, \translation} \quad && \sum\nolimits_i \int_{\cell_i} \norm{\xx - \qq_i}^2 \, d\xx \label{eq:flow-line-primal-obj}
+  \end{alignat}
+  \vspace{-\belowdisplayskip}\vspace{-\abovedisplayskip}
+  \begin{empheq}[left={\text{s.t.} \quad \empheqlbrace}]{alignat=1}
+    & \int_{\cell_i} \bigl( \xx - \pred_i + s\,\mathbf{d}_i + \translation \bigr) \, d\xx = 0 \ \ \forall i , \label{eq:flow-line-primal-cons} \\
+    & \cellvol_i = \pvol_i \ \ \forall i , \label{eq:flow-line-primal-vol}
+  \end{empheq}
+\end{subequations}
+since the Lagrangian of \eqref{eq:flow-line-primal} is linear in $s$ and $\translation$, and is bounded below in them exactly when the shifts verify the two linear constraints.
+Under these constraints, the objective \eqref{eq:flow-line-primal-obj} is affine in the centroids and equals $\smash{2s\kappa}$ up to a constant, while summing \eqref{eq:flow-line-primal-cons} over the cells fixes the translation independently of $s$.
+In \S\ref{sec:flow-constrained}, the sites are $\qq^k$, the targets are $\smash{\pred^{k+1}}$, and the direction is $\dual^k$; if $\dual^k$ is not centered, the second constraint removes its mean $\smash{\bar\dual^k = \sum_i \pvol_i\,\dual^k_i / \domainVol}$ from the first one, so the lemma applies with $\smash{\mathbf{d} = \dual^k - \bar\dual^k}$, the translation absorbing $\smash{s\,\bar\dual^k}$, and $\kappa \!>\! 0$ follows from Lemma~\ref{lem:unachievable-prediction}.
+Contrary to Lemma~\ref{lem:proximal}, the constraint fixes the dilation of the limit, so the iterates cannot collapse to coinciding generators when the entry point is realizable.
+If the line meets $\achievable$ at a single point, or enters it through a flat face, the maximizers only include normals with coinciding generators, and the iterates converge to such a degenerate normal.
+
+\paragraph{Step-size estimate.}
+We sketch a leading-order estimate of the time steps for which the correction of \S\ref{sec:flow-constrained} has a solution.
+For generators $\dual$ with distinct sites, the centroids $\centroid(\dual)$ of the power diagram with volumes $\pvol$ form the gradient of the support function $\sigma_{\achievable}$ \cite[Prop.~3.5]{Bourne2026ConvexOrder}, so their Jacobian $\smash{\Jmat = \partial\centroid / \partial\dual}$ at $\dual^k$ is symmetric and positive semi-definite, and vanishes along the homotheties.
+It maps generator perturbations to motions of the realizable boundary, so its eigenvalues are the radii of curvature of the boundary of $\achievable$ at $\qq^k$, and its range is the tangent space $T$ of the centered vectors that are volume-weighted orthogonal to $\dual^k$.
+It is computed as the Schur complement of the Jacobian of the cell moments after eliminating the weights, which involves the same facet integrals as the Hessian of $\jointdual$.
+We decompose the offset $\smash{\delta = \pred^{k+1} - \qq^k}$ into its part $\smash{\delta_T \in T}$ and its components along $\dual^k$ and the translations.
+Solving \eqref{eq:flow-line-constraint} amounts to finding a perturbation $\mathbf{u}$ and a gauge $(s, \translation)$ with $\smash{\centroid(\dual^k + \mathbf{u}) = \pred^{k+1} - s\,\dual^k - \translation}$, which to first order splits into $\smash{\Jmat\,\mathbf{u} = \delta_T}$ and a gauge given by the normal components of $\delta$.
+Assuming that $\Jmat$ is invertible on $T$, with smallest eigenvalue $\lambda_{\min}$, the implicit function theorem yields a solution for small enough $\delta$, with $\smash{\mathbf{u} \approx \Jmat^{-1} \delta_T}$, and this solution is the entry point of the line, since its normal is close to $\dual^k$.
+The perturbed generators remain distinct, and the solution thus realizable, if $\smash{\norm{\mathbf{u}}_\infty < \tfrac12 \min_{i \neq j} \norm{\dual^k_i - \dual^k_j}}$, which holds when $\smash{\norm{\delta_T} \lesssim \tfrac12\,\lambda_{\min} \min_{i \neq j} \norm{\dual^k_i - \dual^k_j}}$, up to norm-equivalence constants involving $\min_i \pvol_i$.
+By \eqref{eq:flow-shake-step-pred}, $\smash{\delta_T = \tstep\,\vel^k_T + \tfrac{\tstep^2}{\stiff^2}\,\qq^k_T}$, where the subscript $T$ denotes the tangential part, which gives the CFL-type estimate
+\begin{equation}
+  \tstep\,\norm{\vel^k_T} + \frac{\tstep^2}{\stiff^2}\,\norm{\qq^k_T} \;\lesssim\; \tfrac12\,\lambda_{\min}\,\min\nolimits_{i \neq j} \norm{\dual^k_i - \dual^k_j} .
+  \label{eq:flow-step-estimate}
+\end{equation}
+Its potential term vanishes when $\qq^k$ is a centroidal power diagram, while a sharply curved boundary or a small generator spacing, \ie a nearby flat face, restricts the step.
+This estimate is only asymptotic: a rigorous bound would also require controlling the variation of $\Jmat$ over the neighborhood of $\dual^k$, \ie the third derivatives of $\sigma_{\achievable}$, which involve inverse facet distances.
+
+\section{Feasible volumes for prescribed centroids}
+\label{sec:appendix-maxent}
+
+In the centroid-only problem of \S\ref{sec:centroid-constraints}, the volumes are unknown, and the conservation identities \eqref{eq:partition-feasibility} are satisfiable only if there exist non-negative volumes $\cellvol_i$ with $\smash{\sum_i \cellvol_i \tcentroid_i = \domainVol\,\centroid_\domain}$ and $\smash{\sum_i \cellvol_i = \domainVol}$.
+Drawing inspiration from \citet{Hormann2008MaxEnt}, one way to recover such volumes is to solve
+\begin{subequations}
+  \label{eq:maxent-feasibility}
+  \begin{alignat}{2}
+    & \min_{\{\cellvol_i\}} \quad && \sum\nolimits_i \cellvol_i \, \log\bigl( \cellvol_i / \domainVol \bigr) \label{eq:maxent-feasibility-obj} \\
+    & \text{s.t.} \quad && \sum\nolimits_i \cellvol_i \, \tcentroid_i = \domainVol \, \centroid_\domain , \quad \sum\nolimits_i \cellvol_i = \domainVol , \label{eq:maxent-feasibility-cons}
+  \end{alignat}
+\end{subequations}
+which is equivalent to the \emph{unconstrained} convex minimization
+\begin{equation}
+  \min_{\yy \in \R^{d+1}} \
+    \domainVol \sum\nolimits_i \exp\bigl( -\yy\tr \lift_i \bigr)
+    + \yy\tr \lift_\domain ,
+  \label{eq:maxent-dual}
+\end{equation}
+with the homogeneous lifts $\lift_i \!=\! [\tcentroid_i, 1]$ and $\lift_\domain \!=\! \domainVol\,[\centroid_\domain, 1]$, whose minimizer recovers the volumes as $\smash{\cellvol_i = \domainVol \exp(-\yy\tr \lift_i)}$.
+
+\section{Bordered Newton step}
+\label{sec:appendix-bordered}
+
+We detail the Newton step of the constrained integrator (\S\ref{sec:flow-constrained}), which maximizes \eqref{eq:flow-line-constraint}.
+Denoting the negated Hessian blocks of $\jointdual$ by $\smash{\Kmat = -\partial^2_{\shift\shift}\jointdual}$ and $\smash{\wlap = -\partial^2_{\weight\weight}\jointdual}$, the mixed block \eqref{eq:joint-hessian} by $\smash{\Bmat = \partial^2_{\shift\weight}\jointdual = -\partial\cellvol/\partial\shift}$, and the constraint rows by $\smash{\Cmat\,\shift = \bigl( \sum_i \pvol_i\,\shift_i\tr \dual^k_i, \, \sum_i \pvol_i\,\shift_i \bigr)}$, this bordered system reads
+\begin{equation}
+  \begin{bmatrix} \Kmat & -\Bmat & \Cmat\tr \\ -\Bmat\tr & \wlap & 0 \\ \Cmat & 0 & 0 \end{bmatrix}
+  \begin{bmatrix} \delta\shift \\ \delta\weight \\ (2s, 2\translation) \end{bmatrix}
+  =
+  \begin{bmatrix} \partial_{\shift}\jointdual \\ \partial_{\weight}\jointdual \\ 0 \end{bmatrix} ,
+  \label{eq:flow-constrained-newton}
+\end{equation}
+where the last row vanishes since every iterate satisfies the linear constraints, and where we pin one weight to fix the additive constant.
+At a stationary point, the updates vanish and the first row reduces to $\smash{\partial_{\shift}\jointdual = \Cmat\tr (2s, 2\translation)}$, \ie to the correction \eqref{eq:flow-shake-step-corr} with the new particles as centroids.
+
+We solve this system by block elimination of the multipliers.
+Since the negated Hessian of $\jointdual$ is singular along the homotheties \eqref{eq:joint-nullspace}, we first add to it the outer product of the constraint rows $\smash{\hat\Cmat = [\Cmat \;\, 0]}$, padded with zeros on the weights, which yields
+\begin{equation}
+  \Nmat = \begin{bmatrix} \Kmat & -\Bmat \\ -\Bmat\tr & \wlap \end{bmatrix} + \hat\Cmat\tr \hat\Cmat .
+  \label{eq:appendix-bordered-matrix}
+\end{equation}
+This modification leaves the solution unchanged, since the updates satisfy $\smash{\hat\Cmat\,(\delta\shift, \delta\weight) = 0}$, so the added term vanishes on them.
+With one weight pinned, the only remaining null-space modes of the negated Hessian are the dilation and the translations of \eqref{eq:joint-nullspace}, on which $\smash{\hat\Cmat}$ evaluates to the $(d+1) \times (d+1)$ matrix with entries $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \dual_i}$, $\smash{\sum_i \pvol_i\,\dual^k_i}$, $\smash{\sum_i \pvol_i\,\dual_i}$ and $\smash{\domainVol\,\Id}$, where $\dual$ are the current generators.
+Its determinant is proportional to $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr (\dual_i - \bar\dual)}$, with $\smash{\bar\dual = \sum_i \pvol_i\,\dual_i / \domainVol}$, so $\Nmat$ is nonsingular whenever this correlation is nonzero, as in the condition $\kappa \!>\! 0$ of Lemma~\ref{lem:line-constrained}.
+
+Denoting by $\residual = (\partial_{\shift}\jointdual, \partial_{\weight}\jointdual)$ the gradient, the Newton step then follows in three stages,
+\begin{subequations}
+  \label{eq:flow-constrained-elimination}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \Nmat \, \bigl[ \boldsymbol{\xi} , \, \Xi \bigr] &= \bigl[ \residual , \, \hat\Cmat\tr \bigr] , \label{eq:flow-constrained-elimination-solve} \\[1mm]
+    \bigl( \hat\Cmat\, \Xi \bigr) \, (2s, 2\translation) &= \hat\Cmat\, \boldsymbol{\xi} , \label{eq:flow-constrained-elimination-gauge} \\[1mm]
+    (\delta\shift, \delta\weight) &= \boldsymbol{\xi} - \Xi\, (2s, 2\translation) . \label{eq:flow-constrained-elimination-update}
+  \end{empheq}
+\end{subequations}
+The first stage solves $\Nmat$ for $d + 2$ right-hand sides: the gradient $\residual$, and the columns of $\smash{\hat\Cmat\tr}$, which are $\smash{\pvol_i\,\dual^k_i}$ for the dilation and $\smash{\pvol_i\,\Id}$ for the translations on the shifts.
+The second stage solves a dense $(d + 1) \times (d + 1)$ symmetric positive-definite system for the gauge $(s, \translation)$, \ie the negated Schur complement of the bordered system with $\Nmat$ in place of the negated Hessian, and the last stage recovers the updates of the shifts and weights.
+Since $\smash{\hat\Cmat\tr \hat\Cmat}$ is dense with rank $d + 1$, $\Nmat$ is a sparse matrix plus a low-rank term, which can be applied without being formed, \eg within conjugate gradients.
+% TODO: choose the solver for N to match ../src (currently only a sparse Cholesky of H + eps M); a sparse direct factorization needs the dense rank-(d+1) term handled separately.
+
+\section{Unachievable predictions}
+\label{sec:appendix-prediction}
+
+We prove the two results used in \S\ref{sec:flow-implicit} to show that the predictions are unachievable, which we state for a general dilation coefficient $\predcoef$ and a general velocity factor $\beta$, covering both the prediction \eqref{eq:flow-shake-step-pred} ($\smash{\predcoef = \tstep^2/\stiff^2}$, $\beta = 1$) and its fully implicit variant \eqref{eq:flow-projection-pred} ($\beta = 1 + \predcoef$).
+Since translations are absorbed by the gauge, we place the origin at the centroid of the domain, $\smash{\domainCentroid = 0}$, so that all achievable centroids verify $\smash{\sum_i \pvol_i\,\centroid_i = 0}$.
+Both proofs rely on the fact that the centroids $\qq^k$ of the power diagram generated by $\dual^k$ maximize the linear function $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \centroid_i}$ over $\achievable$ (\S\ref{sec:background}).
+
+\begin{lemma}
+  \label{lem:normal-velocity}
+  Let the particles $\qq^{k-1}$ be achievable and the particles $\qq^k$ be realizable with generators $\dual^k$.
+  Then the velocities $\smash{\vel^k = (\qq^k - \qq^{k-1})/\tstep}$ verify $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \vel^k_i \ge 0}$.
+\end{lemma}
+\begin{proof}
+  Since $\qq^k$ maximizes $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \centroid_i}$ over $\achievable$ and $\qq^{k-1} \!\in\! \achievable$, we have $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \vel^k_i = \sum_i \pvol_i\,(\dual^k_i)\tr (\qq^k_i - \qq^{k-1}_i) / \tstep \ge 0}$.
+  This sign does not depend on the choice of generators among the homotheties \eqref{eq:lifted-homothety}: a dilation by $s \!>\! 0$ scales the sum by $s$, while a translation $\translation$ adds $\smash{\translation\tr \sum_i \pvol_i\,\vel^k_i}$, which vanishes since both $\qq^{k-1}$ and $\qq^k$ verify \eqref{eq:partition-feasibility-centroid}.
+\end{proof}
+
+\begin{lemma}
+  \label{lem:unachievable-prediction}
+  Let the particles $\qq^k$ be realizable with generators $\dual^k$, and let the velocities $\vel^k$ have zero total momentum.
+  For coefficients $\predcoef \!\ge\! 0$ and $\beta \!>\! 0$, consider the prediction
+  \begin{equation}
+    \pred^{k+1} = (1 + \predcoef)\,\qq^k + \beta\,\tstep\,\vel^k .
+    \label{eq:appendix-prediction}
+  \end{equation}
+  Then $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \qq^k_i > 0}$, and if
+  \begin{equation}
+    \beta\,\tstep \sum\nolimits_i \pvol_i\,(\dual^k_i)\tr \vel^k_i
+    + \predcoef \sum\nolimits_i \pvol_i\,(\dual^k_i)\tr \qq^k_i \ge 0 ,
+    \label{eq:appendix-prediction-condition}
+  \end{equation}
+  the prediction $\smash{\pred^{k+1}}$ is unachievable unless $\smash{\pred^{k+1} = \qq^k}$.
+\end{lemma}
+\begin{proof}
+  Since $\vel^k$ has zero total momentum, the prediction verifies \eqref{eq:partition-feasibility-centroid}.
+  % 
+  To show that $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \qq^k_i > 0}$, consider the fractional partitions $\smash{\basis_i(\xx) = \tfrac{\pvol_i}{\domainVol} \bigl( 1 + \mathbf{a}_i\tr \xx \bigr)}$ with $\smash{\sum_i \pvol_i\,\mathbf{a}_i = 0}$, which sum to one and are non-negative for $\mathbf{a}$ small enough.
+  Since $\smash{\int_\domain \xx\, d\xx = 0}$, they have volumes $\pvol$ and centroids $\smash{\centroid_i = \mathrm{M}\,\mathbf{a}_i / \domainVol}$, with the positive definite matrix $\smash{\mathrm{M} = \int_\domain \xx\,\xx\tr d\xx}$.
+  Choosing $\smash{\mathbf{a}_i = \varepsilon\,\domainVol\,\mathrm{M}^{-1} (\dual^k_i - \bar{\dual})}$, with $\bar{\dual}$ the volume-weighted mean of the generators and $\varepsilon \!>\! 0$ small, yields achievable centroids $\smash{\centroid_i = \varepsilon\,(\dual^k_i - \bar{\dual})}$, at which the linear function $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \centroid_i}$ equals $\smash{\varepsilon \sum_i \pvol_i \norm{\dual^k_i - \bar{\dual}}^2}$.
+  This value is positive since the generators are pairwise distinct, and it is bounded by the maximum of the linear function over $\achievable$, attained at $\qq^k$.
+  % 
+  By \eqref{eq:appendix-prediction}, the left-hand side of \eqref{eq:appendix-prediction-condition} is the increment $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr (\pred^{k+1}_i - \qq^k_i)}$ of the linear function from $\qq^k$ to $\smash{\pred^{k+1}}$.
+  If this increment is positive, $\smash{\pred^{k+1}}$ lies strictly beyond the supporting hyperplane of $\achievable$ at $\qq^k$ with normal $\dual^k$, and is thus unachievable.
+  If it vanishes, $\smash{\pred^{k+1}}$ lies on this hyperplane.
+  Since $\qq^k$ is realizable, it is an exposed point of $\achievable$, and its normal cone consists of the homotheties of $\dual^k$ (\S\ref{sec:background}), so this hyperplane touches $\achievable$ only at $\qq^k$, and $\smash{\pred^{k+1}}$ is achievable only if $\smash{\pred^{k+1} = \qq^k}$.
+\end{proof}
+
+\begin{corollary}
+  \label{cor:unachievable-prediction}
+  Under the assumptions of Lemma~\ref{lem:unachievable-prediction}, let the velocities verify $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \vel^k_i \ge 0}$, as given by Lemma~\ref{lem:normal-velocity}.
+  Then $\smash{\pred^{k+1}}$ is unachievable, unless $\predcoef \!=\! 0$ and $\vel^k \!=\! 0$.
+\end{corollary}
+\begin{proof}
+  Since $\beta \!>\! 0$, both terms of \eqref{eq:appendix-prediction-condition} are non-negative, so Lemma~\ref{lem:unachievable-prediction} applies.
+  For $\predcoef \!>\! 0$, the second term is positive, so the increment is positive and $\smash{\pred^{k+1}}$ is unachievable.
+  For $\predcoef \!=\! 0$, we have $\smash{\pred^{k+1} = \qq^k}$ only if $\vel^k \!=\! 0$.
+\end{proof}
+
+\begin{lemma}
+  \label{lem:stiffness-scaling}
+  For given sites $\qq$ and prediction $\pred$, let $\smash{F_\alpha(\dual) = \max_{\weight} \jointdual_\alpha(\dual - \qq, \weight)}$ be the softened dual \eqref{eq:regularized-dual} with target centroids $\smash{\tcentroid = \pred - \qq/\alpha}$, as a function of the generators $\smash{\dual = \qq + \shift}$.
+  Then, up to an additive constant, $F_\alpha$ does not depend on $\qq$, and $\smash{F_{\lambda\alpha}(\lambda\,\dual) = \lambda\,F_\alpha(\dual)}$ for all $\lambda \!>\! 0$.
+\end{lemma}
+\begin{proof}
+  As shown in Appendix~\ref{sec:appendix-regularized}, maximizing $\jointdual$ over the weights gives, with the support function $\smash{\sigma_{\achievable}(\dual) = \max_{\centroid \in \achievable} \sum_i \pvol_i\,\dual_i\tr \centroid_i}$,
+  \begin{equation*}
+    \max_{\weight} \jointdual(\shift, \weight)
+    = \int_\domain \norm{\xx}^2 d\xx + \sum\nolimits_i \pvol_i \norm{\qq_i}^2 + 2 \sum\nolimits_i \pvol_i\,\shift_i\tr \tcentroid_i - 2\,\sigma_{\achievable}(\dual) .
+  \end{equation*}
+  Substituting $\smash{\shift = \dual - \qq}$ and $\smash{\tcentroid = \pred - \qq/\alpha}$, and subtracting the penalty $\smash{\tfrac{1}{\alpha} \sum_i \pvol_i \norm{\dual_i - \qq_i}^2}$ of \eqref{eq:regularized-dual}, the terms coupling $\dual$ and $\qq$ cancel, which leaves
+  \begin{equation*}
+    F_\alpha(\dual)
+    = 2 \Bigl( \sum\nolimits_i \pvol_i\,\dual_i\tr \pred_i - \sigma_{\achievable}(\dual) \Bigr) - \frac{1}{\alpha} \sum\nolimits_i \pvol_i \norm{\dual_i}^2 + \text{const} ,
+  \end{equation*}
+  where the constant depends on $\qq$, $\pred$, and $\alpha$ only.
+  Since $\sigma_{\achievable}$ is positively $1$-homogeneous, the first term scales by $\lambda$ under $\dual \mapsto \lambda\,\dual$, and so does the second one when $\alpha$ is replaced by $\lambda\alpha$.
+\end{proof}
+% 
+As a consequence, the maximizers verify $\smash{\opt{\dual}_{\lambda\alpha} = \lambda\,\opt{\dual}_\alpha}$ and generate the same power diagram, and the Hessians verify $\smash{\nabla^2 F_{\lambda\alpha}(\lambda\,\dual) = \nabla^2 F_\alpha(\dual) / \lambda}$, so that the conditioning of the maximization at its solution does not depend on $\alpha$.
+
+\end{document}

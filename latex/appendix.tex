@@ -73,7 +73,7 @@ For its Hessian, we differentiate \eqref{eq:appendix-centroid-grad} once more, a
 Letting $\alpha, \beta$ range over the shifted-site variables $\{\dual, \combweight\}$, this yields
 \begin{equation}
   \partial^2_{\shift_i \shift_j} \centroiddual
-    = \sum_{\alpha, \beta} (\partial_{\shift_i} \alpha_i)\,(\partial^2_{\alpha_i \beta_j} \energy)\,(\partial_{\shift_j} \beta_j)
+    = \sum\nolimits_{\alpha, \beta} (\partial_{\shift_i} \alpha_i)\,(\partial^2_{\alpha_i \beta_j} \energy)\,(\partial_{\shift_j} \beta_j)
       + \delta_{ij}\,(\partial^2_{\shift_i} \combweight_i)\,(\partial_{\combweight_i} \energy) ,
   \label{eq:appendix-centroid-hess-chain}
 \end{equation}
@@ -88,7 +88,7 @@ Contracting the Hessian blocks with a perturbation $\smash{\delta\shift = \{\del
 \begin{equation*}
   \delta\shift\tr \nabla^2 \centroiddual \, \delta\shift
   \!=\! 
-  -\sum_{i,j}\! \frac{1}{2\,\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\! \bigl( \delta\varphi_i(\xx) - \delta\varphi_j(\xx) \bigr)^2 \, dA
+  -\sum\nolimits_{i,j}\! \frac{1}{2\,\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\! \bigl( \delta\varphi_i(\xx) - \delta\varphi_j(\xx) \bigr)^2 \, dA
   \le 0 ,
   \label{eq:appendix-centroid-nsd}
 \end{equation*}
@@ -105,8 +105,8 @@ The null-space condition then reads $\smash{\delta a_i - \delta a_j = \kappa_{ij
 
 In terms of the lifting of \S\ref{sec:background}, we have $\smash{a_i(\xx) = 2\,\dual_i\tr\xx - \sheight_i}$, where the height $\smash{\sheight_i = \norm{\dual_i}^2 - \combweight_i}$ of the shifted weighted site is related to the height $\smash{\height_i = \norm{\qq_i}^2 - \weight_i}$ of the original one by $\smash{\sheight_i = \height_i + 2\,\tcentroid_i\tr\shift_i}$.
 Each shift thus moves the lifted point $\smash{(\dual_i, \sheight_i) = (\qq_i, \height_i) + (\shift_i, 2\,\tcentroid_i\tr\shift_i)}$ affinely, and \eqref{eq:appendix-affine} gives $\smash{a_i(\tcentroid_i) = 2\,\qq_i\tr\tcentroid_i - \height_i = \gamma_i}$ for every shift, with $\gamma_i$ as in \eqref{eq:pivot}.
-In other words, the shift $\shift_i$ pivots the lifted hyperplane of site $i$ about the fixed point $\smash{\liftedtarget_i = (\tcentroid_i, \gamma_i)}$.
-Applying the homotheties \eqref{eq:lifted-homothety} to the lifted shifted sites and differentiating at $s \!=\! 1 \!+\! \mu$ with infinitesimal $(\mu, \translation, c)$ gives the infinitesimal homotheties
+In other words, the shift $\shift_i$ pivots the lifted hyperplane of site $i$ about the fixed point $\smash{(\tcentroid_i, \gamma_i)}$.
+Applying the homotheties of \eqref{eq:lifted-homothety} to the lifted shifted sites and differentiating at $s \!=\! 1 \!+\! \mu$ with an infinitesimal offset $(\translation, -c)$ gives the infinitesimal homotheties
 \begin{equation}
   \delta\dual_i = \mu\,\dual_i + \translation ,
   \qquad
@@ -114,8 +114,7 @@ Applying the homotheties \eqref{eq:lifted-homothety} to the lifted shifted sites
   \label{eq:infinitesimal-homothety}
 \end{equation}
 \ie $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$, which always satisfy the null-space condition with $\kappa_{ij} \equiv \mu$.
-Assumption~\ref{asm:lift-uniqueness} in Appendix~\ref{sec:appendix-lift} states that they are the only solutions.
-As discussed there, this assumption fails for degenerate diagrams; in particular, in $d \!=\! 1$, $\centroiddual$ has $n$ shifts but only $n\!-\!1$ facet terms, so its Hessian is always singular.
+As is generic \cite{Bourne2025Inverting}, we assume that they are also the only solutions, \ie that the cells determine their lifted affine functions only up to these homotheties; this fails in special configurations, such as strips of parallel cells or a boundary cell with a single neighbor, whose affine function may rotate about their shared facet.
 
 With fixed weights, a shift perturbation changes each affine function by $\smash{\delta a_i = 2\,\delta\shift_i\tr(\xx - \tcentroid_i)}$, which vanishes at $\tcentroid_i$, so an infinitesimal homothety is realizable by the shifts exactly when it preserves all pivots.
 Matching the linear and constant parts of $\delta a_i = 2\,\delta\shift_i\tr(\xx - \tcentroid_i)$ with $\mu\,a_i + 2\,\translation\tr\xx + c$ gives
@@ -127,10 +126,10 @@ Matching the linear and constant parts of $\delta a_i = 2\,\delta\shift_i\tr(\xx
 \end{equation}
 where the second identity evaluates the first at $\smash{\xx = \tcentroid_i}$.
 Since $\delta\shift = 0$ forces $\mu = 0$ and $\translation = 0$ when the shifted sites are distinct, and then $c = 0$, the Hessian is \emph{negative definite} if and only if \eqref{eq:appendix-centroid-kernel} has only the trivial solution, \ie if and only if the vectors $\smash{(\gamma_i, \tcentroid_i, 1)}$ span $\R^{d+2}$.
-Equivalently, the pivots $\smash{\liftedtarget_i \in \R^{d+1}}$ do not lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
+Equivalently, the pivots $\smash{(\tcentroid_i, \gamma_i) \in \R^{d+1}}$ do not lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
 Since $n$ points in $\R^{d+1}$ always lie on a common hyperplane when $n \!\le\! d\!+\!1$, this requires $n \!\ge\! d\!+\!2$.
 A vertical hyperplane ($\mu \!=\! 0$) corresponds to targets $\tcentroid_i$ lying on a common hyperplane of $\R^d$.
-In the centroidal setting $\qq_i \!=\! \tcentroid_i$ with $\weight_i \!=\! 0$, the pivots $\smash{\liftedtarget_i = (\tcentroid_i, \norm{\tcentroid_i}^2)}$ lie on the paraboloid, and a non-vertical hyperplane ($\mu \!\neq\! 0$) cuts it along a sphere, recovering the Delaunay degeneracy of targets on a common hyperplane or sphere.
+In the centroidal setting $\qq_i \!=\! \tcentroid_i$ with $\weight_i \!=\! 0$, the pivots $\smash{(\tcentroid_i, \norm{\tcentroid_i}^2)}$ lie on the paraboloid, and a non-vertical hyperplane ($\mu \!\neq\! 0$) cuts it along a sphere, recovering the Delaunay degeneracy of targets on a common hyperplane or sphere.
 In general, $\gamma_i$ lowers the paraboloid by the power distance from $\tcentroid_i$ to its own weighted site, so the degeneracy is that of the regular triangulation of the targets weighted by these power distances.
 In particular, the condition that the targets affinely span $\R^d$ is not sufficient.
 
@@ -170,7 +169,7 @@ The Hessian is then the facet-based Laplacian assembled from $\phi_i$:
     \label{eq:appendix-block-off}
     \\[2mm]
     \partial^2_{\mult_i \mult_i} \jointdual
-      &= -\!\sum_{j \sim i} \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_i(\xx)\tr \, dA.
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_i(\xx)\tr \, dA.
     \label{eq:appendix-block-diag}
   \end{empheq}
 \end{subequations}
@@ -191,11 +190,11 @@ and diagonal blocks
   \label{eq:appendix-blocks-diag}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
     \partial^2_{\shift_i \shift_i\tr} \jointdual
-      &= -\!\sum_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i)(\xx - \tcentroid_i)\tr \, dA , \label{eq:appendix-blocks-uu-diag} \\
+      &= -\!\sum\nolimits_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i)(\xx - \tcentroid_i)\tr \, dA , \label{eq:appendix-blocks-uu-diag} \\
     \partial^2_{\shift_i \weight_i} \jointdual
-      &= -\!\sum_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i) \, dA , \label{eq:appendix-blocks-uw-diag} \\
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i) \, dA , \label{eq:appendix-blocks-uw-diag} \\
     \partial^2_{\weight_i \weight_i} \jointdual
-      &= -\!\sum_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-blocks-ww-diag}
+      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-blocks-ww-diag}
   \end{empheq}
 \end{subequations}
 whose shift--shift, shift--weight, and weight--weight parts recover, respectively, the centroid Hessian \eqref{eq:centroid-hessian}, the mixed block \eqref{eq:joint-hessian}, and the volume Hessian \eqref{eq:newton-step}.
@@ -204,14 +203,14 @@ whose shift--shift, shift--weight, and weight--weight parts recover, respectivel
 Contracting the Hessian with a perturbation $\smash{\delta\mult = \{ (\delta\shift_i, \delta\weight_i) \}}$, again collapses each facet to a scalar square of the form
 \begin{equation*}
   \delta\mult\tr \nabla^2 \jointdual \, \delta\mult
-    = -\sum_{i,j} \frac{1}{2\,\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \bigl( \delta\psi_i(\xx) - \delta\psi_j(\xx) \bigr)^2 \, dA
+    = -\sum\nolimits_{i,j} \frac{1}{2\,\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \bigl( \delta\psi_i(\xx) - \delta\psi_j(\xx) \bigr)^2 \, dA
     \;\le\; 0 ,
   \label{eq:appendix-joint-nsd}
 \end{equation*}
 now with variations of the affine field $\smash{\delta\psi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i) + \delta\weight_i}$.
 Hence, $\nabla^2 \jointdual \preceq 0$ and $\jointdual$ is jointly concave.
 As in Appendix~\ref{sec:appendix-centroid}, this quadratic form vanishes exactly when $\smash{\delta\psi_i - \delta\psi_j = \kappa_{ij}\,(a_i - a_j)}$ on every facet, now with $\smash{\delta a_i = \delta\psi_i}$ since the weights also vary.
-The dilation and translation perturbation $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$ always satisfies this condition, and Assumption~\ref{asm:lift-uniqueness} states that it is the only solution.
+The dilation and translation perturbation $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$ always satisfies this condition and produces the only solution.
 Matching the linear and constant parts as in \eqref{eq:appendix-centroid-kernel}, but now solving the constant part for the free weight perturbation, gives
 \begin{equation*}
   \delta\shift_i = \mu\,\dual_i + \translation ,
@@ -221,76 +220,241 @@ Matching the linear and constant parts as in \eqref{eq:appendix-centroid-kernel}
 which is exactly the $(d\!+\!2)$-dimensional family in \eqref{eq:joint-nullspace}.
 One can verify directly that it lies in the null-space, since $\smash{\delta\psi_i - \delta\psi_j = \mu\,(a_i - a_j)}$ vanishes on $\face_{ij}$.
 There, $\mu$ scales the lifted shifted sites $\smash{(\dual_i, \sheight_i)}$, $\translation$ translates them horizontally, and $c$ translates them vertically, which together form the homotheties \eqref{eq:infinitesimal-homothety} that leave the power diagram unchanged (\S\ref{sec:background}).
-In contrast to $\centroiddual$, these modes are present for any data, because the free weights absorb the weight changes they require.
+In contrast to $\centroiddual$, these modes are always present because the free weights absorb the weight changes they require.
 
-\section{Existence of solutions}
-\label{sec:appendix-existence}
+\section{Feasible volumes for prescribed centroids}
+\label{sec:appendix-maxent}
 
-On the open set of distinct shifted sites with non-empty cells, the energies $\centroiddual$ and $\jointdual$ are differentiable and concave, and their stationary points are exactly the power diagrams that meet the constraints.
-We detail here which targets admit such a stationary point, for each formulation.
+In the centroid-only problem of \S\ref{sec:centroid-constraints}, the volumes are unknown, and the conservation identities \eqref{eq:partition-feasibility} are satisfiable only if there exist non-negative volumes $\cellvol_i$ with $\smash{\sum_i \cellvol_i \tcentroid_i = \domainVol\,\centroid_\domain}$ and $\smash{\sum_i \cellvol_i = \domainVol}$.
+Drawing inspiration from \citet{Hormann2008MaxEnt}, one way to recover such volumes is to solve
+\begin{subequations}
+  \label{eq:maxent-feasibility}
+  \begin{alignat}{2}
+    & \min_{\{\cellvol_i\}} \quad && \sum\nolimits_i \cellvol_i \, \log\bigl( \cellvol_i / \domainVol \bigr) \label{eq:maxent-feasibility-obj} \\
+    & \text{s.t.} \quad && \sum\nolimits_i \cellvol_i \, \tcentroid_i = \domainVol \, \centroid_\domain , \quad \sum\nolimits_i \cellvol_i = \domainVol , \label{eq:maxent-feasibility-cons}
+  \end{alignat}
+\end{subequations}
+which is equivalent to the \emph{unconstrained} convex minimization
+\begin{equation}
+  \min_{\yy \in \R^{d+1}} \
+    \domainVol \sum\nolimits_i \exp\bigl( -\yy\tr \lift_i \bigr)
+    + \yy\tr \lift_\domain ,
+  \label{eq:maxent-dual}
+\end{equation}
+with the homogeneous lifts $\lift_i \!=\! [\tcentroid_i, 1]$ and $\lift_\domain \!=\! \domainVol\,[\centroid_\domain, 1]$, whose minimizer recovers the volumes as $\smash{\cellvol_i = \domainVol \exp(-\yy\tr \lift_i)}$.
 
-\paragraph{Volume constraints.}
-The $n$ weights of $\dualenergy$, up to a common constant, match the $n$ volume constraints, up to their sum, and any positive volumes summing to $\domainVol$ are realized for any distinct sites \cite{Aurenhammer1998Minkowski}.
+\section{Bordered Newton step}
+\label{sec:appendix-bordered}
 
-\paragraph{Centroid constraints.}
-The $nd$ shifts of $\centroiddual$ likewise match the $nd$ centroid constraints, since the free volumes leave these constraints independent.
-When the pivots are not coplanar, the Hessian of $\centroiddual$ is negative definite (\S\ref{sec:centroid-constraints}), so by the inverse function theorem, solutions persist under small perturbations of the targets.
-Not every target is realizable, however.
-In $\domain = [0,1]$ with targets $\smash{\tcentroid = (0.3, 0.7)}$, the partition $[0.05, 0.55]$ and its complement realizes the targets, but no power diagram does, since its interval cells $[0,s]$ and $[s,1]$ would require both $s = 0.6$ and $s = 0.4$; the supremum of $\centroiddual$ is then approached as the two shifted sites merge.
+We detail the Newton step of Algorithm~\ref{alg:flow-constrained-newton}, which solves \eqref{eq:flow-line-constraint} by maximizing $\jointdual$ subject to the linear constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans}.
 
-\paragraph{Volume and centroid constraints.}
-Since $\jointdual$ is the minimum over partitions of the Lagrangian \eqref{eq:joint-lagrangian}, which is affine in the multipliers for fixed cells, it varies linearly along the modes \eqref{eq:joint-nullspace}, which leave the cells unchanged.
-A maximizer therefore requires $\jointdual$ to be bounded along these modes.
-Along the constant and translation modes, the slope depends only on the data and vanishes exactly under the identities \eqref{eq:partition-feasibility}.
-Along the dilation mode, which scales the shifted sites by a factor $s \!>\! 0$, the slope instead depends on the configuration: once the volumes are enforced, it equals $\smash{2 \sum_i \pvol_i (\tcentroid_i - \centroid_i)\tr \dual_i}$ \cite[Theorem~4.2]{Bourne2025Inverting}.
-Unless the targets are realized by a power diagram, $\jointdual$ is thus either unbounded above as the shifted sites dilate, or approaches its supremum only as they contract and merge.
-This additional condition fixes the overall spread of the target centroids relative to the prescribed volumes, but not the shape of their configuration \cite{Bourne2026ConvexOrder}.
-In the unit interval with two cells of volume $\smash{\tfrac12}$, for instance, the targets $(0.3, 0.7)$ satisfy \eqref{eq:partition-feasibility}, but must be spread by a factor $\smash{\tfrac54}$ about $\smash{\tfrac12}$, to $\smash{(\tfrac14, \tfrac34)}$, to be realized \cite[Example~4.7]{Bourne2025Inverting}.
+\paragraph{Constraint matrix.}
+We stack the shifts and weights into $\smash{\mathbf{z} = (\shift, \weight)}$, and write the dilation constraint \eqref{eq:flow-line-constraint-dil} as the row $\smash{\mathbf{a} = (\{\pvol_i\,\dual^k_i\}_i, 0)}$ and the translation constraint \eqref{eq:flow-line-constraint-trans} along each axis $\mathbf{e}_j$ as the row $\smash{\mathbf{b}_j = (\{\pvol_i\,\mathbf{e}_j\}_i, 0)}$, both with zero entries on the weights.
+We then collect these $d \!+\! 1$ rows into the auxiliary matrix
+\begin{equation}
+  \Cmat = \begin{bmatrix} \mathbf{a} & \mathbf{b}_1 & \cdots & \mathbf{b}_d \end{bmatrix}\tr ,
+  \label{eq:appendix-constraint-matrix}
+\end{equation}
+so that the constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans} read $\Cmat\,\mathbf{z} = 0$.
 
-\section{Regularized joint dual}
-\label{sec:appendix-regularized}
+\paragraph{Newton system.}
+Denoting by $\smash{\mathbf{g} = \nabla\jointdual(\mathbf{z})}$ the gradient \eqref{eq:joint-gradient}, the constraint multipliers $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d) \in \R^{d+1}}$, 
+% with the translation $\smash{\translation = (t_1, \dots, t_d)}$, and the Newton step $\delta\mathbf{z}$, 
+we solve the bordered system
+\begin{equation}
+  \begin{bmatrix} \Nmat & \Cmat\tr \\ \Cmat & 0 \end{bmatrix}
+  \begin{bmatrix} \delta\mathbf{z} \\ \boldsymbol{\nu} \end{bmatrix}
+  =
+  \begin{bmatrix} \mathbf{g} \\ 0 \end{bmatrix},
+  \label{eq:flow-constrained-newton}
+\end{equation}
+%
+where the matrix
+\begin{equation}
+  \Nmat = -\nabla^2\jointdual(\mathbf{z}) + \varepsilon\,\mathrm{diag}(\pvol)
+  \label{eq:appendix-bordered-matrix}
+\end{equation}
+is the negated Hessian of $\jointdual$, with blocks \eqref{eq:centroid-hessian}, \eqref{eq:joint-hessian}, and \eqref{eq:newton-step}, perturbed by a small $\varepsilon \!>\! 0$ multiple of the target volumes $\pvol$ to remove its null-space \eqref{eq:joint-nullspace}.
+Since the negated Hessian is positive semi-definite, $\Nmat$ is positive definite and sparse, with the same pattern as the Hessian, so it admits a sparse Cholesky factorization.
 
-\paragraph{Duality.}
-In terms of the centroid moments $\smash{\mathbf{m}_i = \int_{\cell_i} (\xx - \tcentroid_i)\,d\xx = \cellvol_i (\centroid_i - \tcentroid_i)}$ and volume residuals $\smash{r_i = \cellvol_i - \pvol_i}$, the penalties of \eqref{eq:regularized-primal} are the Legendre conjugates
-\begin{equation*}
-  \frac{2\,\norm{\mathbf{m}_i}^2}{\alpha\,\pvol_i} = \max_{\shift_i} \ -2\,\shift_i\tr \mathbf{m}_i - \frac{\alpha}{2}\,\pvol_i \norm{\shift_i}^2 ,
-  \qquad
-  \frac{r_i^2}{2\beta\,\pvol_i} = \max_{\weight_i} \ -\weight_i\, r_i - \frac{\beta}{2}\,\pvol_i\, \weight_i^2 ,
-\end{equation*}
-attained at $\smash{\shift_i = -2\,\mathbf{m}_i / (\alpha\,\pvol_i)}$ and $\smash{\weight_i = -r_i / (\beta\,\pvol_i)}$, where $\beta \!=\! 0$ corresponds to the hard constraint $r_i = 0$.
-Substituting these expressions turns \eqref{eq:regularized-primal} into a min--max problem whose inner function is the Lagrangian \eqref{eq:joint-lagrangian} minus the two quadratic terms of \eqref{eq:regularized-dual}.
-Relaxing the partitions to fractional ones, the problem is convex in the partition and concave in the multipliers, so the minimization and maximization can be exchanged, and minimizing over partitions first yields \eqref{eq:regularized-dual}.
-Its derivatives \eqref{eq:regularized-gradient} follow from those of $\jointdual$ in Appendix~\ref{sec:appendix-joint}, and for $\alpha, \beta \!>\! 0$ it is strongly concave, so it attains its maximum at a unique point.
+\paragraph{Block elimination.}
+Eliminating $\delta\mathbf{z}$ from the first row of \eqref{eq:flow-constrained-newton} gives $\smash{\delta\mathbf{z} = \Nmat^{-1} \bigl( \mathbf{g} - \Cmat\tr \boldsymbol{\nu} \bigr)}$, which we compute from the $d \!+\! 2$ sparse solves
+\begin{equation}
+  \label{eq:flow-constrained-elimination-solve}
+  \left\{
+  \begin{aligned}
+    \Nmat\,\mathbf{z}_0 &= \mathbf{g} , \\
+    \Nmat\,\mathbf{z}_a &= 2\,\mathbf{a} , \\
+    \Nmat\,\mathbf{z}_{b_j} &= 2\,\mathbf{b}_j \ \ (j = 1, \dots, d) ,
+  \end{aligned}
+  \right.
+\end{equation}
+which share a single factorization of $\Nmat$.
+Substituting into the last row $\Cmat\,\delta\mathbf{z} = 0$ yields the dense $(d \!+\! 1) \times (d \!+\! 1)$ normal equation:
+\begin{equation}
+    \begin{bmatrix}
+      \mathbf{a}\tr\mathbf{z}_a & \mathbf{a}\tr\mathbf{z}_{b_1} & \cdots & \mathbf{a}\tr\mathbf{z}_{b_d} \\
+      \mathbf{b}_1\tr\mathbf{z}_a & \mathbf{b}_1\tr\mathbf{z}_{b_1} & \cdots & \mathbf{b}_1\tr\mathbf{z}_{b_d} \\
+      \vdots & \vdots & \ddots & \vdots \\
+      \mathbf{b}_d\tr\mathbf{z}_a & \mathbf{b}_d\tr\mathbf{z}_{b_1} & \cdots & \mathbf{b}_d\tr\mathbf{z}_{b_d}
+    \end{bmatrix}
+    \begin{bmatrix} s \\ t_1 \\ \vdots \\ t_d \end{bmatrix}
+    =
+    \begin{bmatrix} \mathbf{a}\tr\mathbf{z}_0 \\ \mathbf{b}_1\tr\mathbf{z}_0 \\ \vdots \\ \mathbf{b}_d\tr\mathbf{z}_0 \end{bmatrix} ,
+    \label{eq:flow-constrained-elimination-gauge}
+\end{equation}
+which is symmetric positive definite.
+The Newton step follows as
+\begin{equation}
+  \delta\mathbf{z} = \mathbf{z}_0 - s\,\mathbf{z}_a - \sum\nolimits_j t_j\,\mathbf{z}_{b_j}.
+  \label{eq:flow-constrained-elimination-update}
+\end{equation}
 
-\paragraph{Existence and bounds for $\beta \!=\! 0$.}
-Let $\cell^\star$ be any partition with volumes $\smash{\pvol_i}$.
-Since $\jointdual(\shift, \weight)$ is a minimum over partitions, evaluating the Lagrangian at $\cell^\star$ gives $\smash{\jointdual(\shift, \weight) \le C - 2\sum_i \shift_i\tr \mathbf{m}_i^\star}$ for a constant $C$ independent of the weights, so $\jointdual_{\alpha 0} \to -\infty$ as $\norm{\shift} \to \infty$, uniformly in the weights.
-For bounded shifts, $\jointdual_{\alpha 0}$ is, up to the additive constant on the weights, coercive in the weights whenever $\smash{\sum_i \pvol_i = \domainVol}$, as in the volume-constrained problem \eqref{eq:volume-dual}.
-Hence $\jointdual_{\alpha 0}$ attains its maximum.
-Since $\jointdual_{\alpha 0}$ is strongly concave in the shifts, two maximizers $\smash{(\shift^1, \weight^1)}$ and $\smash{(\shift^2, \weight^2)}$ would give at their midpoint a value exceeding the maximum by at least $\smash{\tfrac{\alpha}{8}\sum_i \pvol_i \norm{\shift^1_i - \shift^2_i}^2}$, so the maximizing shifts are unique.
-At a maximizer, optimality in the weights enforces the volumes $\smash{\pvol_i}$, also for fractional partitions, and optimality in the shifts gives $\smash{\alpha\,\pvol_i\,\shift_i = 2\,\pvol_i (\tcentroid_i - \centroid_i)}$, where $\centroid_i$ is the centroid of the possibly fractional cell $i$.
-For targets in the convex hull of $\domain$, both centroids lie in this hull, so $\smash{\norm{\shift_i} \le \tfrac{2}{\alpha}\operatorname{diam}(\domain)}$.
-Therefore, $\smash{\norm{\dual_i - \dual_j} \ge \norm{\qq_i - \qq_j} - \norm{\shift_i} - \norm{\shift_j} > 0}$ whenever $\smash{\alpha > 4\operatorname{diam}(\domain) / \min_{i \neq j} \norm{\qq_i - \qq_j}}$, in which case the optimal partition is the power diagram of the shifted weighted sites.
+\section{Algorithms}
+\label{sec:appendix-algorithms}
 
-\paragraph{Limits and projection.}
-The bound on the shifts shows that they vanish as $\alpha \!\to\! \infty$, so $\jointdual_{\alpha 0}(\shift, \weight) \to \jointdual(0, \weight) = \dualenergy(\weight)$, while $\jointdual_{\alpha 0} \to \jointdual$ as $\alpha \!\to\! 0$.
-In the centroidal setting $\qq_i \!=\! \tcentroid_i$, expanding the transport cost of a partition with volumes $\smash{\pvol_i}$ as $\smash{\int_\domain \norm{\xx}^2 d\xx - 2 \sum_i \pvol_i\,\tcentroid_i\tr\centroid_i + \sum_i \pvol_i \norm{\tcentroid_i}^2}$ shows that the objective of \eqref{eq:regularized-primal} with $\beta \!=\! 0$ equals, up to a positive factor and an additive constant, $\smash{\sum_i \pvol_i \norm{\centroid_i - \dilation\,\tcentroid_i}^2}$ with $\smash{\dilation = 1 + \tfrac{\alpha}{2}}$.
-Minimizing it over achievable centroids is the $\pvol$-weighted projection of $\dilation\,\tcentroid$ onto their set, which coincides with the projection of the targets dilated about $\centroid_\domain$, since both differ by a uniform translation orthogonal to the affine constraint $\smash{\sum_i \pvol_i \centroid_i = \domainVol\,\centroid_\domain}$.
-Moreover, the optimal shifted sites $\smash{\dual_i = \tcentroid_i + \shift_i = \tfrac{2}{\alpha}(\dilation\,\tcentroid_i - \centroid_i)}$ are proportional to the difference between the dilated targets and their projection, as in \citet[Lemma~4.1]{Bourne2026ConvexOrder}.
+We summarize the time steps of the constrained (\S\ref{sec:flow-constrained}) and penalty-based (\S\ref{sec:flow-penalty}) integrators, together with the Newton solves they rely on.
+Both solves perturb the negated Hessian by $\smash{\varepsilon\,\mathrm{diag}(\pvol)}$, and backtrack the step size $\omega$ until the objective increases.
 
-\section{Uniqueness of the lift}
-\label{sec:appendix-lift}
+\begin{algorithm}[H]
+  \caption{Time step of the constrained integrator (\S\ref{sec:flow-constrained}).}
+  \label{alg:flow-constrained}
+  \begin{algorithmic}[1]
+    \Require particles $\qq^k$, velocities $\vel^k$, generators $\dual^k$ and shifted weights $\combweight^k$ of the power diagram with centroids $\qq^k$, volumes $\pvol$, time step $\tstep$, strength $\stiff$
+    \State $\pred^{k+1} \gets (1 + \tstep^2/\stiff^2)\,\qq^k + \tstep\,\vel^k$ \Comment{prediction \eqref{eq:flow-shake-step-pred}}
+    \State $(\shift, \weight, s, \translation) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $\combweight^k$
+    \State $\qq^{k+1} \gets \pred^{k+1} - s\,\dual^k - \translation$ \Comment{correction \eqref{eq:flow-shake-step-corr}}
+    \State $\vel^{k+1} \gets (\qq^{k+1} - \qq^k) / \tstep$
+    \State $\dual^{k+1} \gets \qq^k + \shift$ \Comment{\eqref{eq:shifted-site-pos}}
+    \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2 + 2\,\shift\tr (\qq^k - \pred^{k+1})$ \Comment{\eqref{eq:shifted-site-weight}}
+  \end{algorithmic}
+\end{algorithm}
 
-The null-space characterizations of Appendices~\ref{sec:appendix-centroid} and~\ref{sec:appendix-joint} rely on the converse of the invariance \eqref{eq:infinitesimal-homothety}: that lifted homotheties are the \emph{only} perturbations of the generators that leave the cells unchanged.
-We write the power distance of a weighted site $(\dual_i, \combweight_i)$ as $\smash{\norm{\xx}^2 - a_i(\xx)}$ with the affine function $\smash{a_i(\xx) = 2\,\dual_i\tr\xx - \sheight_i}$ and height $\smash{\sheight_i = \norm{\dual_i}^2 - \combweight_i}$, as in \S\ref{sec:background}.
-A perturbation leaves the cells unchanged to first order exactly when it keeps every facet hyperplane $\smash{\{a_i = a_j\}}$ fixed, \ie when $\smash{\delta a_i - \delta a_j}$ is a multiple of $\smash{a_i - a_j}$ for every pair of neighbors $i \!\sim\! j$.
-\begin{assumption}[Lift uniqueness]
-  \label{asm:lift-uniqueness}
-  The only perturbations $\smash{\{\delta a_i\}}$ such that $\smash{\delta a_i - \delta a_j}$ vanishes on the hyperplane of $\face_{ij}$ for every pair of neighbors $i \!\sim\! j$ are the infinitesimal homotheties $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$ of \eqref{eq:infinitesimal-homothety}.
-\end{assumption}
-In words, the cells determine their polyhedral lift up to a homothety, a statement closely related to the uniqueness of liftings in the Maxwell--Cremona correspondence.
-A simple count supports this assumption: the unknowns are the $d\!+\!1$ coefficients of each affine function, while each interior facet imposes $d$ conditions, so the system is overdetermined for typical diagrams in $d \!\ge\! 2$.
-For instance, \citet{Bourne2025Inverting} recall that the generators of a normal 2D power diagram are determined by its cells once the generator of one cell and one coordinate of a neighboring site are fixed, which is exactly $d\!+\!2 \!=\! 4$ parameters.
-The assumption fails, however, for degenerate diagrams: in $d \!=\! 1$, where each facet is a point and imposes a single condition; for diagrams with parallel facets only, such as strips; for cells adjacent to a single interior facet, whose affine function may rotate about that facet; and for diagrams whose adjacency graph is disconnected, where each component admits its own homothety.
+\begin{algorithm}[H]
+  \caption{Bordered Newton solve of \eqref{eq:flow-line-constraint} (Appendix~\ref{sec:appendix-bordered}).}
+  \label{alg:flow-constrained-newton}
+  \begin{algorithmic}[1]
+    \Require sites $\qq$, targets $\pred$, direction $\dual^k$, initial weights $\weight^0$, volumes $\pvol$, regularization $\varepsilon \!>\! 0$, tolerance $\tau$
+    \State build the constraint matrix $\Cmat = [\mathbf{a}, \mathbf{b}_1, \dots, \mathbf{b}_d]\tr$ \Comment{\eqref{eq:appendix-constraint-matrix}}
+    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$
+    \Repeat
+      \State build the power diagram of the shifted sites \eqref{eq:shifted-site}
+      \State $\mathbf{g} \gets \nabla\jointdual(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}}
+      \State $\Nmat \gets -\nabla^2\jointdual(\mathbf{z}) + \varepsilon\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:appendix-bordered-matrix}}
+      \State solve for $\mathbf{z}_0$, $\mathbf{z}_a$, $\mathbf{z}_{b_j}$ \Comment{$d \!+\! 2$ sparse solves \eqref{eq:flow-constrained-elimination-solve}}
+      \State solve for the gauge $(s, \translation)$ \Comment{dense system \eqref{eq:flow-constrained-elimination-gauge}}
+      \State $\delta\mathbf{z} \gets \mathbf{z}_0 - s\,\mathbf{z}_a - \sum_j t_j\,\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-update}}
+      \State $\mathbf{z} \gets \mathbf{z} + \omega\,\delta\mathbf{z}$, halving $\omega$ from $1$ until $\jointdual$ increases
+    \Until{$\norm{\mathbf{g} - \Cmat\tr \boldsymbol{\nu}} < \tau$, with $\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d)$} \Comment{stationarity of \eqref{eq:flow-constrained-newton}}
+    \State \Return $(\shift, \weight)$ and the gauge $(s, \translation)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Time step of the penalty-based integrator (\S\ref{sec:flow-penalty}).}
+  \label{alg:flow-penalty}
+  \begin{algorithmic}[1]
+    \Require particles $\qq^k$, velocities $\vel^k$, maximizer $(\shift^k, \weight^k)$ of $\jointdual_\alpha$ with sites and targets $\qq^k$, volumes $\pvol$, time step $\tstep$, strength $\stiff$, stiffness $\alpha$
+    \State $\vel^{k+1} \gets \vel^k - (1 + 1/\alpha)\,(\tstep/\stiff^2)\,\shift^k$ \Comment{velocity update \eqref{eq:flow-softened-step-vel}}
+    \State $\qq^{k+1} \gets \qq^k + \tstep\,\vel^{k+1}$ \Comment{position update \eqref{eq:flow-softened-step-pos}}
+    \State $(\shift^{k+1}, \weight^{k+1}) \gets$ Alg.~\ref{alg:newton} with sites and targets $\qq^{k+1}$, weights $\weight^k$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Newton solve of $\jointdual_\alpha$ (or of $\jointdual$, for $\alpha = \infty$).}
+  \label{alg:newton}
+  \begin{algorithmic}[1]
+    \Require sites $\qq$, targets $\tcentroid$, initial weights $\weight^0$, volumes $\pvol$, stiffness $\alpha$ (optional), regularization $\varepsilon \!>\! 0$, tolerance $\tau$
+    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$
+    \Repeat
+      \State build the power diagram of the shifted sites \eqref{eq:shifted-site}
+      \State $\mathbf{g} \gets \nabla\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}, \eqref{eq:regularized-gradient-shift}}
+      \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z}) + \varepsilon\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:appendix-bordered-matrix}}
+      \State solve $\Nmat\,\delta\mathbf{z} = \mathbf{g}$
+      \State $\mathbf{z} \gets \mathbf{z} + \omega\,\delta\mathbf{z}$, halving $\omega$ from $1$ until $\jointdual_\alpha$ increases
+    \Until{$\norm{\mathbf{g}} < \tau$}
+    \State \Return $(\shift, \weight)$
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Prior methods.}
+For comparison, we also summarize the methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} in our notation, in which the generators $\qq$ are the unknowns and the weights $\weight^\star(\qq)$ maximize $\dualenergy$ in \eqref{eq:volume-dual}.
+
+\begin{algorithm}[H]
+  \caption{Volume solve of \citet{Bourne2025Inverting}, used by Algorithms~\ref{alg:bourne2025}--\ref{alg:bourne2026-fw}.}
+  \label{alg:bourne-volume}
+  \begin{algorithmic}[1]
+    \Require generators $\qq$, volumes $\pvol$, regularization $\varepsilon \!>\! 0$, tolerance $\tau$ (they use $\tau \!=\! 10^{-3}$)
+    \State $\weight \gets$ initial weights with no empty cell
+    \Repeat \Comment{damped Newton of Kitagawa, M\'erigot, and Thibert}
+      \State build the power diagram of $(\qq, \weight)$ \Comment{\eqref{eq:power-cell}}
+      \State $\mathbf{g} \gets \pvol - \cellvol$ \Comment{\eqref{eq:volume-dual-gradient}}
+      \State $\wlap \gets -\nabla^2\dualenergy(\weight) + \varepsilon\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:newton-step}, as in \eqref{eq:appendix-bordered-matrix}}
+      \State solve $\wlap\,\delta\weight = \mathbf{g}$
+      \State $\weight \gets \weight + \omega\,\delta\weight$, halving $\omega$ from $1$ until no cell is too small
+    \Until{$\lvert \cellvol_i - \pvol_i \rvert < \tau\,\pvol_i$ for all $i$}
+    \State \Return weights $\weight^\star(\qq) = \weight$ and centroids $\centroid(\qq)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Inversion and fitting by \citet{Bourne2025Inverting}.}
+  \label{alg:bourne2025}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$, targets $\tcentroid$, minimum distance $\delta$ (they use $\delta \!=\! 10^{-3}$), mode $\in \{\textsc{Invert}, \textsc{Fit}\}$
+    \If{mode $= \textsc{Invert}$}
+      \State $\qq \gets$ random samples in $\domain$
+    \Else
+      \State $\qq \gets \tcentroid$ \Comment{their Remark~4.13}
+    \EndIf
+    \Repeat \Comment{SLSQP, \texttt{scipy.optimize.minimize}}
+      \State $(\weight^\star, \centroid) \gets$ Alg.~\ref{alg:bourne-volume} with generators $\qq$
+      \If{mode $= \textsc{Invert}$}
+        \State $\mathbf{g} \gets \{\pvol_i\,(\tcentroid_i - \centroid_i)\}_i$ \Comment{their Thm.~4.2}
+        \State $\qq \gets$ SLSQP step along $\mathbf{g}$, s.t. $\norm{\qq_i - \qq_j} \ge \delta$
+        \Statex \hspace{4.5em} and $\sum_i \norm{\qq_i - \domainCentroid}^2 \le n\,\domainVol$ \hfill \texttt{//} ball constraint
+      \Else
+        \State $\mathbf{g} \gets -2 \sum_i \pvol_i^2\,(\partial\centroid_i / \partial\qq)\tr (\centroid_i - \tcentroid_i)$ \Comment{least squares}
+        \State $\qq \gets$ SLSQP step along $\mathbf{g}$, s.t. $\norm{\qq_i - \qq_j} \ge \delta$
+      \EndIf
+    \Until{SLSQP converges}
+    \State \Return generators $\qq$ and weights $\weight^\star(\qq)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Projection--dilation fitting by \citet{Bourne2026ConvexOrder}, subgradient variant.}
+  \label{alg:bourne2026-subgradient}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$ with $\sum_i \pvol_i \!=\! 1$, targets $\tcentroid$, dilation $\lambda \!>\! 1$, iterations $K$
+    \State $\mathbf{z} \gets \lambda\,\tcentroid$ \Comment{dilated targets}
+    \State $m \gets \bigl( \tfrac{1}{\domainVol} \int_\domain \norm{\xx}^2 d\xx \bigr)^{1/2}$ \Comment{ball radius}
+    \State $\qq^1 \gets$ random generators, or $\tcentroid$
+    \For{$k = 1, \ldots, K$}
+      \State $\centroid^k \gets$ Alg.~\ref{alg:bourne-volume} with generators $\qq^k$, merged if coinciding
+      \State $\mathbf{y} \gets \qq^k - \tfrac{2}{k+1} \bigl( \qq^k - \mathbf{z} + \centroid^k \bigr)$ \Comment{subgradient step}
+      \State $r \gets \bigl( \sum_i \pvol_i \norm{\mathbf{y}_i - \mathbf{z}_i}^2 \bigr)^{1/2}$
+      \State $\qq^{k+1} \gets \mathbf{z} + (\mathbf{y} - \mathbf{z}) / \max(r/m, 1)$ \Comment{ball projection}
+    \EndFor
+    \State \Return generators $\qq^{K}$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Projection--dilation fitting by \citet{Bourne2026ConvexOrder}, Frank--Wolfe variant.}
+  \label{alg:bourne2026-fw}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$, targets $\tcentroid$, dilation $\lambda \!>\! 1$, iterations $K$
+    \State $\mathbf{z} \gets \lambda\,\tcentroid$
+    \State $\centroid^1 \gets$ Alg.~\ref{alg:bourne-volume} with generators $\tcentroid$ \Comment{a point of $\achievable$}
+    \For{$k = 1, \ldots, K$}
+      \State $\centroid' \gets$ Alg.~\ref{alg:bourne-volume} with generators $\mathbf{z} - \centroid^k$ \Comment{vertex of $\achievable$}
+      \State $\gamma \gets \operatorname{clamp}_{[0,1]} \Bigl( \frac{\sum_i \pvol_i (\mathbf{z}_i - \centroid'_i)\tr (\centroid^k_i - \centroid'_i)}{\sum_i \pvol_i \norm{\centroid^k_i - \centroid'_i}^2} \Bigr)$ \Comment{exact line search}
+      \State $\centroid^{k+1} \gets \gamma\,\centroid^k + (1 - \gamma)\,\centroid'$
+    \EndFor
+    \State \Return generators $\qq = \mathbf{z} - \centroid^{K}$
+  \end{algorithmic}
+\end{algorithm}
 
 \end{document}

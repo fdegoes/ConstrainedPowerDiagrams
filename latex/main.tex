@@ -5,6 +5,7 @@
 
 \documentclass[sigconf, review, nonacm]{acmart}
 \citestyle{acmauthoryear}   % SIGGRAPH-style author--year citations, e.g. [de Goes et al. 2012]
+\setcitestyle{nosort}        % keep the source order (chronological) inside a \cite; acmart enables sorting by default
 
 %% --- Packages -------------------------------------------------------------
 \usepackage{amsmath}
@@ -16,6 +17,13 @@
 \usepackage{graphicx}
 \usepackage{xspace}    % smart trailing space for \ie / \eg
 \usepackage{subfiles}  % lets each content file also compile on its own
+\usepackage{algorithm}      % pseudocode (appendix; also bourne_algos.tex)
+\usepackage{algpseudocode}
+\usepackage{float}        % [H] placement keeps the appendix algorithms in order
+\makeatletter
+\newcommand{\LineComment}[1]{\Statex \hskip\ALG@thistlm \texttt{//} #1}  % unnumbered comment above a block of pseudocode
+\algrenewcommand{\algorithmiccomment}[1]{\hfill \texttt{//} #1}  % end-of-line comments as //
+\makeatother
 
 %% --- Theorem environments -------------------------------------------------
 \theoremstyle{definition}
@@ -27,6 +35,7 @@
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}{Lemma}[section]
 \newtheorem{proposition}{Proposition}[section]
+\newtheorem{corollary}{Corollary}[section]
 
 %% --- Custom notation ------------------------------------------------------
 \input{alias}
@@ -60,6 +69,7 @@
 % \subfile{sitemin}  % deprecated: site optimization (superseded by Lagrangian flow)
 % \subfile{entropic}
 % \subfile{applications}
+\subfile{results}
 \subfile{conclusion}
 
 %% --- Bibliography ---------------------------------------------------------
@@ -68,5 +78,7 @@
 
 %% --- Appendix -------------------------------------------------------------
 \subfile{appendix}
+% \subfile{bourne_algos}  % TEMPORARY: pseudocode of Bourne et al. 2025/2026
+% \subfile{flow_plan}     % TEMPORARY: plan for restructuring Sec. 5
 
 \end{document}

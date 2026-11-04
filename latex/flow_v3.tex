@@ -1,0 +1,261 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+% DRAFT (rewrite of Section 5 around discrete Lagrangians).
+% The previous version, with the implicit and semi-implicit steps, is kept in flow_v1.tex.
+
+\section{Power Particles Revisited}
+\label{sec:flow}
+
+In this section, we apply the constrained power diagrams of \S\ref{sec:contributions} to the discretization of incompressible flows, in which each fluid parcel is a cell of a power diagram with prescribed volume, represented by a particle $\qq_i$ at the centroid of its cell.
+In particular, our approach improves upon two prior methods, providing a variational counterpart to Power Particles \cite{deGoes2015PowerParticles}, which we show to be a simplification of our centroid constrained formulation, while also strengthening the incompressibility of the variational scheme by \citet{Gallouet2018Lagrangian}, which we recover as a special case.
+
+\subsection{Discrete Lagrangian}
+\label{sec:flow-lagrangian}
+For simplicity, we assume a uniform density of one, so the mass of each cell $\cell_i$ equals its prescribed volume $\pvol_i$.
+We denote the time increment by $\tstep$, and use a superscript to indicate a time-step, \eg $\smash{\qq^k}$ refers to the particle positions at time $\smash{t^k = k\tstep}$.
+% 
+The variants we present below share a common structure with a discrete Lagrangian that measures the particle kinetic energy over a time step minus a potential $\cpot$ measured from the particle-induced partition:
+\begin{equation}
+  \lag_d(\qq^k, \qq^{k+1})
+    = \frac{1}{2\tstep} \sum\nolimits_i \pvol_i \norm{\qq^{k+1}_i - \qq^k_i}^2 - \frac{\tstep}{2\stiff^2}\, \cpot(\qq^k) ,
+  \label{eq:flow-discrete-lagrangian}
+\end{equation}
+where $\stiff \!>\! 0$ is a stiffness, and the potential is evaluated at the start of the time step.
+More generally, the potential could blend the states $\qq^k$ and $\qq^{k+1}$, which yields other symplectic integrators, such as the Störmer--Verlet scheme or the implicit midpoint rule \cite{marsden2001discrete}.
+Instead, we focus on the evaluation at $\qq^k$, which leads to the explicit symplectic Euler integrator.
+% \cite[Example~2.3.2 with $\alpha \!=\! 0$]{marsden2001discrete}.
+% 
+Indeed, making the discrete action $\sum_k \lag_d(\qq^k, \qq^{k+1})$ stationary within each $\qq^k$ gives the discrete Euler--Lagrange equations, which reduce to
+\begin{subequations}
+  \label{eq:flow-symplectic-euler}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \vel^{k+1}_i &= \vel^k_i - \frac{\tstep}{2\stiff^2\pvol_i}\, \partial_{\qq_i} \cpot(\qq^k) , \label{eq:flow-symplectic-euler-vel} \\[2mm]
+    \qq^{k+1}_i &= \qq^k_i + \tstep\, \vel^{k+1}_i . \label{eq:flow-symplectic-euler-pos}
+  \end{empheq}
+\end{subequations}
+
+\subsection{Centroid Constrained Update}
+\label{sec:flow-centroids}
+
+We begin by considering a formulation in which the particles $\qq$ are the centroids of a power diagram with the prescribed volumes $\pvol$.
+Building upon \S\ref{sec:joint-constraints}, we set both the sites $\qq$ and the prescribed centroids $\tcentroid$ of $\jointdual$ to the particles, \ie $\tcentroid = \qq$, and define the potential
+\begin{equation}
+  \cpot_\infty(\qq) = \max_{\shift, \weight} \jointdual(\shift, \weight).
+  \label{eq:flow-centroid-potential}
+\end{equation}
+When the maximum is attained, its maximizer generates a power diagram with volumes $\pvol$ and centroids $\qq$, and $\cpot_\infty$ equals the quantization cost $\smash{\sum_i \int_{\cell_i} \norm{\xx - \qq_i}^2 d\xx}$ of this partition.
+However, as discussed in \S\ref{sec:remarks}, such a power diagram does not exist for arbitrary particles, with the maximum attained only when the particles are realizable.
+% Otherwise, $\jointdual$ either grows without bound or only approaches its supremum as the shifted sites merge.
+Therefore, the potential \eqref{eq:flow-centroid-potential} imposes a \emph{holonomic} constraint on our dynamical system \eqref{eq:flow-symplectic-euler}, \ie a constraint on the positions $\qq$ alone, independent of the velocities, which requires the particles to remain realizable at every time step.
+% Note: as alpha -> infinity, the softened dual H_alpha recovers H (sec:regularized-joint), so this
+% potential is also the alpha -> infinity limit of the relaxation in sec:flow-softened.
+
+% \paragraph{Discrete Euler--Lagrange equations.}
+To derive the velocity update in \eqref{eq:flow-symplectic-euler-vel}, we need the gradient of the potential with respect to the particles, which enter $\jointdual$ both as sites and as targets.
+At fixed multipliers, the sites contribute the residual \eqref{eq:centroid-gradient} and the targets contribute the derivative of the centroid constraint term in \eqref{eq:joint-lagrangian}, so that
+\begin{equation}
+  \partial_{\qq_i} \jointdual
+  = 2\,\cellvol_i\,(\qq_i - \centroid_i) + 2\,\cellvol_i\,\shift_i
+  = 2\,\cellvol_i\,(\dual_i - \centroid_i) ,
+  \label{eq:softened-site-gradient}
+\end{equation}
+which, by the envelope theorem, is also the gradient of $\max_{\shift,\weight}\jointdual$, and reduces to $\smash{2\,\pvol_i\,(\dual_i \!-\! \qq_i)}$ for $\centroid \!=\! \qq$.
+% With the centroids constrained at the particles, $\centroid = \qq$, this gradient simplifies to $\smash{2\,\pvol_i \shift_i}$.
+The discrete Lagrangian \eqref{eq:flow-discrete-lagrangian} with the potential \eqref{eq:flow-centroid-potential} and its holonomic constraint then leads to a constrained variational integrator \cite{marsden2001discrete}:
+% , analogous to the SHAKE algorithm \cite{Ryckaert1977Shake}, : 
+% which is known to be variational \cite{marsden2001discrete}:
+\begin{subequations}
+  \label{eq:flow-shake}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \vel^{k+1}_i &= \vel^k_i + \frac{\tstep}{\stiff^2} \bigl( \qq^k_i - \dual^k_i \bigr) , \label{eq:flow-shake-vel} \\[2mm]
+    \qq^{k+1}_i &= \qq^k_i + \tstep\, \vel^{k+1}_i , \label{eq:flow-shake-pos}
+  \end{empheq}
+\end{subequations}
+where $\dual^k$ are the generators of the power diagram that maximizes $\jointdual$ with sites and target centroids at the current particles $\qq^k$, and the new particles $\qq^{k+1}$ must again be an exposed point of $\achievable$ to form a realizable power diagram.
+% 
+The offsets $\smash{\qq_i - \dual_i}$ between each particle and the generator of its own cell thus play the role of the constraint force, and \eqref{eq:flow-shake} tends to $\smash{\ddot\qq_i = (\qq_i - \dual_i)/\stiff^2}$ as $\tstep \!\to\! 0$.
+% 
+The generators $\dual^k$ are, however, only defined up to the homotheties in \eqref{eq:lifted-homothety}, \ie up to a translation and a dilation.
+The translation is fixed since the new particles $\qq^{k+1}$ must satisfy the identity \eqref{eq:partition-feasibility-centroid}, while the dilation is precisely the free magnitude of the constraint force, which must be solved for so that $\qq^{k+1}$ is realizable.
+% 
+Unlike classical applications of constrained variational integrators where the constraint is an explicit function whose root yields this magnitude (see \eg \cite{Ryckaert1977Shake}), realizable centroids are only described implicitly as the exposed points of $\achievable$.
+Solving for the dilation thus requires a line search for the magnitude of the generators $\smash{\dual^k}$ until the new particles are realizable (\ie $\smash{\qq^{k+1} \!\in\! \achievable}$), each trial of which maximizes $\jointdual$ with no guarantee that a solution exists.
+The update \eqref{eq:flow-shake} is thus variational but impractical.
+As we show next, the softened formulation of \S\ref{sec:regularized-joint} offers a relaxation suitable to this problem.
+
+\subsection{Relaxation by projection}
+\label{sec:flow-projection}
+
+We first separate the update \eqref{eq:flow-shake} into a prediction that ignores the constraint and a correction along the generators.
+Substituting \eqref{eq:flow-shake-vel} in \eqref{eq:flow-shake-pos}, with the magnitude of the generators left free, gives
+\begin{subequations}
+  \label{eq:flow-projection-pred}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \pred^{k+1} &= \Bigl( 1 + \frac{\tstep^2}{\stiff^2} \Bigr) \qq^k + \tstep\, \vel^k , \label{eq:flow-projection-pred-c} \\[2mm]
+    \qq^{k+1} &= \pred^{k+1} - s\,\dual^k , \quad s \ge 0 , \label{eq:flow-projection-pred-q}
+  \end{empheq}
+\end{subequations}
+where $\smash{\pred^{k+1}}$ is the prediction, and the line search towards $\achievable$ from \S\ref{sec:flow-centroids} solves for $s$.
+The correction in \eqref{eq:flow-projection-pred-q} thus follows the generators $\smash{\dual^k}$ of the current power diagram, which are normal to $\achievable$ at the current particles $\smash{\qq^k}$ but generally not at the new ones $\smash{\qq^{k+1}}$, which is why a solution may not exist.
+
+Without loss of generality, we place the origin at the centroid of the domain, $\smash{\domainCentroid = 0}$, so that the factor $\smash{1 + \tstep^2/\stiff^2}$ in \eqref{eq:flow-projection-pred-c} dilates the particles about $\domainCentroid$.
+The velocities $\smash{\vel^k = (\qq^k - \qq^{k-1})/\tstep}$ have zero total momentum, since both configurations verify the identity \eqref{eq:partition-feasibility-centroid}, and we assume the same of the initial velocities, so that the prediction $\smash{\pred^{k+1}}$ verifies \eqref{eq:partition-feasibility-centroid} as well.
+% 
+Moreover, the prediction is always unachievable.
+Indeed, since the previous particles $\qq^{k-1}$ are achievable, the velocities have a non-negative component along the generators $\dual^k$ of the current power diagram, \ie $\smash{\sum_i \pvol_i\,(\dual^k_i)\tr \vel^k_i \ge 0}$ (Lemma~\ref{lem:normal-velocity}), so the previous step leaves no inward normal velocity.
+Under this condition, a prediction $\smash{(1 + \predcoef)\,\qq^k + \tstep\,\vel^k}$ with any coefficient $\predcoef \!\ge\! 0$ is unachievable, unless $\predcoef \!=\! 0$ and $\vel^k \!=\! 0$ (Corollary~\ref{cor:unachievable-prediction}).
+For $\predcoef \!>\! 0$, the dilation pushes the prediction strictly beyond the supporting hyperplane of $\achievable$ at $\qq^k$ with normal $\dual^k$, by an amount proportional to $\predcoef$ and independent of the velocities, while for $\predcoef \!=\! 0$, the prediction is unachievable only because $\qq^k$ is an exposed point of $\achievable$, and it is realizable for particles at rest.
+No upper bound on $\predcoef$ is needed, since a larger dilation only pushes the prediction further outward, and our prediction \eqref{eq:flow-projection-pred-c} corresponds to $\smash{\predcoef = \tstep^2/\stiff^2 > 0}$, so it is unachievable for any $\tstep \!>\! 0$ and $\stiff \!>\! 0$, including particles at rest.
+% 
+These results hold at every step $k \!\ge\! 1$ as long as the particles remain realizable, so that only the initial velocities require attention.
+More precisely, Lemma~\ref{lem:unachievable-prediction} only requires the increment \eqref{eq:appendix-prediction-condition} to be non-negative, which allows a small inward initial velocity, bounded by the dilation term.
+In the common case where the simulation starts from a centroidal power diagram, \ie $\smash{\dual^0 = \qq^0}$, this condition reads
+\begin{equation}
+  \tstep \sum\nolimits_i \pvol_i\,(\qq^0_i)\tr \vel^0_i + \predcoef \sum\nolimits_i \pvol_i \norm{\qq^0_i}^2 \ge 0 ,
+  \label{eq:flow-initial-velocity}
+\end{equation}
+which can be checked directly from the initial data, and whose first term is the rate of change of the spread $\smash{\tfrac12 \sum_i \pvol_i \norm{\qq_i}^2}$ of the particles about $\domainCentroid$.
+For initial velocities given by the cell averages of a divergence-free field tangent to $\partial\domain$, this first term vanishes, since the flow keeps the cells in $\achievable$ for small times of either sign and $\qq^0$ maximizes the linear function there, so that \eqref{eq:flow-initial-velocity} holds.
+For other initial velocities, \eg point samples of such a field, the first term only vanishes up to the quadrature error, and \eqref{eq:flow-initial-velocity} typically holds for $\predcoef \!>\! 0$.
+Otherwise, the inward normal component can be removed by subtracting a uniform dilation velocity, \ie by replacing $\vel^0$ with $\smash{\vel^0 - \min(0, \gamma)\,\qq^0}$, where $\smash{\gamma = \sum_i \pvol_i\,(\qq^0_i)\tr \vel^0_i / \sum_i \pvol_i \norm{\qq^0_i}^2}$, which preserves the zero total momentum.
+
+To address this, we propose to take the correction along the generators at the end of the time step instead, \ie replacing $\smash{\dual^k}$ with the (unknown) generators $\smash{\dual^{k+1}}$ of the new power diagram, so that $\smash{\qq^{k+1} \!=\! \pred^{k+1} \!-\! s\,\dual^{k+1}}$ while the prediction $\smash{\pred^{k+1}}$ remains unchanged.
+% 
+% Since the generators vary continuously with the particles, both choices agree as $\tstep \!\to\! 0$, but only the latter turns the update into a projection.
+Since the generators $\smash{\dual^{k+1}}$ are an outward normal of $\achievable$ at the centroids $\smash{\qq^{k+1}}$ of their (unknown) power diagram (\S\ref{sec:background}), the correction $\smash{\pred^{k+1} \!-\! \qq^{k+1} \!=\! s\,\dual^{k+1}}$ with $s \!>\! 0$ lies in the normal cone of $\achievable$ at $\smash{\qq^{k+1}}$.
+% 
+By the classical characterization of projections onto convex sets (see \eg \cite[Thm.~3.16]{Bauschke2017Convex}), this is exactly the condition for $\smash{\qq^{k+1} \!\in\! \achievable}$ to be the closest point of $\achievable$ to $\smash{\pred^{k+1}}$.
+% , \ie the relaxed update returns the projection of the prediction $\smash{\pred^{k+1}}$ onto $\achievable$, in the volume-weighted $\smash{L^2}$ sense.
+% Equivalently, $\smash{\qq^{k+1}}$ minimizes $\smash{\tfrac12\norm{\qq - \qq^k - \tstep\,\vel^k}^2_{\pvol} - \tfrac{\tstep^2}{\stiff^2}\langle\qq^k, \qq\rangle_{\pvol}}$ over $\achievable$, with the volume-weighted inner product $\smash{\langle \mathbf{a}, \mathbf{b} \rangle_{\pvol} = \sum_i \pvol_i\,\mathbf{a}_i\tr \mathbf{b}_i}$, where the linear term is the potential $\cpot_\infty$ linearized at $\qq^k$, so the relaxed update is a forward--backward step, explicit in the potential and implicit in the constraint.
+
+Note that this modified update amounts to a direct maximization of $\jointdual_\alpha$, whose maximizer returns the power diagram with centroids closest to the pushed targets $\smash{\tcentroid + \qq/\alpha}$ as in \eqref{eq:regularized-projection}.
+In other words, the constraint force in \eqref{eq:flow-shake} is now computed by maximizing $\jointdual_\alpha$ instead of a line search.
+To solve $\jointdual_\alpha$, we set the sites to the current particles $\smash{\qq^k}$ and the target centroids to $\smash{\tcentroid^{k+1} = \pred^{k+1} - \qq^k/\alpha}$, so that the pushed targets coincide with the prediction $\smash{\pred^{k+1}}$.
+Since the pushed targets coincide with $\smash{\pred^{k+1}}$ for any $\alpha$, the new particles do not depend on $\alpha$, which only scales the generators $\smash{\dual^{k+1} \!=\! \alpha\,(\pred^{k+1} \!-\! \qq^{k+1})}$ given by \eqref{eq:regularized-gradient-shift}.
+In fact, this scaling is the only effect of the stiffness: in terms of the generators, the softened problems with stiffness $\alpha$ and $\lambda\alpha$ coincide up to the scaling $\dual \mapsto \lambda\,\dual$ and a factor $\lambda$ on the objective (Lemma~\ref{lem:stiffness-scaling}), so they share the same conditioning, and $\alpha$ only sets the scale of the optimal generators relative to the initial guess $\dual = \qq^k$ at $\shift = 0$.
+% 
+We thus fix $\smash{\alpha = 1/\predcoef}$ with $\smash{\predcoef = \tstep^2/\stiff^2}$, for which the target centroids reduce to the free drift $\smash{\tcentroid^{k+1} = \qq^k + \tstep\,\vel^k}$, the correction has magnitude $\smash{s = \predcoef}$, and the generators are directly the constraint force of \eqref{eq:flow-shake}.
+We emphasize the distinction between the two configurations: the prediction $\smash{\pred^{k+1}}$ is the point being projected, which is unachievable by Corollary~\ref{cor:unachievable-prediction}, while the target centroids $\smash{\tcentroid^{k+1}}$ are the traditional prediction without dilation, which is the input passed to $\jointdual_\alpha$, and the two differ by the dilation $\smash{\predcoef\,\qq^k}$.
+The relaxed update then takes the form:
+\begin{subequations}
+  \label{eq:flow-projection-step}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \vel^{k+1}_i &= \vel^k_i + \frac{\tstep}{\stiff^2} \bigl( \qq^k_i - \dual^{k+1}_i \bigr) , \label{eq:flow-projection-step-vel} \\[2mm]
+    \qq^{k+1}_i &= \qq^k_i + \tstep\, \vel^{k+1}_i , \label{eq:flow-projection-step-pos}
+  \end{empheq}
+\end{subequations}
+where $\smash{\dual^{k+1}}$ are now the generators of the power diagram that maximizes $\jointdual_\alpha$ with sites $\smash{\qq^k}$ and target centroids $\smash{\tcentroid^{k+1}}$, and whose centroids are the new particles $\smash{\qq^{k+1}}$.
+% 
+Since the sites do not affect the result, they may also be chosen to improve the initial guess of the maximization.
+For instance, setting the sites to the previous generators $\dual^k$ instead yields the target centroids $\smash{\tcentroid^{k+1} = \qq^k + \tstep\,\vel^k + \predcoef\,(\qq^k - \dual^k)}$, which are the particles predicted by the constrained update \eqref{eq:flow-shake} with the constraint force of the previous step, and the initial generators $\smash{\dual = \dual^k}$, which are close to $\smash{\dual^{k+1}}$ for smooth motions.
+
+\paragraph{Properties.}
+Eliminating the velocities, the relaxed update reads $\smash{\qq^{k+1} = P_{\achievable}\bigl( 2\,\qq^k - \qq^{k-1} + \tfrac{\tstep^2}{\stiff^2}\,\qq^k \bigr)}$, \ie a Verlet prediction followed by the projection $P_{\achievable}$ onto $\achievable$ in the volume-weighted norm $\smash{\norm{\qq}_{\pvol}^2 = \sum_i \pvol_i \norm{\qq_i}^2}$, in the spirit of position-based and projection methods for constrained dynamics.
+Since $\achievable$ is closed and convex, this projection always exists and is unique for any prediction and any time step, and it is computed by a single concave maximization rather than a line search.
+Moreover, all particles remain in $\achievable$ and thus satisfy the conservation identity \eqref{eq:partition-feasibility-centroid} at every step, so the total momentum $\smash{\sum_i \pvol_i\,\vel^{k+1}_i = \sum_i \pvol_i\,(\qq^{k+1}_i - \qq^k_i)/\tstep}$ vanishes exactly.
+Without potential ($\stiff \!\to\! \infty$), the nonexpansiveness of projections onto convex sets, together with $\smash{\qq^k = P_{\achievable}(\qq^k)}$, gives $\smash{\norm{\vel^{k+1}}_{\pvol} \le \norm{\vel^k}_{\pvol}}$, so the kinetic energy never increases, and the energy lost is the normal velocity removed by the projection, as in an inelastic impact.
+These properties come at the price of the variational structure of \eqref{eq:flow-shake}: since the projection is not invertible, the relaxed update is neither symplectic nor time-reversible.
+
+\paragraph{Remark on admissible predictions.}
+By Corollary~\ref{cor:unachievable-prediction}, the prediction $\smash{\pred^{k+1}}$ is unachievable at every step, so it is never its own projection and the generators $\smash{\dual^{k+1} = \alpha\,(\pred^{k+1} - \qq^{k+1})}$ never vanish.
+Unachievable predictions are thus projected onto the relative boundary of $\achievable$, but this boundary is not entirely realizable: besides the exposed points, which are the centroids of power diagrams, it contains flat faces exposed by normals with coinciding generators (\S\ref{sec:background}), on which the new particles are the centroids of a fractional partition rather than of a power diagram.
+These faces are not exceptional, since predictions projecting onto them form open sets, so the projection is realizable only if the normal $\smash{\pred^{k+1} - \qq^{k+1}}$ has pairwise distinct entries.
+This is the case for small enough time steps.
+Indeed, since the normal cone of $\achievable$ at the realizable particles $\qq^k$ is the single ray of the generators $\dual^k$ relative to \eqref{eq:partition-feasibility-centroid}, the normals at nearby boundary points remain close to this ray and their generators remain distinct, while the nonexpansiveness of the projection, which fixes $\qq^k$, gives $\smash{\norm{\qq^{k+1} - \qq^k} \le \norm{\pred^{k+1} - \qq^k}}$ in the volume-weighted norm, which is of order $\tstep$.
+The new particles are therefore realizable whenever the time step is small compared to the distance of the current configuration to a degenerate one, in which two generators coincide.
+This distance is not bounded uniformly, so realizability is a condition on the time step rather than a property of the scheme, but when it fails, the projection still returns achievable centroids instead of having no solution.
+% TODO: check the order of accuracy; a RATTLE variant would also
+% project the velocity onto the tangent space at q^{k+1} \cite{Andersen1983Rattle}.
+
+\subsection{Relaxation by penalty}
+\label{sec:flow-softened}
+
+A second relaxation replaces the holonomic constraint by a penalty.
+Recall from \S\ref{sec:regularized-joint} that the softened dual $\jointdual_\alpha$ recovers $\jointdual$ in the limit $\alpha \!\to\! \infty$.
+Using $\jointdual_\alpha$ in place of $\jointdual$ in \eqref{eq:flow-centroid-potential}, the particles no longer need to be the centroids of their cells: they act as the sites $\qq$ of a power diagram with exact volumes, whose centroids are only pulled toward the sites with stiffness $\alpha \!>\! 0$,
+\begin{equation}
+  \cpot_\alpha(\qq) = \max_{\shift, \weight} \jointdual_\alpha(\shift, \weight) .
+  \label{eq:flow-softened-potential}
+\end{equation}
+where the particles $\qq$ now act as both the sites and the targets of $\jointdual_\alpha$.
+This potential is finite for any distinct sites, so the Lagrangian is unconstrained, and its discrete Euler--Lagrange equations are explicit.
+Since the penalty of $\jointdual_\alpha$ does not depend on the particles, its site gradient is again \eqref{eq:softened-site-gradient}, and the update \eqref{eq:flow-symplectic-euler} becomes
+\begin{subequations}
+  \label{eq:flow-softened-step}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \vel^{k+1}_i &= \vel^k_i + (1 + \alpha)\, \frac{\tstep}{\stiff^2} \bigl( \centroid^k_i - \qq^k_i \bigr) , \label{eq:flow-softened-step-vel} \\[2mm]
+    \qq^{k+1}_i &= \qq^k_i + \tstep\, \vel^{k+1}_i , \label{eq:flow-softened-step-pos}
+  \end{empheq}
+\end{subequations}
+where $\centroid^k$ are the centroids of the power diagram computed by maximizing $\jointdual_\alpha$ with sites and targets at $\qq^k$, which by \eqref{eq:regularized-gradient-shift} lie at $\smash{\qq_i \!-\! \centroid_i = \shift_i / \alpha}$ from the sites.
+This correction is the dilate-and-project construction of \citet{Bourne2026ConvexOrder}, now applied to fluids: as discussed in the link to \citet{Bourne2026ConvexOrder} of \S\ref{sec:remarks}, maximizing $\jointdual_\alpha$ with the targets at the sites returns the projection onto $\achievable$ of the sites dilated by the factor $1 + 1/\alpha$.
+Contrary to the projection of \S\ref{sec:flow-projection}, this relaxation keeps the integrator exactly variational, and approximates the constraint instead.
+
+\paragraph{Remark on \citet{Gallouet2018Lagrangian}.}
+For $\alpha \!=\! 0$, the shifts vanish and \eqref{eq:flow-softened-potential} reduces to the cost of a volume-constrained power diagram (\S\ref{sec:background}),
+\begin{equation}
+  \cpot_0(\qq) = \max_\weight \dualenergy(\weight) ,
+  \label{eq:flow-gm-potential}
+\end{equation}
+which, with the factor $1/(2\stiff^2)$ of \eqref{eq:flow-discrete-lagrangian}, is the potential of \citet{Gallouet2018Lagrangian}.
+The update \eqref{eq:flow-softened-step} then pulls each site toward the centroid of its own volume-constrained cell, $\smash{\vel^{k+1}_i = \vel^k_i + \tfrac{\tstep}{\stiff^2} (\centroid^k_i - \qq^k_i)}$, which is exactly their scheme \cite[Eq.~(1.11)]{Gallouet2018Lagrangian}, shown to converge towards smooth solutions of the Euler equations for $\tstep \!\le\! \stiff$, with an error bound that vanishes only for $\tstep \!=\! o(\stiff^2)$ \cite[Theorem~1.4]{Gallouet2018Lagrangian}.
+The scheme of \citet{Gallouet2018Lagrangian} is thus the weakest relaxation of the constrained Lagrangian of \S\ref{sec:flow-centroids}: the cells always match their prescribed volumes, but the particles are tied to their centroids only through the stiffness $\stiff$, so the velocities are divergence-free only in the stiff limit $\stiff \!\to\! 0$.
+
+\subsection{Power Particles as a splitting of the constrained formulation}
+\label{sec:flow-pp}
+
+Power Particles \cite{deGoes2015PowerParticles} store, for each particle, a site $\qq_i$ and a velocity $\vel_i$, and advance them by an operator splitting.
+Given sites $\qq^k$ and velocities $\vel^k$, and up to a cyclic rotation of \cite[Alg.~1]{deGoes2015PowerParticles}, each time step performs:
+\begin{enumerate}
+  \item \emph{Volume enforcement:} compute the weights that maximize $\dualenergy(\weight)$ for the sites $\qq^k$, and the centroids $\centroid^k$ of the resulting cells.
+  \item \emph{Pressure projection:} solve $\smash{\tstep\,\Lmat\,\press = \Dmat\,\vel^k}$ and set $\smash{\vel^{k+1} = \vel^k - \tstep\,\Mmat^{-1} \Gmat\,\press}$, where $\smash{\Mmat = \mathrm{diag}(\pvol_i \Id_d)}$ is the diagonal mass matrix, $\Dmat$ is the discrete divergence of the volumes with respect to the sites at fixed weights, $\smash{\Gmat = -\Dmat\tr}$, and $\smash{\Lmat = \Dmat\,\Mmat^{-1} \Gmat}$ \cite[Eqs.~(4) and~(7)]{deGoes2015PowerParticles}.
+  \item \emph{Advection:} $\smash{\qq^{k+1} = \centroid^k + \tstep\,\vel^{k+1}}$.
+\end{enumerate}
+This splitting is not derived from a variational principle, and \citet[Remark~1.5]{Gallouet2018Lagrangian} note that it lacks a Hamiltonian structure, although it behaves better than their penalty scheme in practice and does not depend on a stiffness.
+We now interpret its three steps against the constrained formulation of \S\ref{sec:flow-centroids} without potential ($\stiff \!\to\! \infty$), whose projection scheme of \S\ref{sec:flow-projection} moves the centroids by $\smash{\pred^{k+1} = \qq^k + \tstep\,\vel^k}$ and then returns them to the closest centroids of a power diagram by a softened solve.
+
+\paragraph{Advection is the drift.}
+The advected sites $\smash{\centroid^k + \tstep\,\vel^{k+1}}$ are the free drift of the centroids, \ie the prediction \eqref{eq:flow-projection-pred} without potential.
+The sites of Power Particles are thus predicted centroids rather than independent particles.
+
+\paragraph{Volume enforcement is a position constraint.}
+The weight solve returns the drifted points to the centroids of a power diagram with volumes $\pvol$, but not to the closest ones: it uses the drifted points as the \emph{sites} of the new power diagram, whereas the projection scheme uses them as \emph{targets} and solves for the sites $\dual$ as well.
+The two coincide when the drifted points are already the sites of a centroidal power diagram, and differ otherwise by one Lloyd step, which moves each cell toward a centroidal configuration while preserving the volumes.
+% Linearization: the centroids of the power diagram of sites y vary with y through Jmat (centroid Jacobian),
+% while the closest-point map at a boundary point is the tangential projector (up to curvature).
+% They agree to first order when Jmat ~ tangential projector.
+This explains why Power Particles drift toward centroidal power diagrams without any potential: the weight solve applies the regularization of \S\ref{sec:flow-centroids} to the positions only, and never to the momenta.
+
+\paragraph{Pressure projection is a velocity constraint.}
+The pressure projection removes the component of the velocity that changes the volumes to first order, \ie it projects the velocity onto the tangent space of the volume constraints, as in the second stage of the RATTLE integrator \cite{Andersen1983Rattle}.
+Unlike the projection scheme, which turns the position correction $\smash{\qq^{k+1} - \pred^{k+1}}$ into an impulse through the velocity update, Power Particles discard this correction from the velocity and replace it by the tangential projection of step~2.
+
+\paragraph{Summary.}
+Power Particles can thus be read as a position-and-velocity projection integrator for the geodesic flow of the centroids of \S\ref{sec:flow-centroids}, in which the closest-point projection is replaced by a weight solve with the drifted points as sites, which adds a Lloyd regularization of the positions.
+Two approximations separate it from the projection scheme: the discrete divergence $\Dmat$ is taken with respect to the sites at fixed weights, which matches the tangent space of the constraint only when the centroid Jacobian $\smash{\Jmat = \partial\centroid/\partial\dual}$ is close to the identity, and the velocities are site velocities rather than centroid velocities.
+% TODO: quantify both approximations (error estimate or numerical check of Jmat ~ Id).
+
+\subsection{Discussion}
+\label{sec:flow-discussion}
+
+\paragraph{Choice of quadrature.}
+The discrete Lagrangian \eqref{eq:flow-discrete-lagrangian} evaluates the potential at the start of the step.
+Blending the potential values instead, $\smash{(1 - \theta)\, \cpot(\qq^k) + \theta\, \cpot(\qq^{k+1})}$, yields for any $\theta$ the same positions, $\smash{\pvol_i (\qq^{k+1}_i - 2\qq^k_i + \qq^{k-1}_i) / \tstep^2 = -\nabla_{\qq_i} \cpot(\qq^k)}$, and only changes how the velocities are staggered: $\theta \!=\! 1$ gives the adjoint symplectic Euler scheme, and $\theta \!=\! 1/2$ the Störmer--Verlet scheme.
+Evaluating the potential at a blended position $\smash{(1 - \theta)\,\qq^k + \theta\,\qq^{k+1}}$ gives other symplectic schemes, such as the implicit midpoint rule for $\theta \!=\! 1/2$.
+None of these choices recovers the implicit Euler step $\smash{\pvol_i (\qq^{k+1}_i - 2\qq^k_i + \qq^{k-1}_i) / \tstep^2 = -\nabla_{\qq_i} \cpot(\qq^{k+1})}$, \ie the minimization of the incremental potential, since the derivative of a discrete action with respect to $\qq^k$ cannot involve the force at $\qq^{k+1}$ alone: the implicit Euler step is not variational, and it dissipates energy.
+
+\paragraph{Relation to Arnold's geodesics.}
+Incompressible Euler flows are geodesics on the group of measure-preserving maps \cite{Gallouet2018Lagrangian}.
+\citet{Gallouet2018Lagrangian} discretize such maps by their values on a fixed partition of the domain into cells of volumes $\pvol$, and penalize the distance of these values to the measure-preserving maps.
+The values attained by measure-preserving maps are exactly the achievable centroids $\achievable$ of \S\ref{sec:background} \cite{Bourne2026ConvexOrder}, so the formulation of \S\ref{sec:flow-centroids}, whose potential is finite only on such centroids, replaces this penalty by an exact constraint and is thus a direct discrete counterpart of Arnold's geodesics.
+
+\paragraph{Projection versus penalty.}
+The two relaxations of the constrained Lagrangian trade different properties.
+The projection of \S\ref{sec:flow-projection} keeps the particles at the centroids of power diagrams, but replaces the variational SHAKE step by a single solve that uses the constraint force of the new diagram.
+The penalty of \S\ref{sec:flow-softened} keeps an exactly variational, explicit integrator, but only ties the particles to the centroids through the stiffness $\alpha$; it recovers the scheme of \citet{Gallouet2018Lagrangian} for $\alpha \!=\! 0$ and the constrained formulation as $\alpha \!\to\! \infty$.
+% TODO: does the step restriction of the softened scheme tighten with alpha? The force is scaled by
+% (1 + alpha), but acts on a smaller gap; it depends on the derivative of the softened centroids w.r.t. q.
+
+\end{document}

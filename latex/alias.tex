@@ -25,6 +25,7 @@
 \newcommand{\tcentroid}{\overline{\centroid}} % prescribed / target centroid, \tcentroid_i
 \newcommand{\lift}{\boldsymbol{\ell}}        % homogeneous lift (\tcentroid_i, 1), max-entropy feasibility
 \newcommand{\shift}{\mathbf{u}}              % centroid multiplier ("shift"), \shift_i
+\newcommand{\bweight}{\overline{\weight}}  % reference weights of the softened volume constraints (sec 4.4), \bweight_i
 \newcommand{\vmult}{\weight}                 % volume multiplier == weight w, \vmult_i
 \newcommand{\combweight}{\lambda}            % combined dual weight of a shifted site, \combweight_i
 \newcommand{\mult}{\mathbf{z}}               % stacked per-site multiplier, \mult_i = (\shift_i, \weight_i)
@@ -47,7 +48,7 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 
 % Power distance from x to weighted site i:  \pdist{\xx}{i}
-\newcommand{\pdist}[2]{\norm{#1 - \qq_{#2}}^2 - \weight_{#2}}
+\newcommand{\pdist}[2]{\norm{#1 \!-\! \qq_{#2}}^2 \!-\! \weight_{#2}}
 
 % Volume constraints
 \newcommand{\pvol}{\overline{V}}  % prescribed / target volume, \overline V (index added in text)
@@ -73,7 +74,7 @@
 \newcommand{\vel}{\mathbf{v}}                % particle velocity, \vel_i
 \newcommand{\tstep}{\Delta t}                % time step
 \newcommand{\mass}{m}                        % particle mass, \mass_i
-\newcommand{\Mmat}{\mathrm{M}}               % diagonal mass matrix, \Mmat = \mathrm{diag}(\mass_i \Id_d)
+\newcommand{\Mmat}{\mathrm{M}}               % diagonal mass matrix, \Mmat = \mathrm{diag}(\pvol_i \Id_d) (unit density)
 \newcommand{\stiff}{\epsilon}                % stiffness parameter of the Gallouet--Merigot penalty
 \newcommand{\kinetic}{\mathcal{K}}           % kinetic energy
 \newcommand{\Dmat}{\mathrm{D}}               % discrete divergence, \Dmat = \partial \cellvol / \partial(\text{positions})
@@ -83,13 +84,28 @@
 \newcommand{\Bmat}{\mathrm{B}}               % centroid-residual derivative w.r.t. particle positions at fixed shifts
 \newcommand{\Jmat}{\mathrm{J}}               % Jacobian of the cell centroids w.r.t. the sites, \Jmat = \partial \centroid / \partial \dual
 \newcommand{\residual}{\mathbf{g}}           % centroid residual, \residual_i = \int_{\cell_i} (\xx - \centroid_i) d\xx
-\newcommand{\softpot}{\Phi}                  % softened potential of the particles, \softpot_\alpha(\qq) = \max \jointdual_{\alpha 0}
+\newcommand{\softpot}{\Phi}                  % softened potential of the particles, \softpot_\alpha(\qq) = \max \jointdual_{\alpha}(\cdot, \cdot; \qq, \qq)
 \newcommand{\achievable}{\mathcal{C}}        % convex set of centroids achievable with volumes \pvol (fractional partitions)
+\newcommand{\proj}{\mathcal{P}_{\achievable}}  % projection onto \achievable, \proj(\ucentroid), computed by \jointdual_\alpha
+\newcommand{\ucentroid}{\tilde{\centroid}}  % centroids to be projected onto \achievable, \proj(\ucentroid)
+\newcommand{\opt}[1]{\hat{#1}}             % optimal value of a variable, \eg \opt{\shift}, \opt{\centroid}
+\newcommand{\homotheties}{\mathcal{N}}     % homothetic lifted weighted sites generating the same power diagram, \homotheties(\qq,\weight)
+\newcommand{\helper}{\mathcal{B}}            % helper function of Bourne et al. 2025, \helper(\dual) = <\dual, \tcentroid> - \sigma(\dual)
 \newcommand{\wlap}{\Delta}                  % negated volume Hessian (weight Laplacian), \wlap = -\nabla^2_{\weight\weight} \jointdual
 \newcommand{\pvolmat}{\overline{\mathrm{V}}}  % diagonal matrix of prescribed volumes, \mathrm{diag}(\pvol_i \Id_d)
-\newcommand{\dilation}{\theta}               % dilation factor 1 + \alpha/2 of the softened potential
+\newcommand{\predcoef}{\eta}               % dilation coefficient of the prediction, \pred = (1 + \predcoef)\,\qq^k + \tstep\,\vel^k
+\newcommand{\dilation}{\theta}               % dilation factor 1 + 1/\alpha of the softened potential
 
 % Lifting of a power diagram (Background, shifted power diagrams)
-\newcommand{\liftedtarget}{\boldsymbol{\Gamma}} % pivot (\tcentroid_i, \gamma_i) in R^{d+1} of the lifted hyperplane of site i, \liftedtarget_i
 \newcommand{\height}{h}                      % lifted height of a weighted site, \height_i = \norm{\qq_i}^2 - \weight_i
 \newcommand{\sheight}{\tilde{\height}}       % lifted height of a shifted weighted site, \sheight_i = \norm{\dual_i}^2 - \combweight_i
+
+% Softened centroid constraints and variational time stepping
+\newcommand{\slack}{\mathbf{r}}              % centroid slack of the softened primal, \slack_i
+\newcommand{\vslack}{s}                % volume slack of the softened volumes, \vslack_i
+\newcommand{\cpot}{\mathcal{U}}               % potential of the Lagrangian flows (sec:flow), \cpot_0, \cpot_\alpha, \cpot_\infty
+\newcommand{\pred}{\tilde{\qq}}             % predicted particle positions of a time step, used as \pred^{k+1}
+% Hand-drawn brace spanning the constraint rows of an alignat: \constraintbrace{half-height}{lowering}
+\newcommand{\constraintbrace}[2]{\smash{\raisebox{-#2}{$\left\{\vrule height #1 depth #1 width 0pt\right.$}}\,}
+\newcommand{\Cmat}{\mathrm{C}}               % constraint rows of the constrained integrator, \Cmat\,\shift = (\sum_i \pvol_i \shift_i\tr \dual^k_i, \sum_i \pvol_i \shift_i)
+\newcommand{\Nmat}{\mathrm{N}}               % negated Hessian of \jointdual augmented by the constraint rows, used in the block elimination of the constrained Newton step

@@ -1,0 +1,114 @@
+% !TEX root = main.tex
+% TEMPORARY: pseudocode summaries of Bourne et al. 2025 and 2026, for internal reference only.
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\renewcommand{\thesection}{\Alph{section}}  % the appendix numbering set in appendix.tex does not survive the subfile group
+\section{[Temporary] Algorithms of \citeauthor{Bourne2025Inverting} and \citeauthor{Bourne2026ConvexOrder}}
+\label{sec:appendix-bourne-algos}
+
+We summarize the numerical methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} in our notation.
+Both papers take as input the target volumes $\pvol$ and target centroids $\tcentroid$, with $\smash{\sum_i \pvol_i = \domainVol}$ and $\smash{\sum_i \pvol_i \tcentroid_i = \domainVol\,\domainCentroid}$, and seek generators $\qq$ whose volume-constrained power diagram has centroids equal to, or close to, the targets.
+In both papers, the generators are the unknowns, and the weights are always eliminated by a semi-discrete optimal transport solve; there are no separate sites.
+We write $\smash{\weight^\star(\qq)}$ for the weights that maximize $\dualenergy$ in \eqref{eq:volume-dual} for the generators $\qq$, and $\smash{\cellvol_i(\qq)}$ and $\smash{\centroid_i(\qq)}$ for the volumes and centroids of the resulting cells.
+For brevity, we also write $\smash{\transport(\qq) = \dualenergy(\weight^\star(\qq))}$ for the transport cost, and $\smash{\langle \mathbf{a}, \mathbf{b} \rangle_{\pvol} = \sum_i \pvol_i\,\mathbf{a}_i\tr \mathbf{b}_i}$.
+
+\begin{algorithm}[h]
+  \caption{Volume solve, used as a subroutine by all algorithms below \cite{Bourne2025Inverting}.}
+  \label{alg:bourne-volume}
+  \begin{algorithmic}[1]
+    \Require generators $\qq$, volumes $\pvol$, tolerance $\tau$ (they use $\tau \!=\! 10^{-3}$)
+    \State $\weight \gets$ weights that rescale the generators toward $\domainCentroid$ until no cell is empty
+    \Repeat \Comment{damped Newton of Kitagawa, M\'erigot, and Thibert}
+      \State build the power diagram of $(\qq, \weight)$ \Comment{\eqref{eq:power-cell}}
+      \State $\mathbf{g} \gets \pvol - \cellvol$; \ $\wlap \gets -\nabla^2\dualenergy(\weight)$, one weight pinned \Comment{\eqref{eq:volume-dual-gradient}, \eqref{eq:newton-step}}
+      \State solve $\wlap\,\delta\weight = \mathbf{g}$
+      \State $\weight \gets \weight + \omega\,\delta\weight$, halving $\omega$ from $1$ until no cell is too small
+    \Until{$\lvert \cellvol_i - \pvol_i \rvert < \tau\,\pvol_i$ for all $i$}
+    \State \Return weights $\weight^\star(\qq) = \weight$ and centroids $\centroid(\qq)$
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{\citet{Bourne2025Inverting}.}
+Their helper function, in our notation and up to a factor of two, is
+\begin{equation*}
+  \mathcal{B}(\qq) = \tfrac12\,\transport(\qq) - \tfrac12 \norm{\qq}^2_{\pvol} + \langle \qq, \tcentroid \rangle_{\pvol} - \tfrac12 \int_\domain \norm{\xx}^2 d\xx = \langle \qq, \tcentroid - \centroid(\qq) \rangle_{\pvol} ,
+\end{equation*}
+which is concave, positively $1$-homogeneous, invariant under translations of the generators, and has gradient $\smash{\partial_{\qq_i} \mathcal{B} = \pvol_i (\tcentroid_i - \centroid_i(\qq))}$ \cite[Theorem~4.2]{Bourne2025Inverting}.
+Its maximum is $0$, attained at the generators of a realizing diagram if one exists, but also at any configuration where all generators coincide.
+They therefore add two constraints: a ball constraint, which makes the feasible set compact, and a minimum-distance constraint, which keeps the generators distinct but makes the feasible set non-convex.
+For data that are not realizable (Goal~2), the maximizer of $\mathcal{B}$ on the ball tends to merge generators, so for their EBSD application they directly minimize the least-squares error $\smash{f(\qq) = \sum_i \pvol_i^2 \norm{\centroid_i(\qq) - \tcentroid_i}^2 = \norm{\nabla \mathcal{B}}^2}$, using the derivatives of the centroids with respect to the generators.
+
+\begin{algorithm}[h]
+  \caption{Inversion and fitting by \citet{Bourne2025Inverting}.}
+  \label{alg:bourne2025}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$, targets $\tcentroid$, minimum distance $\delta$ (they use $\delta \!=\! 10^{-3}$), mode $\in \{\textsc{Invert}, \textsc{Fit}\}$
+    \State $\qq \gets$ random samples in $\domain$ (\textsc{Invert}) or $\qq \gets \tcentroid$ (\textsc{Fit}) \Comment{their Remark~4.13}
+    \Repeat \Comment{SLSQP, \texttt{scipy.optimize.minimize}}
+      \State $(\weight^\star, \centroid) \gets$ Alg.~\ref{alg:bourne-volume} with generators $\qq$
+      \If{mode $= \textsc{Invert}$}
+        \State $\mathbf{g} \gets \{\pvol_i\,(\tcentroid_i - \centroid_i)\}_i$ \Comment{ascent on $\mathcal{B}$, their Thm.~4.2}
+      \Else
+        \State $\mathbf{g} \gets -2 \sum_i \pvol_i^2\,(\partial\centroid_i / \partial\qq)\tr (\centroid_i - \tcentroid_i)$ \Comment{descent on $f$}
+      \EndIf
+      \State $\qq \gets$ SLSQP step along $\mathbf{g}$ subject to $\norm{\qq_i - \qq_j} \ge \delta$ for all $i \!\neq\! j$, and,
+      \Statex \qquad for \textsc{Invert} only, $\sum_i \norm{\qq_i - \domainCentroid}^2 \le n\,\domainVol$ \Comment{ball constraint}
+    \Until{SLSQP converges}
+    \State \Return generators $\qq$ and weights $\weight^\star(\qq)$
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{\citet{Bourne2026ConvexOrder}.}
+They work with the convex set $\achievable$ of centroid configurations achievable with the volumes $\pvol$, and with its support function $\smash{\sigma_{\achievable}(\qq) = \max_{\centroid \in \achievable} \langle \qq, \centroid \rangle_{\pvol}}$.
+For distinct generators, the maximizer is unique and equals the centroids $\centroid(\qq)$ of the volume-constrained power diagram, so $\smash{\nabla \sigma_{\achievable} = \centroid(\qq)}$, and $\smash{\sigma_{\achievable}(\qq) = \tfrac12 \bigl( \int_\domain \norm{\xx}^2 d\xx + \norm{\qq}^2_{\pvol} - \transport(\qq) \bigr)}$.
+When generators coincide, a subgradient is obtained by merging the coinciding generators into a single generator with the summed volume, solving the transport problem for the merged generators, and assigning the centroid of the merged cell to each of them.
+Given targets $\tcentroid$ and a dilation factor $\lambda \!>\! 1$, they project the dilated targets $\smash{\mathbf{z} = \lambda\,\tcentroid}$ onto $\achievable$, in the $\pvol$-weighted norm,
+\begin{equation*}
+  P_{\achievable}(\mathbf{z}) = \argmin_{\centroid \in \achievable} \tfrac12 \norm{\centroid - \mathbf{z}}^2_{\pvol} ,
+  \qquad
+  \text{dual:} \ \min_{\qq} \ \mathcal{J}(\qq) = \tfrac12 \norm{\qq}^2_{\pvol} - \langle \qq, \mathbf{z} \rangle_{\pvol} + \sigma_{\achievable}(\qq) ,
+\end{equation*}
+whose solutions are related by $\smash{\qq^\star = \mathbf{z} - P_{\achievable}(\mathbf{z})}$ \cite[Lemma~4.1]{Bourne2026ConvexOrder}.
+The generators $\qq^\star$ produce a power diagram with the volumes $\pvol$ and centroids $\smash{P_{\achievable}(\mathbf{z})}$, which approach the targets as $\lambda \!\to\! 1$ when the targets are realizable.
+The dual objective $\mathcal{J}$ is $1$-strongly convex but only $C^1$ on distinct generators, so they solve it by first-order methods; they parametrize $\smash{\lambda = t/(t-1)}$, with $t \!=\! 10$ to $1250$ in their experiments.
+
+\begin{algorithm}[h]
+  \caption{Projection--dilation fitting by \citet{Bourne2026ConvexOrder}, subgradient variant.}
+  \label{alg:bourne2026-subgradient}
+  \begin{algorithmic}[1]
+    \Require targets $(\pvol, \tcentroid)$, dilation $\lambda \!>\! 1$, iterations $K$
+    \State $\mathbf{z} \gets \lambda\,\tcentroid$; \quad $m \gets \bigl( \tfrac{1}{\domainVol} \int_\domain \norm{\xx}^2 d\xx \bigr)^{1/2}$ \Comment{bound on $\smash{\norm{\qq^\star - \mathbf{z}}_{\pvol}}$, volumes normalized to $\sum_i \pvol_i \!=\! 1$}
+    \State $\qq^1 \gets$ random generators (or $\tcentroid$)
+    \For{$k = 1, \ldots, K$}
+      \State $\centroid^k \gets$ centroids of $\textsc{VolumeSolve}(\qq^k, \pvol)$, merging coinciding generators
+      \State $\eta_k \gets 2/(k+1)$
+      \State $\mathbf{y} \gets \qq^k - \eta_k \bigl( \qq^k - \mathbf{z} + \centroid^k \bigr)$ \Comment{subgradient step on $\mathcal{J}$}
+      \State $\qq^{k+1} \gets \mathbf{z} + (\mathbf{y} - \mathbf{z}) / \max\bigl( \norm{\mathbf{y} - \mathbf{z}}_{\pvol} / m, 1 \bigr)$ \Comment{project onto the ball}
+    \EndFor
+    \State \Return generators $\qq^{K}$ (or the weighted average $\smash{\sum_k \tfrac{2k}{K(K+1)}\,\qq^k}$ of their Lemma~6.2)
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[h]
+  \caption{Projection--dilation fitting by \citet{Bourne2026ConvexOrder}, Frank--Wolfe variant.}
+  \label{alg:bourne2026-fw}
+  \begin{algorithmic}[1]
+    \Require targets $(\pvol, \tcentroid)$, dilation $\lambda \!>\! 1$, iterations $K$
+    \State $\mathbf{z} \gets \lambda\,\tcentroid$
+    \State $\centroid^1 \gets$ any point of $\achievable$, \eg the centroids of $\textsc{VolumeSolve}(\tcentroid, \pvol)$
+    \For{$k = 1, \ldots, K$}
+      \State $\mathbf{s} \gets$ centroids of $\textsc{VolumeSolve}(\mathbf{z} - \centroid^k, \pvol)$ \Comment{linear minimization oracle: $\argmax_{\achievable} \langle \mathbf{z} - \centroid^k, \cdot \rangle_{\pvol}$}
+      \State $\gamma \gets \operatorname{clamp}_{[0,1]} \bigl( \langle \mathbf{z} - \mathbf{s}, \centroid^k - \mathbf{s} \rangle_{\pvol} / \norm{\centroid^k - \mathbf{s}}^2_{\pvol} \bigr)$ \Comment{exact line search}
+      \State $\centroid^{k+1} \gets \gamma\,\centroid^k + (1 - \gamma)\,\mathbf{s}$
+    \EndFor
+    \State \Return generators $\qq = \mathbf{z} - \centroid^{K}$, and the centroids of $\textsc{VolumeSolve}(\qq, \pvol)$
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Comparison with our formulation.}
+Every iteration of Algorithms~\ref{alg:bourne2025}--\ref{alg:bourne2026-fw} calls the nonlinear weight solve of Algorithm~\ref{alg:bourne-volume}, and the outer loops are first-order or quasi-Newton methods on the generators.
+In contrast, Newton's method on $\jointdual_\alpha$ of \S\ref{sec:regularized-joint} updates the shifts and the weights simultaneously, with the explicit facet-based Hessian of \S\ref{sec:joint-constraints}, so that neither the volumes nor the centroids need to be satisfied at intermediate iterates.
+For sites equal to the targets, $\qq \!=\! \tcentroid$, its maximizer is the output of Algorithms~\ref{alg:bourne2026-subgradient} and~\ref{alg:bourne2026-fw} with $\lambda \!=\! 1 + 1/\alpha$, and its generators are the shifted sites $\dual$, which match their generators $\smash{\mathbf{z} - P_{\achievable}(\mathbf{z})}$ up to the factor $\alpha$, which does not change the power diagram.
+
+\end{document}

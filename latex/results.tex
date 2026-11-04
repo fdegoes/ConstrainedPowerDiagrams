@@ -1,0 +1,26 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Inverse Tessellations}
+\label{sec:results-inverse}
+
+% TODO: compare our joint and softened formulations (Sec. 4) against the inverse/fitting examples of Bourne et al.
+% Test cases from the papers (in bib/):
+% - [Bourne2025Inverting, Sec. 5.1, Figs. 1-2]: recover a Laguerre diagram from the areas and centroids of its cells (2D, random generators).
+% - [Bourne2025Inverting, Sec. 5.2, Figs. 3-7]: fit to synthetic data perturbed with small (0.001) and larger (0.05) noise; minimum-distance constraint active.
+% - [Bourne2025Inverting, Sec. 5.3, Figs. 8-9]: fit to an EBSD image of steel.
+% - [Bourne2026ConvexOrder, Sec. 6.3.1, Figs. 8-14]: reconstruction with N = 20 and N = 728 on [0,1]^2, t = 1250; subgradient vs Frank-Wolfe convergence.
+% - [Bourne2026ConvexOrder, Sec. 6.3.2, Figs. 15-16]: EBSD image of single-phase steel, N = 243 grains, domain [0, 252.25]^2, t = 10.
+% Metrics to report: centroid residual, volume error, iterations / volume solves, wall-clock time, and failures (merged generators).
+
+\subsection{Incompressible Flows}
+\label{sec:results-flows}
+
+% TODO: compare the constrained (Sec. 5.2) and penalty-based (Sec. 5.3) integrators against Power Particles [deGoes2015PowerParticles] and the scheme of [Gallouet2018Lagrangian].
+% Metrics to report: energy drift over time, centroid--particle gap, volume error, divergence, Newton iterations per step, maximum stable time step, and sensitivity to alpha and epsilon.
+
+\end{document}
