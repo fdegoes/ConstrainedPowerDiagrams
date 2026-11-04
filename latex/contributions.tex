@@ -249,7 +249,7 @@ The remaining perturbations change only the weights, along which the Hessian red
 Consequently, $\jointdual_{\alpha}$ is concave for any $\alpha \!>\! 0$ and admits a unique maximizer for {any} target centroids.
 % 
 However, its optimal partition is a power diagram only if the generators $\smash{\dual}$ remain pairwise distinct.
-Setting \eqref{eq:regularized-gradient-shift} to zero, the optimal shifts are $\smash{\shift_i = \alpha\,(\tcentroid_i - \centroid_i)}$, so they satisfy $\smash{\norm{\shift_i} \!\le\! \alpha \operatorname{diam}(\domain)}$ if the targets $\tcentroid$ are within the convex hull of $\domain$.
+Setting \eqref{eq:regularized-gradient-shift} to zero, the optimal shifts are $\smash{\shift_i = \alpha\,(\tcentroid_i - \centroid_i)}$, so they satisfy $\smash{\norm{\shift_i} \!\le\! \alpha \operatorname{diam}(\domain)}$ when the targets $\tcentroid$ are within the convex hull of $\domain$.
 By the triangle inequality, the generators then verify 
 $\smash{
 \norm{\dual_i \!-\! \dual_j} 
@@ -261,12 +261,20 @@ $\smash{
   \label{eq:regularized-distinct}
 \end{equation}
 
-At the maximizer, \eqref{eq:regularized-primal-cons} forces $\smash{\slack_i = \centroid_i \!-\! \tcentroid_i}$, and the optimal shifts follow from \eqref{eq:regularized-gradient-shift} as $\smash{\shift_i = \alpha\,(\tcentroid_i \!-\! \centroid_i)}$.
+Moreover, we note that, at the maximizer, \eqref{eq:regularized-primal-cons} forces $\smash{\slack_i = \centroid_i \!-\! \tcentroid_i}$, and the optimal shifts follow from \eqref{eq:regularized-gradient-shift} as $\smash{\shift_i = \alpha\,(\tcentroid_i \!-\! \centroid_i)}$.
 The penalty in \eqref{eq:regularized-primal-obj} is thus the volume-weighted least-squares centroid residual $\smash{\alpha \sum_i \pvol_i \norm{\centroid_i - \tcentroid_i}^2}$, which resembles the residual of \citet{Bourne2025Inverting}, except that they weighted each cell by $\smash{\pvol_i^2}$ instead of $\pvol_i$.
 While they minimized their residual through a non-convex search over the sites, we minimize ours through a concave maximization.
 % Our softened problem penalizes this same residual combined with the first term of \eqref{eq:regularized-primal-obj} through a concave maximization.
 % At the solution, we can further rearrange \eqref{eq:regularized-primal-obj}, up to a constant, as
-We can further rearrange the optimal value of the objective \eqref{eq:regularized-primal-obj}, up to a constant, as
+By the parallel-axis theorem with exact volumes, the optimal value of the objective \eqref{eq:regularized-primal-obj} further decomposes as
+\begin{equation}
+  \sum\nolimits_i \int_{\cell_i} \norm{\xx \!-\! \centroid_i}^2 d\xx
+  + \sum\nolimits_i \pvol_i \norm{\centroid_i \!-\! \qq_i}^2
+  + \alpha \sum\nolimits_i \pvol_i \norm{\centroid_i \!-\! \tcentroid_i}^2 ,
+  \label{eq:regularized-decomposition}
+\end{equation}
+\ie the quantization error of the cells about their centroids plus two least-squares terms that pull the centroids towards the sites and towards the targets, respectively.
+Expanding the quantization error and dropping the terms independent of the partition, \eqref{eq:regularized-decomposition} rearranges as
 \begin{equation}
   \alpha \sum\nolimits_i \pvol_i \norm{\centroid_i - \bigl( \tcentroid_i + \tfrac{1}{\alpha}\,\qq_i \bigr)}^2.
   \label{eq:regularized-projection}

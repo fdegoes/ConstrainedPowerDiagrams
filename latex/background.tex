@@ -5,7 +5,8 @@
 \section{Background}
 \label{sec:background}
 
-We start by reviewing key concepts required by our contributions.
+% We start by reviewing key concepts required by our contributions.
+Before presenting our contributions, we review key concepts underlying our work.
 Here, we consider a bounded domain $\domain$ in $\smash{\R^d}$ and define a \emph{partition} of $\domain$ as a collection of $n$ cells $\smash{\cell \!=\! \{\cell_i\}_{i=1}^n}$ of positive volume that tile $\domain$.
 We denote the {volume} and {centroid} for each cell $\cell_i$ as
 \begin{subequations}
@@ -83,6 +84,7 @@ Based on \eqref{eq:power-cell}, the power diagram for given weighted sites $(\qq
   \label{eq:power-diagram}
 \end{equation}
 % We refer to $\energy$ as the \emph{energy} of the power diagram.
+For zero weights, $\energy$ is often referred to as the \emph{quantization error} between the cells and their respective sites \cite{Lloyd1982Quantization}. %, and we use this term more generally for the objective of \eqref{eq:power-diagram} with zero weights at any partition.
 Note that, for any fixed partition, the objective in \eqref{eq:power-diagram} is affine in the weights, so $\energy$ is a minimum of affine functions and is thus concave in $\weight$.
 Moreover, 
 % by Reynolds' transport theorem, the boundary terms cancel across shared facets, where neighboring power distances are equal, so 
