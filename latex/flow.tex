@@ -2,9 +2,6 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
-% DRAFT (Section 5: constrained / penalty / discussion).
-% Previous versions: flow_v1.tex (implicit / semi-implicit), flow_v2.tex, flow_v3.tex, flow_v4.tex (holonomic / penalty / projection / prior work), flow_v5.tex (constrained / implicit / penalty / discussion).
-
 \section{Power Particles Revisited}
 \label{sec:flow}
 
@@ -40,7 +37,7 @@ We can thus express the potential induced by this discretization as
   \cpot(\qq) = \max_{\shift, \weight} \jointdual(\shift, \weight) ,
   \label{eq:flow-centroid-potential}
 \end{equation}
-whose maximum is finite only when the particles $\qq$ are realizable, generating a centroidal power diagram with sites $\qq$ and volumes $\pvol$.
+whose maximum is attained only when the particles $\qq$ are realizable, generating a power diagram with centroids $\qq$ and volumes $\pvol$.
 
 The motion of the particles is then governed by the Lagrangian
 \begin{equation}
@@ -57,7 +54,7 @@ The internal forces are computed via the potential gradient relative to $\qq$, w
   2\,\pvol_i\,\shift_i = 2\,\pvol_i\,(\dual_i - \qq_i) ,
   \label{eq:flow-potential-gradient}
 \end{equation}
-where only the target derivatives contribute, since the site derivatives $\smash{2\,\pvol_i\,(\qq_i - \centroid_i)}$ vanishes when the centroids are the particles.
+where only the target derivatives contribute, since the site derivatives $\smash{2\,\pvol_i\,(\qq_i - \centroid_i)}$ vanish when the centroids are the particles.
  
 However, the maximizing shifts are only defined up to the homotheties \eqref{eq:joint-nullspace}, so this gradient depends on the choice of generators within the normal cone of $\achievable$ at $\qq$, as noted earlier in \S\ref{sec:background}.
 Given the generators $\dual$ at the maximizer, their homotheties are of the form $\smash{s\,\dual_i + \translation}$, with a dilation $s \!>\! 0$ and a translation $\translation \!\in\! \R^d$ as gauge unknowns.
@@ -84,7 +81,7 @@ The resulting discrete Euler--Lagrange equations simplify to a central finite di
 \end{equation}
 where $\smash{\dual^k}$ are generators of the power diagram with centroids $\qq^k$, while the gauge $\smash{(s^k, \translation^k)}$ needs to be chosen so that the new particles $\smash{\qq^{k+1}}$ are realizable.
 % Note that the translation $\translation$ are fully determined by the dilation $s$ since summing \eqref{eq:flow-discrete} with weights $\pvol$ must preserve \eqref{eq:partition-feasibility-centroid}.
-This update rule corresponds to the Störmer--Verlet scheme in its position form, which is an explicit, second-order, symplectic and time-reversible integrator \cite{Hairer2006GNI}, moving particles in time via
+This update rule corresponds to the Störmer--Verlet scheme in its position form, which is a second-order, symplectic and time-reversible integrator \cite{Hairer2006GNI} whose constraint force is determined implicitly through the gauge, moving particles in time via
 \begin{subequations}
   \label{eq:flow-shake-step}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
@@ -95,7 +92,7 @@ This update rule corresponds to the Störmer--Verlet scheme in its position form
 \end{subequations}
 \ie a prediction $\smash{\pred^{k+1}}$ followed by a correction along a homothety of the current generators $\smash{\dual^k}$, where we absorbed the factor $\smash{\tstep^2/\stiff^2}$ into $\smash{(s, \translation)}$,
  % = \tfrac{\tstep^2}{\stiff^2} (s^k, \translation^k)}$
-and the new velocities follow as $\smash{\vel^{k+1} \!=\! (\qq^{k+1} \!-\! \qq^k)/\tstep}$.
+and the new velocities follow as $\smash{\vel^{k+1} \!=\! (\qq^{k+1} \!-\! \qq^k)/\tstep}$. %, as in SHAKE.
 
 Instead of a line search over the unknowns $(s, \translation)$ along $\dual^k$ until the new particles $\smash{\qq^{k+1}}$ are realizable, we recast the correction step as a single concave maximization of $\jointdual$ with sites $\qq^k$, prescribed volumes $\pvol$, and prescribed centroids $\smash{\pred^{k+1}}$, while handling the gauge variables via linear constraints on the shifts:
 \begin{subequations}
@@ -109,7 +106,7 @@ Instead of a line search over the unknowns $(s, \translation)$ along $\dual^k$ u
 Introducing multipliers $2s$ and $2\translation$, the stationary condition of \eqref{eq:flow-line-constraint} is exactly the update \eqref{eq:flow-shake-step-corr}, with the new particles as centroids of the resulting power diagram.
 Note that, for convenience, we scaled both multipliers by two to match \eqref{eq:flow-potential-gradient}.
 %
-Solving \eqref{eq:flow-line-constraint} selects the scale $s$ as the smallest correction that brings the prediction back to $\achievable$.
+Intuitively, solving \eqref{eq:flow-line-constraint} selects the scale $s$ of the correction that brings the prediction back to $\achievable$ along the current generators.
 The constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans} thus remove the shift components of the dilation and translation modes \eqref{eq:joint-nullspace}, so the maximizer is unique, when it exists, up to the additive constant on the weights.
 % \ie the root of the line search closest to the prediction, without any bisection.
 %
@@ -117,9 +114,10 @@ The constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-cons
 
 We summarize a time step of this integrator in Algorithm~\ref{alg:flow-constrained}.
 Within each time step, we solve \eqref{eq:flow-line-constraint} via a Newton's method as in Algorithm \ref{alg:flow-constrained-newton}.
-Starting from zero shifts, which satisfy the linear constraints, and weights reset to the latest shifted weights ($\smash{\weight^{k+1} \!=\! \combweight^k}$), each iteration computes the Newton system of $\jointdual$ bordered by the $d \!+\! 1$ rows of \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans}, which returns the updates of the shifts and weights together with the multipliers $(s, \translation)$.
+Starting from zero shifts, which satisfy the linear constraints, and, as an initial guess, the shifted weights $\combweight^k$ of the previous power diagram, each iteration computes the Newton system of $\jointdual$ bordered by the $d \!+\! 1$ rows of \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans}, which returns the updates of the shifts and weights together with the multipliers $(s, \translation)$.
 As described in Appendix~\ref{sec:appendix-bordered}, each Newton step costs $d \!+\! 2$ solves of a sparse linear system with the Hessian of $\jointdual$, followed by a dense $(d \!+\! 1) \times (d \!+\! 1)$ system to compute the gauge $(s, \translation)$.
 At convergence, the centroids of the maximizer are the new particles $\smash{\qq^{k+1}}$, and its generators $\smash{\qq^k \!+\! \shift}$ provide the direction $\smash{\dual^{k+1}}$ of the next step at no extra cost.
+We initialize the simulation from a centroidal power diagram, \eg computed by Lloyd iterations, whose generators are the particles themselves, $\smash{\dual^0 \!=\! \qq^0}$.
 \subsection{Penalty-based Integrator}
 \label{sec:flow-penalty}
 
@@ -160,16 +158,18 @@ This update is symplectic and time-reversible as in \S\ref{sec:flow-constrained}
 
 
 Each step thus evaluates the force at the current particles by a single unconstrained maximization of $\jointdual_\alpha$, with neither a line search of \eqref{eq:flow-shake-step-corr} nor the linear constraints of \eqref{eq:flow-line-constraint}.
-As before, we solve this maximization via a Newton's method, starting from zero shifts and the weights reset to the latest shifted weights.
+As before, we solve this maximization via a Newton's method, starting from zero shifts and, as an initial guess, the shifted weights of the previous power diagram, and we obtain the first maximizer by a single such solve at the initial particles $\qq^0$.
 However, the Newton system of our softened objective needs no border, and its only null-space mode is the additive constant on the weights.
 At convergence, the force \eqref{eq:softened-site-gradient} follows directly from the optimal shifts.
-Note that the stiffness $\alpha$ is kept fixed over time, so the bound \eqref{eq:regularized-distinct} is only a sufficient condition for the maximizer to be a power diagram.
+Note that, since $\alpha$ is a parameter of the Lagrangian, we cannot decrease it over time to enforce the bound \eqref{eq:regularized-distinct}, which is only a sufficient condition for the maximizer to be a power diagram.
 % TODO: behavior when the generators collide for large alpha; numerical validation in ../src.
 We summarize a time step of this integrator in Algorithm~\ref{alg:flow-penalty}.
+
 \subsection{Discussion}
 \label{sec:flow-discussion}
 
-We conclude this section by comparing our two integrators, and by relating them to SHAKE, to the scheme of \citet{Gallouet2018Lagrangian}, and to Power Particles \cite{deGoes2015PowerParticles}.
+We conclude this section by comparing our two integrators, and by relating them to classical constrained integrators and to prior Lagrangian fluid discretizations based on power diagrams.
+% , to the scheme of \citet{Gallouet2018Lagrangian}, and to Power Particles \cite{deGoes2015PowerParticles}.
 
 \paragraph{Constrained vs.\ relaxed integrators.}
 Both our integrators are variational and solved by Newton's method on a concave objective, but they use this maximization for different purposes.
@@ -183,30 +183,30 @@ Neither integrator constrains the velocities to be divergence-free, instead the 
 
 \paragraph{Link to {SHAKE}.}
 The constrained integrator of \S\ref{sec:flow-constrained} is an instance of the SHAKE algorithm \cite{Ryckaert1977Shake}, \ie the Störmer--Verlet scheme for a holonomic constraint.
-Unlike classical applications of SHAKE, which iterate over explicit constraint functions, our holonomic constraint is a single one whose normal at the particles is given by their generators $\smash{\dual^k}$ up to homotheties.
+Unlike classical applications of SHAKE, which iterate over explicit constraint functions, our holonomic constraint is, within the affine subspace \eqref{eq:partition-feasibility-centroid} enforced by the translation, a single scalar constraint whose normal at the particles is given by their generators $\smash{\dual^k}$ up to homotheties.
 The constraint force is thus known in direction, and the correction reduces to a single constrained maximization, which finds its magnitude without iterating over constraints.
 The same holds for RATTLE \cite{Andersen1983Rattle}, the variant of SHAKE that additionally keeps the velocities tangent to the constraint.
 In our settings, this velocity correction reduces to a single projection of $\smash{\vel^{k+1}}$ onto the orthogonal complement of the generators $\smash{\dual^{k+1}}$ and the translations, \ie $\smash{\sum_i \pvol_i\,(\dual^{k+1}_i)\tr \vel^{k+1}_i = 0}$ and $\smash{\sum_i \pvol_i\,\vel^{k+1}_i = 0}$, computed in closed form from the generators already returned by the position correction.
 
 \paragraph{Link to \citet{Gallouet2018Lagrangian}}
 Our penalty-based integrator in \S\ref{sec:flow-penalty} generalizes the method of \citet{Gallouet2018Lagrangian}.
-For $\alpha \!=\! 0$, the potential \eqref{eq:flow-softened-potential} reduces to b$\smash{\cpot_0(\qq) \!=\! \max_\weight \dualenergy(\weight)}$, which is the potential of \citet{Gallouet2018Lagrangian} with the factor $1/(2\stiff^2)$.
-Consequently, the integrator in \cite[Eq.~(1.11)]{Gallouet2018Lagrangian} gives exactly the update of \eqref{eq:flow-softened-step} with $\alpha \!=\! 0$.
+In the limit $\alpha \!\to\! 0$, the potential \eqref{eq:flow-softened-potential} reduces to $\smash{\cpot_0(\qq) \!=\! \max_\weight \dualenergy(\weight)}$, which is the potential of \citet{Gallouet2018Lagrangian} with the factor $1/(2\stiff^2)$.
+Consequently, the integrator in \cite[Eq.~(1.11)]{Gallouet2018Lagrangian} gives exactly the update \eqref{eq:flow-softened-step} with $\alpha \!=\! 0$, which remains well defined in this limit.
 % 
 As discussed in \citet{Gallouet2018Lagrangian}, this flow convergences towards smooth solutions of the Euler equations for $\tstep \!\le\! \stiff$, with an error bound that vanishes only for $\tstep \!=\! o(\stiff^2)$.
 % 
 However, their scheme ties particles to the centroids only through the strength $\stiff$ of the potential, so the velocities are divergence-free only in the limit $\stiff \!\to\! 0$.
-Instead, our stiffness $\alpha \!>\! 0$ penalizes the centroid residual directly, and thus controls the relaxation of the holonomic constraint independently of $\stiff$.
+Instead, our stiffness $\alpha \!>\! 0$ penalizes the centroid residual directly, and thus controls the relaxation of the holonomic constraint in addition to $\stiff$.
 
 \paragraph{Link to \citet{deGoes2015PowerParticles}}
 The Power Particles method \cite{deGoes2015PowerParticles} advances sites $\qq^k$ and velocities $\vel^k$ via an operator splitting scheme whose steps relate to our penalty-based integrator.
-First, they enforce the volumes by maximizing $\dualenergy$ of \eqref{eq:volume-constrained} over the weights for the sites $\qq^k$, which is equivalent to maximizing $\jointdual_\alpha$ with fixed shifts.
+First, they enforce the volumes by maximizing $\dualenergy$ of \eqref{eq:volume-dual} over the weights for the sites $\qq^k$, which is equivalent to maximizing $\jointdual_\alpha$ with zero shifts.
 Next, they project the velocities $\vel^k$ onto those that preserve the volumes to first order by solving a Poisson equation, which produces the new velocities $\smash{\vel^{k+1}}$ used in place of $\vel^k$ in the update \eqref{eq:flow-softened-step}.
 This projection resembles a single Newton step on $\jointdual_\alpha$ from zero shifts and converged weights, with target centroids $\smash{\tcentroid \!=\! \centroid^k \!+\! \tstep\,\vel^k/\alpha}$.
 In particular, the discrete divergence and gradient operators derived by \citet{deGoes2015PowerParticles} correspond to the shift--weight block \eqref{eq:joint-hessian} of its Hessian.
-Their pressure projection is then reproduced by lumping the shift--shift block to the mass matrix $\smash{\mathrm{diag}(\pvol_i)}$ and zeroing out the weight--weight block.
+Their pressure projection is then reproduced by lumping the shift--shift block to the scaled mass matrix $\smash{\tfrac{2}{\alpha}\,\mathrm{diag}(\pvol_i)}$, \ie the penalty block of $\jointdual_\alpha$, and zeroing out the weight--weight block.
 The Schur complement of the resulting Newton system is the Poisson equation, in which the weight update plays the role of the pressure, while the shift update is the pressure correction that yields $\smash{\vel^{k+1}}$.
-Finally, for the particular stiffness $\smash{\alpha = \stiff^2/\tstep^2 - 1}$, the velocity update \eqref{eq:flow-softened-step-vel} adds the Lloyd displacement $\smash{(\centroid^k - \qq^k)/\tstep}$ to $\vel^k$, so the position update \eqref{eq:flow-softened-step-pos} becomes $\smash{\qq^{k+1} = \centroid^k + \tstep\,\vel^k}$, \ie a full Lloyd step onto the centroids followed by advection.
+Finally, for the particular stiffness $\smash{\alpha = \stiff^2/\tstep^2 - 1}$, which requires $\tstep \!<\! \stiff$, the velocity update \eqref{eq:flow-softened-step-vel} adds the Lloyd displacement $\smash{(\centroid^k - \qq^k)/\tstep}$ to $\vel^k$, so the position update \eqref{eq:flow-softened-step-pos} becomes $\smash{\qq^{k+1} = \centroid^k + \tstep\,\vel^k}$, \ie a full Lloyd step onto the centroids followed by advection.
 With the pressure-corrected velocities $\smash{\vel^{k+1}}$ in place of $\vel^k$, this is exactly their site update $\smash{\qq^{k+1} \!=\! \centroid^k \!+\! \tstep\,\vel^{k+1}}$, although their stored velocities $\smash{\vel^{k+1}}$ omit the Lloyd displacement.
 Since this stiffness is tied to the time step, the splitting does not discretize a Lagrangian, in contrast to our formulations.
 
