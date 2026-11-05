@@ -1,0 +1,93 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Algorithms}
+\label{sec:appendix-algorithms}
+
+We summarize the time steps of the constrained (\S\ref{sec:flow-constrained}) and penalty-based (\S\ref{sec:flow-penalty}) integrators, together with the Newton solves they rely on.
+Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:newton}) regularize the negated Hessian by $\smash{\hreg\,\mathrm{diag}(\pvol)}$ with a small $\hreg \!>\! 0$, and backtrack the step size via the line search of Algorithm~\ref{alg:line-search}, which rebuilds the power diagram at every trial step.
+
+\begin{algorithm}[H]
+  \caption{Time step of the constrained integrator (\S\ref{sec:flow-constrained}).}
+  \label{alg:flow-constrained}
+  \begin{algorithmic}[1]
+    \Require particles $\qq^k$, velocities $\vel^k$, generators $\dual^k$ and shifted weights $\combweight^k$ of the power diagram with centroids $\qq^k$, volumes $\pvol$, time step $\tstep$
+    \State $\pred^{k+1} \gets (1 + \tstep^2)\,\qq^k + \tstep\,\vel^k$ \Comment{\eqref{eq:flow-shake-step-pred}}
+    \State $(\shift, \weight, s, \translation) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $\combweight^k$
+    \State $\qq^{k+1} \gets \pred^{k+1} - s\,\dual^k - \translation$ \Comment{\eqref{eq:flow-shake-step-corr}}
+    \State $\vel^{k+1} \gets (\qq^{k+1} - \qq^k) / \tstep$
+    \State $\dual^{k+1} \gets \qq^k + \shift$ \Comment{\eqref{eq:shifted-site-pos}}
+    \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2 + 2\,\shift\tr (\qq^k - \pred^{k+1})$ \Comment{\eqref{eq:shifted-site-weight}}
+    \State \Return particles $\qq^{k+1}$, velocities $\vel^{k+1}$, generators $\dual^{k+1}$ and shifted weights $\combweight^{k+1}$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Bordered Newton solve of \eqref{eq:flow-line-constraint} (Appendix~\ref{sec:appendix-bordered}).}
+  \label{alg:flow-constrained-newton}
+  \begin{algorithmic}[1]
+    \Require sites $\qq$, targets $\tcentroid$, direction $\dual^k$, initial weights $\weight^0$, volumes $\pvol$, regularization $\hreg \!>\! 0$, tolerance $\tau$
+    \State build the constraint matrix $\Cmat = [\mathbf{a}, \mathbf{b}_1, \dots, \mathbf{b}_d]\tr$ \Comment{\eqref{eq:appendix-constraint-matrix}}
+    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$
+    \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}$ \Comment{\eqref{eq:shifted-site}}
+    \Repeat
+      \State $\mathbf{g} \gets \nabla\jointdual(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}}
+      \State $\Nmat \gets -\nabla^2\jointdual(\mathbf{z}) + \hreg\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:appendix-bordered-matrix}}
+      \State solve for $\mathbf{z}_0$, $\mathbf{z}_a$, $\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-solve}}
+      \State solve for the gauge $(s, \translation)$ \Comment{\eqref{eq:flow-constrained-elimination-gauge}}
+      \State $\delta\mathbf{z} \gets \mathbf{z}_0 - s\,\mathbf{z}_a - \sum_j t_j\,\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-update}}
+      \State $\mathbf{z} \gets$ Alg.~\ref{alg:line-search} with $\mathbf{z}$, $\delta\mathbf{z}$, and $\alpha = \infty$
+    \Until{$\norm{\mathbf{g} - 2 \Cmat\tr (s, \translation)} < \tau$} \Comment{\eqref{eq:flow-constrained-newton}}
+    \State \Return $(\shift, \weight)$ and the gauge $(s, \translation)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Time step of the penalty-based integrator (\S\ref{sec:flow-penalty}).}
+  \label{alg:flow-penalty}
+  \begin{algorithmic}[1]
+    \Require particles $\qq^k$, velocities $\vel^k$, shifted weights $\combweight^k$ of the previous step, volumes $\pvol$, time step $\tstep$, stiffness $\alpha$
+    \State $(\shift, \weight) \gets$ Alg.~\ref{alg:newton} with sites and targets $\qq^k$, initial weights $\combweight^k$
+    \State $\vel^{k+1} \gets \vel^k - (1 + 1/\alpha)\,\tstep\,\shift$ \Comment{\eqref{eq:flow-softened-step-vel}}
+    \State $\qq^{k+1} \gets \qq^k + \tstep\,\vel^{k+1}$ \Comment{\eqref{eq:flow-softened-step-pos}}
+    \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2$ \Comment{\eqref{eq:shifted-site-weight}}
+    \State \Return particles $\qq^{k+1}$, velocities $\vel^{k+1}$ and shifted weights $\combweight^{k+1}$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Newton solve of $\jointdual_\alpha$ or of $\jointdual$.}
+  \label{alg:newton}
+  \begin{algorithmic}[1]
+    \Require sites $\qq$, targets $\tcentroid$, initial weights $\weight^0$, volumes $\pvol$, stiffness $\alpha$ (optional), regularization $\hreg \!>\! 0$, tolerance $\tau$
+    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$
+    \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}$ \Comment{\eqref{eq:shifted-site}}
+    \Repeat
+      \State $\mathbf{g} \gets \nabla\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}, \eqref{eq:regularized-gradient-shift}}
+      \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z}) + \hreg\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:appendix-bordered-matrix}}
+      \State solve $\Nmat\,\delta\mathbf{z} = \mathbf{g}$
+      \State $\mathbf{z} \gets$ Alg.~\ref{alg:line-search} with $\mathbf{z}$ and $\delta\mathbf{z}$
+    \Until{$\norm{\mathbf{g}} < \tau$}
+    \State \Return $(\shift, \weight)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Backtracking line search on $\jointdual_\alpha$ or on $\jointdual$.}
+  \label{alg:line-search}
+  \begin{algorithmic}[1]
+    \Require sites $\qq$, targets $\tcentroid$, multipliers $\mathbf{z}$, step $\delta\mathbf{z}$, volumes $\pvol$, stiffness $\alpha$
+    \State $\omega \gets 1$
+    \Loop
+      \State $\mathbf{z}' \gets \mathbf{z} + \omega\,\delta\mathbf{z}$
+      \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}'$ \Comment{\eqref{eq:shifted-site}}
+      \If{no cell is empty and $\jointdual_\alpha(\mathbf{z}') > \jointdual_\alpha(\mathbf{z})$}
+        \State \Return $\mathbf{z}'$ and its power diagram
+      \EndIf
+      \State $\omega \gets \omega / 2$
+    \EndLoop
+  \end{algorithmic}
+\end{algorithm}
+
+\end{document}

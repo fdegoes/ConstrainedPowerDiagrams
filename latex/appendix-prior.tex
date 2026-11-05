@@ -1,0 +1,86 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{TODO: REMOVE THIS!}
+\label{sec:appendix-prior}
+
+For reference, we summarize the methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} in our notation, in which the generators $\qq$ are the unknowns and the weights $\weight^\star(\qq)$ maximize $\dualenergy$ in \eqref{eq:volume-dual}.
+
+\begin{algorithm}[H]
+  \caption{Volume solve of \citet{Bourne2025Inverting}, used by Algorithms~\ref{alg:bourne2025}--\ref{alg:bourne2026-fw}.}
+  \label{alg:bourne-volume}
+  \begin{algorithmic}[1]
+    \Require generators $\qq$, volumes $\pvol$, regularization $\hreg \!>\! 0$, tolerance $\tau$ (they use $\tau \!=\! 10^{-3}$)
+    \State $\weight \gets$ initial weights with no empty cell
+    \Repeat
+      \State build the power diagram of $(\qq, \weight)$ \Comment{\eqref{eq:power-cell}}
+      \State $\mathbf{g} \gets \pvol - \cellvol$ \Comment{\eqref{eq:volume-dual-gradient}}
+      \State $\wlap \gets -\nabla^2\dualenergy(\weight) + \hreg\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:newton-step}}
+      \State solve $\wlap\,\delta\weight = \mathbf{g}$
+      \State $\weight \gets \weight + \omega\,\delta\weight$, halving $\omega$ from $1$ until no cell is too small
+    \Until{$\lvert \cellvol_i - \pvol_i \rvert < \tau\,\pvol_i$ for all $i$}
+    \State \Return weights $\weight^\star(\qq) = \weight$ and centroids $\centroid(\qq)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Inversion and fitting by \citet{Bourne2025Inverting}.}
+  \label{alg:bourne2025}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$, targets $\tcentroid$, minimum distance $\delta$ (they use $\delta \!=\! 10^{-3}$), mode $\in \{\textsc{Invert}, \textsc{Fit}\}$
+    \If{mode $= \textsc{Invert}$}
+      \State $\qq \gets$ random samples in $\domain$
+    \Else
+      \State $\qq \gets \tcentroid$ \Comment{their Remark~4.13}
+    \EndIf
+    \Repeat \Comment{SLSQP, \texttt{scipy.optimize.minimize}}
+      \State $(\weight^\star, \centroid) \gets$ Alg.~\ref{alg:bourne-volume} with generators $\qq$
+      \If{mode $= \textsc{Invert}$}
+        \State $\mathbf{g} \gets \{\pvol_i\,(\tcentroid_i - \centroid_i)\}_i$ \Comment{their Thm.~4.2}
+        \State $\qq \gets$ SLSQP step along $\mathbf{g}$, s.t. $\norm{\qq_i - \qq_j} \ge \delta$
+        \Statex \hspace{4.5em} and $\sum_i \norm{\qq_i - \domainCentroid}^2 \le n\,\domainVol$ \hfill \texttt{//} ball constraint
+      \Else
+        \State $\mathbf{g} \gets -2 \sum_i \pvol_i^2\,(\partial\centroid_i / \partial\qq)\tr (\centroid_i - \tcentroid_i)$ \Comment{least squares}
+        \State $\qq \gets$ SLSQP step along $\mathbf{g}$, s.t. $\norm{\qq_i - \qq_j} \ge \delta$
+      \EndIf
+    \Until{SLSQP converges}
+    \State \Return generators $\qq$ and weights $\weight^\star(\qq)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Projection--dilation fitting by \citet{Bourne2026ConvexOrder}, subgradient variant.}
+  \label{alg:bourne2026-subgradient}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$ with $\sum_i \pvol_i \!=\! 1$, targets $\tcentroid$, dilation $s \!>\! 1$, iterations $K$
+    \State $\boldsymbol{\zeta} \gets s\,\tcentroid$ \Comment{dilated targets}
+    \State $m \gets \bigl( \tfrac{1}{\domainVol} \int_\domain \norm{\xx}^2 d\xx \bigr)^{1/2}$ \Comment{ball radius}
+    \State $\qq^1 \gets$ random generators, or $\tcentroid$
+    \For{$k = 1, \ldots, K$}
+      \State $\centroid^k \gets$ Alg.~\ref{alg:bourne-volume} with generators $\qq^k$, merged if coinciding
+      \State $\mathbf{y} \gets \qq^k - \tfrac{2}{k+1} \bigl( \qq^k - \boldsymbol{\zeta} + \centroid^k \bigr)$ \Comment{subgradient step}
+      \State $r \gets \bigl( \sum_i \pvol_i \norm{\mathbf{y}_i - \boldsymbol{\zeta}_i}^2 \bigr)^{1/2}$
+      \State $\qq^{k+1} \gets \boldsymbol{\zeta} + (\mathbf{y} - \boldsymbol{\zeta}) / \max(r/m, 1)$ \Comment{ball projection}
+    \EndFor
+    \State \Return generators $\qq^{K}$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Projection--dilation fitting by \citet{Bourne2026ConvexOrder}, Frank--Wolfe variant.}
+  \label{alg:bourne2026-fw}
+  \begin{algorithmic}[1]
+    \Require volumes $\pvol$, targets $\tcentroid$, dilation $s \!>\! 1$, iterations $K$
+    \State $\boldsymbol{\zeta} \gets s\,\tcentroid$
+    \State $\centroid^1 \gets$ Alg.~\ref{alg:bourne-volume} with generators $\tcentroid$ \Comment{a point of $\achievable$}
+    \For{$k = 1, \ldots, K$}
+      \State $\centroid' \gets$ Alg.~\ref{alg:bourne-volume} with generators $\boldsymbol{\zeta} - \centroid^k$ \Comment{vertex of $\achievable$}
+      \State $\omega \gets \operatorname{clamp}_{[0,1]} \Bigl( \frac{\sum_i \pvol_i (\boldsymbol{\zeta}_i - \centroid'_i)\tr (\centroid^k_i - \centroid'_i)}{\sum_i \pvol_i \norm{\centroid^k_i - \centroid'_i}^2} \Bigr)$ \Comment{exact line search}
+      \State $\centroid^{k+1} \gets \omega\,\centroid^k + (1 - \omega)\,\centroid'$
+    \EndFor
+    \State \Return generators $\qq = \boldsymbol{\zeta} - \centroid^{K}$
+  \end{algorithmic}
+\end{algorithm}
+
+\end{document}

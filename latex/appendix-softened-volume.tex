@@ -1,0 +1,62 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Softening Both Constraints}
+\label{sec:softened-volume}
+
+We detail the softening of the volume constraints summarized in \S\ref{sec:remarks}, which yields a single dual objective with one stiffness per constraint type.
+% As we show next, this dual is strongly concave in all multipliers and contains every formulation of this section as a limiting case.
+To this end, we introduce a scalar slack $\smash{\vslack_i \!\in\! \R}$ per cell that absorbs its volume residual, and penalize these slacks with a stiffness $\beta \!>\! 0$ in the objective \eqref{eq:regularized-primal-obj}, together with a linear term given by reference weights $\smash{\bweight = \{\bweight_i\}_{i=1}^n}$, yielding
+\begin{subequations}
+  \label{eq:softened-volume-primal}
+  \begin{alignat}{3}
+    & \min_{\cell, \slack, \vslack} \quad & & 
+    \sum\nolimits_{i} \int_{\cell_i} \!\norm{\xx - \qq_i}^2 d\xx \!+\! \pvol_i \bigl( \alpha \norm{\slack_i}^2 + \beta\,\vslack_i^2 - \bweight_i\,\vslack_i \bigr) \label{eq:softened-volume-primal-obj} \\
+    & \text{s.t.} \quad & \constraintbrace{16pt}{8pt} & \int_{\cell_i} (\xx - \tcentroid_i) \, d\xx = \pvol_i \, \slack_i \ \ \forall i , \label{eq:softened-volume-primal-cons} \\
+    & & & \cellvol_i - \pvol_i = \pvol_i \, \vslack_i \ \ \forall i . \label{eq:softened-volume-primal-vol}
+  \end{alignat}
+\end{subequations}
+% 
+Employing multipliers as in \S\ref{sec:joint-constraints}, the optimal volume slacks take the closed form $\smash{\vslack_i \!=\! (\bweight_i - \weight_i) / (2\beta)}$, and substituting them back into the objective leads to the \emph{softened dual objective}
+\begin{equation}
+  \jointdual_{\alpha\beta}(\shift, \weight) = \jointdual_{\alpha}(\shift, \weight) - \frac{1}{4\beta} \sum\nolimits_i \pvol_i\,(\weight_i - \bweight_i)^2 .
+  \label{eq:softened-volume-dual}
+\end{equation}
+% 
+Note that this volume-induced penalty only modifies the weight derivatives of $\jointdual_\alpha$, with \eqref{eq:joint-gradient-weight} becoming
+\begin{equation}
+  \partial_{\weight_i} \jointdual_{\alpha\beta} = \pvol_i - \cellvol_i - \frac{1}{2\beta}\,\pvol_i\,(\weight_i - \bweight_i) ,
+  \label{eq:softened-volume-gradient}
+\end{equation}
+% 
+so the optimal weights follow the equation of state
+\begin{equation}
+  \weight_i = \bweight_i + 2\beta \Bigl( 1 - \frac{\cellvol_i}{\pvol_i} \Bigr),
+  \label{eq:softened-volume-state}
+\end{equation}
+% 
+and act as a pressure with $\bweight$ as a reference pressure, while each diagonal weight--weight block of the Hessian is shifted by $\smash{-\tfrac{1}{2\beta}\,\pvol_i}$.
+This removes the additive constant on the weights from the null-space, so $\jointdual_{\alpha\beta}$ is strongly concave and admits a unique maximizer for any targets.
+Since the volumes are no longer exact, the optimal shifts become $\smash{\shift_i = \alpha\,(\cellvol_i / \pvol_i)(\tcentroid_i - \centroid_i)}$, so the generators $\dual$ remain pairwise distinct if the bound \eqref{eq:regularized-distinct} on $\alpha$ is tightened by the factor $\smash{\min_i \pvol_i / \domainVol}$, while $\beta$ requires no bound, since the weights do not move the shifted sites.
+
+It is worth noting that \eqref{eq:softened-volume-dual} covers the softening of each constraint type alone as limiting cases.
+In the limit $\alpha \!\to\! 0$, the centroid slacks become free, which forces the shifts to vanish, and $\jointdual_{\alpha\beta}$ reduces to the softening of the volume dual \eqref{eq:volume-dual} by $\beta$:
+\begin{equation}
+  \dualenergy_\beta(\weight) = \dualenergy(\weight) - \frac{1}{4\beta} \sum\nolimits_i \pvol_i\,(\weight_i - \bweight_i)^2 .
+  \label{eq:softened-volume-only-dual}
+\end{equation}
+In the limit $\beta \!\to\! 0$, the volume slacks become free instead, which forces the weights to the reference weights $\bweight$, and $\jointdual_{\alpha\beta}$ reduces to the softening of the centroid dual \eqref{eq:centroid-dual} by $\alpha$ for the fixed weights $\bweight$:
+\begin{equation}
+  \centroiddual_\alpha(\shift) = \centroiddual(\shift) - \frac{1}{\alpha} \sum\nolimits_i \pvol_i \norm{\shift_i}^2 ,
+  \label{eq:softened-centroid-dual}
+\end{equation}
+where $\pvol_i$ only serves as a reference volume weighting the penalty, since the volumes are free.
+% 
+% The stiffness parameters $(\alpha, \beta)$ thus connect all the formulations of this section: 
+Conversely, setting $\beta \!\to\! \infty$ enforces exact volumes and recovers $\jointdual_\alpha$ (\S\ref{sec:regularized-joint}), and further letting $\alpha \!\to\! \infty$ recovers $\jointdual$ (\S\ref{sec:joint-constraints}).
+% , while $\alpha \!\to\! 0$ and $\beta \!\to\! 0$ recover the softened duals $\dualenergy_\beta$ and $\centroiddual_\alpha$, respectively, and in turn $\dualenergy$ (\S\ref{sec:background}) and $\centroiddual$ (\S\ref{sec:centroid-constraints}) as their remaining stiffness tends to infinity.
+% , which suggests extending the flows of \S\ref{sec:flow} to compressible fluids, which we leave for future work.
+% Softening the volumes thus enables an extension of the incompressible flows of \cite{deGoes2015PowerParticles} to the compressible regime, in which the weights play the role of the pressure given by an equation of state (\S\ref{sec:flow-centroids}).
+
+\end{document}

@@ -1,0 +1,26 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Feasible Volumes for Prescribed Centroids}
+\label{sec:appendix-maxent}
+
+In the centroid-only problem of \S\ref{sec:centroid-constraints}, the volumes are unknown, and the conservation identities \eqref{eq:partition-feasibility} are satisfiable only if there exist non-negative volumes $\cellvol_i$ with $\smash{\sum_i \cellvol_i \tcentroid_i = \domainVol\,\centroid_\domain}$ and $\smash{\sum_i \cellvol_i = \domainVol}$.
+Drawing inspiration from \citet{Hormann2008MaxEnt}, one way to recover such volumes is to solve
+\begin{subequations}
+  \label{eq:maxent-feasibility}
+  \begin{alignat}{2}
+    & \min_{\{\cellvol_i\}} \quad && \sum\nolimits_i \cellvol_i \, \log\bigl( \cellvol_i / \domainVol \bigr) \label{eq:maxent-feasibility-obj} \\
+    & \text{s.t.} \quad && \sum\nolimits_i \cellvol_i \, \tcentroid_i = \domainVol \, \centroid_\domain , \quad \sum\nolimits_i \cellvol_i = \domainVol , \label{eq:maxent-feasibility-cons}
+  \end{alignat}
+\end{subequations}
+which is equivalent to the \emph{unconstrained} convex minimization
+\begin{equation}
+  \min_{\yy \in \R^{d+1}} \
+    \domainVol \sum\nolimits_i \exp\bigl( -\yy\tr \lift_i \bigr)
+    + \yy\tr \lift_\domain ,
+  \label{eq:maxent-dual}
+\end{equation}
+with the homogeneous lifts $\lift_i \!=\! [\tcentroid_i, 1]$ and $\lift_\domain \!=\! \domainVol\,[\centroid_\domain, 1]$, whose minimizer recovers the volumes as $\smash{\cellvol_i = \domainVol \exp(-\yy\tr \lift_i)}$.
+
+\end{document}

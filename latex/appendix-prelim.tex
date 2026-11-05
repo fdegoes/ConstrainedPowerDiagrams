@@ -1,0 +1,53 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Derivatives of $\energy$ and $(\dual,\combweight)$}
+\label{sec:appendix-prelim}
+
+Both our objectives $\centroiddual$ and $\jointdual$ are the plain power diagram energy $\energy$ in \eqref{eq:power-diagram} evaluated at the shifted weighted sites $(\dual, \combweight)$ of \eqref{eq:shifted-site}.
+We summarize here the ingredients shared by the next two appendices: the Jacobian of \eqref{eq:shifted-site} and the derivatives of \eqref{eq:power-diagram}.
+
+The first-order derivatives of the reparametrization \eqref{eq:shifted-site} are
+\begin{equation}
+  \partial_{\shift_i} \dual_i = \Id , \qquad
+  \partial_{\shift_i} \combweight_i = 2\,(\dual_i - \tcentroid_i) , \qquad
+  \partial_{\weight_i} \combweight_i = 1 ,
+  \label{eq:appendix-jac}
+\end{equation}
+and its only nonzero second-order part is $\smash{\partial^2_{\shift_i} \combweight_i = 2\,\Id}$.
+
+As detailed in \cite[\S2.4--2.5]{deGoes2014Thesis}, the first derivatives of the energy $\energy$ in \eqref{eq:power-diagram} are the standard site and weight gradients:
+\begin{equation}
+  \partial_{\dual_i} \energy = 2 \int_{\cell_i} (\dual_i - \xx) \, d\xx ,
+  \qquad
+  \partial_{\combweight_i} \energy = -\cellvol_i ,
+  \label{eq:appendix-energy-deriv}
+\end{equation}
+and its second derivatives are facet integrals with off-diagonals
+\begin{subequations}
+  \label{eq:appendix-energy-hess-off}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\dual_i \dual_j} \energy
+      &= \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i)(\xx - \dual_j)\tr \, dA , \label{eq:appendix-energy-hess-pp} \\
+    \partial^2_{\dual_i \combweight_j} \energy
+      &= \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i) \, dA , \label{eq:appendix-energy-hess-pl} \\
+    \partial^2_{\combweight_i \combweight_j} \energy
+      &= \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-energy-hess-ll}
+  \end{empheq}
+\end{subequations}
+and diagonals
+\begin{subequations}
+  \label{eq:appendix-energy-hess-diag}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \partial^2_{\dual_i \dual_i} \energy
+      &= 2\,\cellvol_i\,\Id - \!\sum_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i)(\xx - \dual_i)\tr \, dA , \label{eq:appendix-energy-hess-pp-diag} \\
+    \partial^2_{\dual_i \combweight_i} \energy
+      &= -\!\sum_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \dual_i) \, dA , \label{eq:appendix-energy-hess-pl-diag} \\
+    \partial^2_{\combweight_i \combweight_i} \energy
+      &= -\!\sum_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-energy-hess-ll-diag}
+  \end{empheq}
+\end{subequations}
+where the site--site diagonal carries an extra interior term $2\,\cellvol_i\,\Id$ from the explicit dependence of $\partial_{\dual_i}\energy$ on $\dual_i$, and otherwise each diagonal is the negated neighbor sum of its off-diagonal counterpart.
+
+\end{document}

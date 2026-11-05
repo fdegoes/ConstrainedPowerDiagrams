@@ -1,0 +1,70 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Bordered Newton Step}
+\label{sec:appendix-bordered}
+
+We detail next the Newton step of Algorithm~\ref{alg:flow-constrained-newton}, which solves \eqref{eq:flow-line-constraint} by maximizing $\jointdual$ subject to the linear constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans}.
+
+First, we stack the shifts and weights into $\smash{\mathbf{z} \!=\! (\shift, \weight)}$ and the constraint multipliers into $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d) \in \R^{d+1}}$.
+We also write the dilation constraint \eqref{eq:flow-line-constraint-dil} as the row $\smash{\mathbf{a} = (\{\pvol_i\,\dual^k_i\}_i, 0)}$ and the translation constraint \eqref{eq:flow-line-constraint-trans} along each axis $\mathbf{e}_j$ as the row $\smash{\mathbf{b}_j = (\{\pvol_i\,\mathbf{e}_j\}_i, 0)}$, both with zero entries on the weights.
+We then collect these $d \!+\! 1$ rows into the auxiliary matrix
+\begin{equation}
+  \Cmat = \begin{bmatrix} \mathbf{a} & \mathbf{b}_1 & \cdots & \mathbf{b}_d \end{bmatrix}\tr ,
+  \label{eq:appendix-constraint-matrix}
+\end{equation}
+so that the constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans} read $\Cmat\,\mathbf{z} = 0$.
+% 
+Additionally, we denote the gradient \eqref{eq:joint-gradient} by $\smash{\mathbf{g} \!=\! \nabla\jointdual(\mathbf{z})}$ and the matrix
+\begin{equation}
+  \Nmat = -\nabla^2\jointdual(\mathbf{z}) + \hreg\,\mathrm{diag}(\pvol),
+  \label{eq:appendix-bordered-matrix}
+\end{equation}
+which is the negated Hessian of $\jointdual$ regularized by $\hreg\,\mathrm{diag}(\pvol)$ with a small $\hreg \!>\! 0$ to remove its null-space.
+Since the Hessian is negative semi-definite, $\Nmat$ is positive definite.
+Moreover, $\Nmat$ shares the same sparsity as the Hessian, so it admits a sparse Cholesky factorization.
+% with the translation $\smash{\translation = (t_1, \dots, t_d)}$, and the Newton step $\delta\mathbf{z}$, 
+
+With this notation, we then solve the bordered system
+\begin{equation}
+  \begin{bmatrix} \Nmat & \Cmat\tr \\ \Cmat & 0 \end{bmatrix}
+  \begin{bmatrix} \delta\mathbf{z} \\ \boldsymbol{\nu} \end{bmatrix}
+  =
+  \begin{bmatrix} \mathbf{g} \\ 0 \end{bmatrix}.
+  \label{eq:flow-constrained-newton}
+\end{equation}
+%
+Eliminating $\delta\mathbf{z}$ from the first row of \eqref{eq:flow-constrained-newton} gives $\smash{\delta\mathbf{z} = \Nmat^{-1} \bigl( \mathbf{g} - \Cmat\tr \boldsymbol{\nu} \bigr)}$, which we compute from the $d \!+\! 2$ sparse solves
+\begin{equation}
+  \label{eq:flow-constrained-elimination-solve}
+  \left\{
+  \begin{aligned}
+    \Nmat\,\mathbf{z}_0 &= \mathbf{g} , \\
+    \Nmat\,\mathbf{z}_a &= 2\,\mathbf{a} , \\
+    \Nmat\,\mathbf{z}_{b_j} &= 2\,\mathbf{b}_j \ \ (j = 1, \dots, d) ,
+  \end{aligned}
+  \right.
+\end{equation}
+which share a single factorization of $\Nmat$.
+Substituting into the last row $\Cmat\,\delta\mathbf{z} = 0$ yields the dense $(d \!+\! 1) \times (d \!+\! 1)$ system
+\begin{equation}
+    \begin{bmatrix}
+      \mathbf{a}\tr\mathbf{z}_a & \mathbf{a}\tr\mathbf{z}_{b_1} & \cdots & \mathbf{a}\tr\mathbf{z}_{b_d} \\
+      \mathbf{b}_1\tr\mathbf{z}_a & \mathbf{b}_1\tr\mathbf{z}_{b_1} & \cdots & \mathbf{b}_1\tr\mathbf{z}_{b_d} \\
+      \vdots & \vdots & \ddots & \vdots \\
+      \mathbf{b}_d\tr\mathbf{z}_a & \mathbf{b}_d\tr\mathbf{z}_{b_1} & \cdots & \mathbf{b}_d\tr\mathbf{z}_{b_d}
+    \end{bmatrix}
+    \begin{bmatrix} s \\ t_1 \\ \vdots \\ t_d \end{bmatrix}
+    =
+    \begin{bmatrix} \mathbf{a}\tr\mathbf{z}_0 \\ \mathbf{b}_1\tr\mathbf{z}_0 \\ \vdots \\ \mathbf{b}_d\tr\mathbf{z}_0 \end{bmatrix} ,
+    \label{eq:flow-constrained-elimination-gauge}
+\end{equation}
+which is symmetric positive definite.
+The Newton step follows as
+\begin{equation}
+  \delta\mathbf{z} = \mathbf{z}_0 - s\,\mathbf{z}_a - \sum\nolimits_j t_j\,\mathbf{z}_{b_j}.
+  \label{eq:flow-constrained-elimination-update}
+\end{equation}
+
+\end{document}

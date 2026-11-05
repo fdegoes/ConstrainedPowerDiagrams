@@ -1,0 +1,87 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Derivatives and Concavity of $\centroiddual$}
+\label{sec:appendix-centroid}
+
+For fixed weighted sites $(\qq, \weight)$, the energy $\centroiddual(\shift) = \energy(\dual, \combweight)$ in \eqref{eq:centroid-dual} depends on the shifts $\shift$ \emph{only} through the shifted sites $(\dual, \combweight)$ of \eqref{eq:shifted-site}.
+Applying the chain rule with the Jacobian \eqref{eq:appendix-jac} and the energy gradients \eqref{eq:appendix-energy-deriv}, we obtain the first derivative of $\centroiddual$:
+\begin{equation}
+  \begin{aligned}
+    \partial_{\shift_i} \centroiddual
+      &= (\partial_{\shift_i} \dual_i) \, (\partial_{\dual_i} \energy)
+         + (\partial_{\shift_i} \combweight_i) \, (\partial_{\combweight_i} \energy) \\
+      &= (\partial_{\dual_i} \energy) + 2\,(\dual_i - \tcentroid_i)\, (\partial_{\combweight_i} \energy)
+       = 2 \int_{\cell_i} (\tcentroid_i - \xx) \, d\xx ,
+  \end{aligned}
+  \label{eq:appendix-centroid-grad}
+\end{equation}
+thus recovering the gradient \eqref{eq:centroid-dual-gradient}.
+% 
+For its Hessian, we differentiate \eqref{eq:appendix-centroid-grad} once more, again via the chain rule.
+Letting $k, l$ range over the shifted-site variables $\{\dual, \combweight\}$, this yields
+\begin{equation}
+  \partial^2_{\shift_i \shift_j} \centroiddual
+    = \sum\nolimits_{k, l} (\partial_{\shift_i} k_i)\,(\partial^2_{k_i l_j} \energy)\,(\partial_{\shift_j} l_j)
+      + \delta_{ij}\,(\partial^2_{\shift_i} \combweight_i)\,(\partial_{\combweight_i} \energy) ,
+  \label{eq:appendix-centroid-hess-chain}
+\end{equation}
+where $\delta_{ij}$ is the Kronecker delta.
+Substituting the energy Hessian \eqref{eq:appendix-energy-hess-off}--\eqref{eq:appendix-energy-hess-diag} and the Jacobian \eqref{eq:appendix-jac}, 
+% and using $\smash{\xx - \tcentroid_i = (\xx - \dual_i) + (\dual_i - \tcentroid_i)}$, 
+the facet terms combine into $\smash{(\xx - \tcentroid_i)(\xx - \tcentroid_j)\tr}$, recovering the facet Laplacian in \eqref{eq:centroid-hessian}.
+
+% \paragraph{Negative semidefiniteness and null-space.}
+To read off the definiteness of \eqref{eq:centroid-hessian}, we introduce the auxiliary per-cell affine field $\varphi_i(\xx) = 2\,\shift_i\tr (\xx - \tcentroid_i)$, whose variation under a shift perturbation $\delta\shift_i$ is $\delta\varphi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i)$.
+Contracting the Hessian blocks with a perturbation $\smash{\delta\shift = \{\delta\shift_i\}}$ collapses each facet to a scalar square:
+\begin{equation*}
+  \delta\shift\tr \nabla^2 \centroiddual \, \delta\shift
+  \!=\! 
+  -\sum\nolimits_{i,j}\! \frac{1}{2\,\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\! \bigl( \delta\varphi_i(\xx) - \delta\varphi_j(\xx) \bigr)^2 \, dA
+  \le 0 ,
+  \label{eq:appendix-centroid-nsd}
+\end{equation*}
+so $\nabla^2 \centroiddual \preceq 0$ and $\centroiddual$ is concave.
+
+This quadratic form vanishes only when $\delta\varphi_i(\xx) = \delta\varphi_j(\xx)$ on every shared facet $\face_{ij}$.
+Note that this condition does \emph{not} glue the affine fields $\delta\varphi_i$ into a single global affine function: two affine functions that agree on the $(d\!-\!1)$-dimensional facet $\face_{ij}$ only agree on its supporting hyperplane, and their difference may be any multiple of the affine function defining this hyperplane.
+To characterize the null-space, we name $a_i$ the affine function of the lifting in \S\ref{sec:background}, evaluated at the shifted weighted site of \eqref{eq:shifted-site}:
+\begin{equation}
+  a_i(\xx) = 2\,\dual_i\tr\xx - \norm{\dual_i}^2 + \combweight_i = 2\,\qq_i\tr\xx - \norm{\qq_i}^2 + 2\,\shift_i\tr(\xx - \tcentroid_i) + \weight_i ,
+  \label{eq:appendix-affine}
+\end{equation}
+so the facet $\face_{ij}$ lies on the hyperplane $\{a_i = a_j\}$ and a perturbation induces $\delta a_i = \delta\varphi_i$ for fixed weights.
+The null-space condition then reads $\smash{\delta a_i - \delta a_j = \kappa_{ij}\,(a_i - a_j)}$ for scalars $\kappa_{ij}$, \ie the perturbation keeps every facet hyperplane fixed to first order and, therefore, leaves the cells unchanged to first order.
+
+In terms of the lifting of \S\ref{sec:background}, we have $\smash{a_i(\xx) = 2\,\dual_i\tr\xx - \sheight_i}$, where the height $\smash{\sheight_i = \norm{\dual_i}^2 - \combweight_i}$ of the shifted weighted site is related to the height $\smash{\height_i = \norm{\qq_i}^2 - \weight_i}$ of the original one by $\smash{\sheight_i = \height_i + 2\,\tcentroid_i\tr\shift_i}$.
+Each shift thus moves the lifted point $\smash{(\dual_i, \sheight_i) = (\qq_i, \height_i) + (\shift_i, 2\,\tcentroid_i\tr\shift_i)}$ affi\-nely, and \eqref{eq:appendix-affine} gives $\smash{a_i(\tcentroid_i) = 2\,\qq_i\tr\tcentroid_i - \height_i = \gamma_i}$ for every shift, with $\gamma_i$ as in \eqref{eq:pivot}.
+In other words, the shift $\shift_i$ pivots the lifted hyperplane of site $i$ about the fixed point $\smash{(\tcentroid_i, \gamma_i)}$.
+Applying the homotheties of \eqref{eq:lifted-homothety} to the lifted shifted sites with $s \!=\! 1 \!+\! \mu$ and an offset $(\translation, -c)$, and keeping the first-order terms, gives the infinitesimal homotheties
+\begin{equation}
+  \delta\dual_i = \mu\,\dual_i + \translation ,
+  \qquad
+  \delta\sheight_i = \mu\,\sheight_i - c ,
+  \label{eq:infinitesimal-homothety}
+\end{equation}
+\ie $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$, which always satisfy the null-space condition with $\kappa_{ij} \equiv \mu$.
+% As is generic \cite{Bourne2025Inverting}, we assume that they are also the only solutions, \ie that the cells determine their lifted affine functions only up to these homotheties; this fails in special configurations, such as strips of parallel cells or a boundary cell with a single neighbor, whose affine function may rotate about their shared facet.
+
+With fixed weights, a shift perturbation changes each affine function by $\smash{\delta a_i = 2\,\delta\shift_i\tr(\xx - \tcentroid_i)}$, which vanishes at $\tcentroid_i$, so an infinitesimal homothety is realizable by the shifts exactly when it preserves all pivots.
+Matching the two sides of $\delta a_i = 2\,\delta\shift_i\tr(\xx - \tcentroid_i)$ and $\mu\,a_i + 2\,\translation\tr\xx + c$ gives
+\begin{equation}
+  \delta\shift_i = \mu\,\dual_i + \translation ,
+  \qquad
+  0 = \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i + c ,
+  \label{eq:appendix-centroid-kernel}
+\end{equation}
+where the first identity matches the linear parts, and the second evaluates both sides at the pivot $\xx \!=\! \tcentroid_i$, where $\delta a_i$ vanishes and $a_i \!=\! \gamma_i$.
+Since $\delta\shift \!=\! 0$ forces $\mu \!=\! 0$ and $\translation = 0$ when the shifted sites are distinct, and then $c \!=\! 0$, the Hessian is \emph{negative definite} if and only if \eqref{eq:appendix-centroid-kernel} has only the trivial solution, \ie if and only if the vectors $\smash{(\gamma_i, \tcentroid_i, 1)}$ span $\R^{d+2}$.
+Equivalently, the pivots $\smash{(\tcentroid_i, \gamma_i) \in \R^{d+1}}$ do not lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
+Since $n$ points in $\R^{d+1}$ always lie on a common hyperplane when $n \!\le\! d\!+\!1$, this requires $n \!\ge\! d\!+\!2$.
+A vertical hyperplane ($\mu \!=\! 0$) corresponds to targets $\tcentroid_i$ lying on a common hyperplane of $\R^d$.
+In the centroidal setting $\qq_i \!=\! \tcentroid_i$ with $\weight_i \!=\! 0$, the pivots $\smash{(\tcentroid_i, \norm{\tcentroid_i}^2)}$ lie on the paraboloid, and a non-vertical hyperplane ($\mu \!\neq\! 0$) cuts it along a sphere, recovering the Delaunay degeneracy of targets on a common hyperplane or sphere.
+In general, $\gamma_i$ lowers the paraboloid by the power distance from $\tcentroid_i$ to its own weighted site, so the degeneracy is that of the regular triangulation of the targets weighted by these power distances.
+% In particular, the condition that the targets affinely span $\R^d$ is not sufficient.
+
+\end{document}
