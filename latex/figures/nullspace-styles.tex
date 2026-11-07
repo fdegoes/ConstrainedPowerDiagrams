@@ -1,0 +1,19 @@
+% Shared TikZ styles of the null-space insets (appendix-nullspace.tex)
+\definecolor{nsBlue}{RGB}{66,113,184}
+\definecolor{nsOrange}{RGB}{230,140,40}
+\definecolor{nsGreen}{RGB}{60,160,90}
+\definecolor{nsRed}{RGB}{205,50,50}
+\definecolor{nsPurple}{RGB}{140,90,180}
+\definecolor{nsGray}{RGB}{150,150,150}
+\tikzset{
+  nsDomain/.style={draw=black, line width=0.6pt},
+  nsFacet/.style={draw=black!70, line width=0.4pt},
+  nsSite/.style={fill=black},
+  nsDual/.style={line width=1.1pt},
+  nsShade/.style={fill=nsBlue!15},
+  nsCut/.style={fill=nsOrange!40},
+  nsHighlight/.style={draw=nsRed, line width=1.4pt},
+  nsGuide/.style={draw=black!40, densely dotted, line width=0.3pt},
+  nsRidge/.style={draw=black, line width=0.9pt},
+  nsLabel/.style={font=\scriptsize, inner sep=1pt},
+}

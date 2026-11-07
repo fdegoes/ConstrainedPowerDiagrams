@@ -15,6 +15,23 @@
 \usepackage{mathtools}
 \usepackage{empheq}    % braced groups of numbered equations
 \usepackage{graphicx}
+\usepackage{tikz}       % vector insets of the null-space appendix
+\usepackage{wrapfig}    % insets wrapped into the appendix text
+% Tighter gaps around the wrapped insets: wrapfig uses \columnsep (text gap) and
+% \intextsep (top/bottom), which are 24pt/12pt in acmart and also serve the columns and [H] floats.
+\newlength{\insetsep}\setlength{\insetsep}{8pt}
+\newlength{\insetvsep}\setlength{\insetvsep}{2pt}
+\newlength{\insetbot}\setlength{\insetbot}{8pt}  % bottom pad so wrapping ends below the inset
+\makeatletter
+\patchcmd{\WF@putfigmaybe}{\advance\@tempdima\columnsep}{\advance\@tempdima\insetsep}{}{\PackageWarning{main}{wrapfig patch 1 failed}}
+\patchcmd{\WF@putfigmaybe}{\kern\columnsep}{\kern\insetsep}{}{\PackageWarning{main}{wrapfig patch 2 failed}}
+\patchcmd{\WF@putfigmaybe}{\kern\columnsep}{\kern\insetsep}{}{\PackageWarning{main}{wrapfig patch 3 failed}}
+\patchcmd{\WF@putfigmaybe}{\advance\WF@size-\intextsep}{\advance\WF@size-\insetvsep}{}{\PackageWarning{main}{wrapfig patch 4 failed}}
+\patchcmd{\WF@putfigmaybe}{\lower\intextsep}{\lower\insetvsep}{}{\PackageWarning{main}{wrapfig patch 5 failed}}
+\patchcmd{\endwrapfloat}{\tw@\intextsep}{\tw@\insetvsep \global\advance\WF@size\insetbot}{}{\PackageWarning{main}{wrapfig patch 6 failed}}
+\let\endwrapfigure\endwrapfloat
+\makeatother
+\input{figures/nullspace-styles}
 \usepackage{xspace}    % smart trailing space for \ie / \eg
 \usepackage{subfiles}  % lets each content file also compile on its own
 \usepackage{algorithm}      % pseudocode (appendix; also bourne_algos.tex)
@@ -78,10 +95,11 @@
 \subfile{appendix-prelim}
 \subfile{appendix-centroid}
 \subfile{appendix-joint}
-\subfile{appendix-softened-volume}
+\subfile{appendix-nullspace}
+% \subfile{appendix-softened-volume}  % softened volumes, currently unused
 \subfile{appendix-maxent}
 \subfile{appendix-bordered}
-\subfile{appendix-distortion}
+% \subfile{appendix-distortion}
 \subfile{appendix-algorithms}
 \subfile{appendix-prior}
 

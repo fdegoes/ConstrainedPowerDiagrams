@@ -2,245 +2,285 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
-\section{Distortion Energies and Affine Deformations}
+\section{Cage Deformations of Power Diagrams}
 \label{sec:appendix-distortion}
 
-The softened dual $\jointdual_\alpha$ of \S\ref{sec:regularized-joint} attaches each centroid to its own target by a zero-length spring.
-In this appendix, we replace this penalty by a general convex \emph{distortion energy} $\distortion$ of the centroids, which yields a family of concave duals containing $\jointdual_\alpha$ as a special case.
-We then characterize when such a dual reproduces an affine deformation of the domain exactly, construct the analog of a Dirichlet energy that does so while also handling general deformations of the boundary, and extend this construction to softened volumes.
+We now consider the deformation of a power diagram that tiles a domain $\rest{\domain}$ following the deformation of the boundary of $\rest{\domain}$.
+We assume that $\rest{\domain}$ is a polytope with planar boundary faces $f$ of outward unit normals $\nrm_f$, \eg a polygon in 2D or a closed triangle mesh in 3D.
+The deformed domain $\domain$ is given by a continuous map $\deform$ of $\partial\rest{\domain}$ that is affine on each face, and we denote the undeformed domain with a hat.
 
-\subsection{Generalized Softening}
-\label{sec:appendix-distortion-dual}
+\subsection{Rest State}
+\label{sec:appendix-distortion-rest}
 
-We promote the prescribed centroids of \S\ref{sec:joint-constraints} to unknowns, penalized by a convex energy $\distortion(\tcentroid)$.
-The corresponding primal problem reads
-\begin{subequations}
-  \label{eq:distortion-primal}
-  \begin{alignat}{3}
-    & \min_{\cell, \tcentroid} \quad & & \sum\nolimits_{i} \int_{\cell_i} \norm{\xx - \qq_i}^2 \, d\xx + \distortion(\tcentroid) \label{eq:distortion-primal-obj} \\
-    & \text{s.t.} \quad & \constraintbrace{16pt}{8pt} & \int_{\cell_i} (\xx - \qq_i) \, d\xx = \pvol_i \, (\tcentroid_i - \qq_i) \ \ \forall i , \label{eq:distortion-primal-cons} \\
-    & & & \cellvol_i = \pvol_i \ \ \forall i , \label{eq:distortion-primal-vol}
-  \end{alignat}
-\end{subequations}
-where \eqref{eq:distortion-primal-cons} states, together with \eqref{eq:distortion-primal-vol}, that the targets are the centroids of the cells.
-Compared to \eqref{eq:joint-lagrangian}, we write the centroid constraint with the prescribed volume $\pvol_i$ in place of the cell volume $\cellvol_i$, which is equivalent under \eqref{eq:distortion-primal-vol}, but moves the targets out of the integrals over the cells.
-This choice is necessary for concavity: with the cell volumes, the targets would multiply the partition in the Lagrangian, and the minimization over the targets would no longer separate from the one over the partitions.
-We also measure the first moments relative to the sites rather than to the origin, so that the constraint is invariant under a common translation of the domain, the sites and the targets, whatever the cell volumes.
-Introducing the multipliers of \S\ref{sec:joint-constraints}, the targets then enter the Lagrangian only through the terms $\smash{2 \sum_i \pvol_i\,\shift_i\tr(\tcentroid_i - \qq_i) + \distortion(\tcentroid)}$, which do not depend on the partition.
-The remaining terms coincide with the Lagrangian \eqref{eq:joint-lagrangian} with targets at the sites.
-Denoting by $\jointdual(\shift, \weight; \tcentroid)$ the joint dual \eqref{eq:joint-dual} with targets $\tcentroid$, the minimization over the partitions thus yields $\jointdual(\shift, \weight; \qq)$, whose shifted sites \eqref{eq:shifted-site} simplify to $\smash{\dual_i = \qq_i + \shift_i}$ and $\smash{\combweight_i = \weight_i + \norm{\shift_i}^2}$.
-The minimization over the targets yields the convex conjugate $\smash{\distortion^\ast(\mathbf{z}) = \sup_{\tcentroid} \sum_i \mathbf{z}_i\tr\tcentroid_i - \distortion(\tcentroid)}$, which leads to the dual objective
+We take as rest state a centroidal power diagram $\smash{\rest{\cell}}$ of $\rest{\domain}$ with volumes $\smash{\rest{\cellvol}}$ and centroids $\smash{\rest{\centroid}}$, constructed from generators $\smash{\rest{\dual}}$ and weights $\smash{\rest{\weight}}$, where we choose the homothety \eqref{eq:lifted-homothety} for which the generators are the centroids, \ie $\smash{\rest{\dual} = \rest{\centroid}}$.
+We denote all quantities of the rest state with a hat, and keep the notation of \S\ref{sec:contributions} on the deformed domain $\domain$, where the volumes $\pvol$, target centroids $\tcentroid$ and sites $\qq$ are predicted from the cage.
+The facet $\face_{ij}$ is orthogonal to the segment joining the generators $\smash{\rest{\dual}_i}$ and $\smash{\rest{\dual}_j}$, and we define its stiffness as
 \begin{equation}
-  \begin{aligned}
-    \jointdual_{\distortion}(\shift, \weight)
-    &= \min_{\tcentroid} \Bigl[ \jointdual(\shift, \weight; \qq) + 2 \sum\nolimits_i \pvol_i\,\shift_i\tr(\tcentroid_i - \qq_i) + \distortion(\tcentroid) \Bigr] \\
-    &= \jointdual(\shift, \weight; \qq) - 2 \sum\nolimits_i \pvol_i\,\shift_i\tr\qq_i - \distortion^\ast\bigl( \{-2\,\pvol_i\,\shift_i\}_i \bigr) ,
-  \end{aligned}
-  \label{eq:distortion-dual}
+  \kappa_{ij} = \frac{\area_{ij}}{\norm{\rest{\dual}_i - \rest{\dual}_j}} ,
+  \label{eq:distortion-stiffness}
 \end{equation}
-which is concave for any convex $\distortion$, since $\distortion^\ast$ is convex.
+which is twice the weight--weight block \eqref{eq:newton-step} of the Hessian of $\jointdual$ on the rest state.
+For each cell $\smash{\rest{\cell}_i}$ that touches a boundary face $f$, we also denote by $\smash{\area_{if}}$ the measure of the boundary patch $\smash{\rest{\cell}_i \cap f}$, by $\foot_{if}$ the \emph{foot} of $\smash{\rest{\centroid}_i}$ on $f$, \ie its orthogonal projection onto the plane of $f$, and by $\smash{\ell_{if} = \norm{\rest{\centroid}_i - \foot_{if}}}$ the distance from the centroid to this plane, and define the boundary stiffness $\smash{\kappa_{if} = \area_{if} / \ell_{if}}$.
+We assume that each centroid lies on the inner side of the planes of its boundary faces, as for a convex cage, so that $\smash{\foot_{if} - \rest{\centroid}_i = \ell_{if}\,\nrm_f}$ and $\kappa_{if} \!>\! 0$.
+The feet treat each boundary patch as a facet shared with a ghost cell, whose centroid is the reflection of $\smash{\rest{\centroid}_i}$ across the plane of $f$: the patch is orthogonal to the segment joining $\smash{\rest{\centroid}_i}$ and its reflection, whose midpoint is $\foot_{if}$, and $\kappa_{if}$ is the stiffness of this ghost facet measured with the distance $\ell_{if}$ to the midpoint, where boundary data are imposed.
+Note that the foot lies on the plane of $f$ but not necessarily on the face itself, \eg near a corner of the cage.
 
-For instance, the penalty of \eqref{eq:regularized-primal}, written in terms of the unknown targets, is $\smash{\distortion(\tcentroid) = \alpha \sum_i \pvol_i \norm{\tcentroid_i - \tcentroid^0_i}^2}$ for fixed targets $\smash{\tcentroid^0}$.
-With the slacks $\smash{\slack_i = \tcentroid_i - \tcentroid^0_i}$, the constraint \eqref{eq:distortion-primal-cons} reads $\smash{\int_{\cell_i} (\xx - \tcentroid^0_i) \, d\xx = \pvol_i\,\slack_i}$ under \eqref{eq:distortion-primal-vol}, so \eqref{eq:distortion-primal} is exactly the softened primal \eqref{eq:regularized-primal} with targets $\smash{\tcentroid^0}$.
-Both problems thus return the same power diagram, with the same generators and shifts, although $\jointdual_\distortion$ and $\jointdual_\alpha$ are different duals of this primal, whose weights differ by $\smash{2\,\shift_i\tr(\tcentroid^0_i - \qq_i)}$.
-More generally, any quadratic $\smash{\distortion(\tcentroid) = \tfrac{1}{2} \sum_{i,j} (\tcentroid_i - \boldsymbol{\psi}_i)\tr \mathrm{K}_{ij} (\tcentroid_j - \boldsymbol{\psi}_j)}$, with a positive definite matrix $\mathrm{K}$ and a rest state $\boldsymbol{\psi}$, has the conjugate $\smash{\distortion^\ast(\mathbf{z}) = \sum_i \mathbf{z}_i\tr\boldsymbol{\psi}_i + \tfrac{1}{2} \sum_{i,j} \mathbf{z}_i\tr (\mathrm{K}^{-1})_{ij}\,\mathbf{z}_j}$, so that
-\begin{equation}
-  \begin{aligned}
-    \jointdual_{\distortion}(\shift, \weight) = \jointdual(\shift, \weight; \qq)
-    &+ 2 \sum\nolimits_i \pvol_i\,\shift_i\tr(\boldsymbol{\psi}_i - \qq_i) \\
-    &- 2 \sum\nolimits_{i,j} \pvol_i\,\shift_i\tr (\mathrm{K}^{-1})_{ij}\,\pvol_j\,\shift_j .
-  \end{aligned}
-  \label{eq:distortion-quadratic}
-\end{equation}
-Since $\mathrm{K}^{-1}$ is dense in general, we keep the targets as unknowns in practice and apply Newton's method to the saddle problem in $(\shift, \weight, \tcentroid)$, whose Hessian is sparse whenever $\mathrm{K}$ is.
+\paragraph{Laplacians.}
+These stiffnesses define two $n \!\times\! n$ Laplacian matrices: the Neumann Laplacian $\mathrm{L}$ with entries $\smash{\mathrm{L}_{ij} = -\kappa_{ij}}$ for neighbors and $\smash{\mathrm{L}_{ii} = \sum_{j \sim i} \kappa_{ij}}$, and the Dirichlet Laplacian $\mathrm{K}$, which adds the boundary stiffnesses to the diagonal, $\smash{\mathrm{K}_{ii} = \mathrm{L}_{ii} + \sum_f \kappa_{if}}$.
+The matrix $\mathrm{L}$ is positive semi-definite with the constant vector in its kernel, while $\mathrm{K}$ is positive definite, since every cell is connected to the boundary through its neighbors.
+The matrix $\mathrm{K}$ is the two-point flux approximation of the Laplacian in the finite-volume method on the rest state, with Dirichlet data imposed at the feet \cite{Eymard2000FVM}.
 
-\paragraph{Optimality conditions.}
-By \eqref{eq:joint-gradient} and the envelope theorem, the gradients of \eqref{eq:distortion-dual} are
+\paragraph{Closure.}
+With respect to $\smash{\rest{\cell}_i}$, the facet $\face_{ij}$ has outward unit normal along $\smash{\rest{\dual}_j - \rest{\dual}_i}$, and the boundary patch $\smash{\rest{\cell}_i \cap f}$ has outward unit normal $\nrm_f$.
+Since the vector areas of a closed polytope sum to zero, the boundary of each cell yields
 \begin{equation}
-  \partial_{\shift_i} \jointdual_{\distortion} = 2\,\bigl( \pvol_i\,(\tcentroid_i - \qq_i) - \cellvol_i\,(\centroid_i - \qq_i) \bigr) ,
+  \sum\nolimits_{j \sim i} \kappa_{ij}\,(\rest{\dual}_i - \rest{\dual}_j) = \rest{\flux}_i ,
   \qquad
-  \partial_{\weight_i} \jointdual_{\distortion} = \pvol_i - \cellvol_i ,
-  \label{eq:distortion-gradient}
+  \rest{\flux}_i = \sum\nolimits_f \area_{if}\,\nrm_f = \sum\nolimits_f \kappa_{if}\,(\foot_{if} - \rest{\centroid}_i) ,
+  \label{eq:distortion-closure}
 \end{equation}
-where $\tcentroid$ is the minimizer of the bracket in \eqref{eq:distortion-dual}, which is unique for a strictly convex $\distortion$.
-Since the targets enter this bracket only through $\smash{2 \sum_i \pvol_i\,\shift_i\tr(\tcentroid_i - \qq_i) + \distortion(\tcentroid)}$, the minimizer verifies, for any multipliers,
-\begin{equation}
-  \partial_{\tcentroid_i} \distortion(\tcentroid) = -2\,\pvol_i\,\shift_i .
-  \label{eq:distortion-target-optimality}
-\end{equation}
-At a maximizer, the weight gradient in \eqref{eq:distortion-gradient} vanishes, so the volumes are exact, and the shift gradient then vanishes only if the targets coincide with the centroids.
-Evaluating \eqref{eq:distortion-target-optimality} at $\smash{\tcentroid = \centroid}$ and solving for the shifts, the generators $\dual = \qq + \shift$ then read
-\begin{equation}
-  \dual_i = \qq_i - \frac{1}{2\,\pvol_i}\, \partial_{\tcentroid_i} \distortion(\centroid) .
-  \label{eq:distortion-generators}
-\end{equation}
-Each generator is thus its site corrected by the force of $\distortion$ per unit volume, which recovers \eqref{eq:regularized-generators} for the penalty of $\jointdual_\alpha$.
+where $\rest{\flux}_i$ is the vector area of the boundary patches of $\smash{\rest{\cell}_i}$.
+With the first expression of $\rest{\flux}_i$, this identity is a Neumann problem for the generators with the matrix $\mathrm{L}$, whose boundary data are vector areas, and it holds for any power diagram.
+With the second, and since $\smash{\rest{\dual} = \rest{\centroid}}$, it states that the stiffnesses are generalized barycentric coordinates of each centroid with respect to its neighbors and its feet, with linear precision.
 
-\paragraph{Reduced primal.}
-For cells with volumes $\pvol$ and centroids $\centroid$, the transport cost is linear in the centroids, since
+\paragraph{Dirichlet energy.}
+Given boundary values $\smash{\mathbf{g} = \{\mathbf{g}_{if}\}}$ at the feet, we define the discrete Dirichlet energy of centroids $\smash{\centroid = \{\centroid_i\}_{i=1}^n}$ as
 \begin{equation}
-  \int_{\cell_i} \norm{\xx - \qq_i}^2 d\xx = \int_{\cell_i} \norm{\xx}^2 d\xx - 2\,\pvol_i\,\qq_i\tr\centroid_i + \pvol_i \norm{\qq_i}^2 ,
-  \label{eq:distortion-transport}
+  \mathcal{W}_{\mathbf{g}}(\centroid) = \frac{1}{2} \sum\nolimits_{\{i,j\}} \kappa_{ij} \norm{\centroid_i - \centroid_j}^2 + \frac{1}{2} \sum\nolimits_{i,f} \kappa_{if} \norm{\centroid_i - \mathbf{g}_{if}}^2 ,
+  \label{eq:distortion-dirichlet-energy}
 \end{equation}
-where the first terms sum to the constant $\smash{\int_\domain \norm{\xx}^2 d\xx}$ over all cells.
-The primal problem \eqref{eq:distortion-primal} thus reduces to
-\begin{equation}
-  \min_{\centroid \in \achievable} \ \distortion(\centroid) - 2 \sum\nolimits_i \pvol_i\,\qq_i\tr\centroid_i ,
-  \label{eq:distortion-reduced}
-\end{equation}
-which recovers the projection \eqref{eq:regularized-projection} for the penalty of $\jointdual_\alpha$.
-The sites $\qq$ only enter through this linear term, which pushes the centroids towards the boundary of $\achievable$, where power diagrams lie (\S\ref{sec:background}), while $\distortion$ pulls them towards its minimizer.
-Accordingly, \eqref{eq:distortion-generators} is the outward normal of $\achievable$ at the optimal centroids.
-Without the sites, the minimizer may lie in the relative interior of $\achievable$, where no power diagram realizes the centroids.
+where the first sum runs over pairs of neighbors in the rest state.
+This energy is a strictly convex quadratic whose Hessian is $\mathrm{K}$ on each coordinate, so its minimizer solves $d$ sparse linear systems with the matrix $\mathrm{K}$.
+By the second form of \eqref{eq:distortion-closure}, the rest centroids minimize $\smash{\mathcal{W}_{\mathbf{g}}}$ for the feet as boundary values, $\smash{\mathbf{g}_{if} = \foot_{if}}$.
 
 \subsection{Affine Deformations}
 \label{sec:appendix-distortion-affine}
 
-Consider an affine map $\deform(\xx) = \Fmat\,\xx + \boldsymbol{\tau}$ with $\det\Fmat > 0$, a power diagram $\cell$ of $\domain$ with volumes $\pvol$, centroids $\centroid$, and generators $\dual$ with heights $\height$, and the deformed domain $\domain' = \deform(\domain)$.
-The cells $\deform(\cell_i)$ tile $\domain'$, with volumes $\smash{\det\Fmat\,\pvol_i}$ and centroids $\smash{\deform(\centroid_i)}$.
-Substituting $\smash{\xx = \Fmat^{-1}(\xx' - \boldsymbol{\tau})}$ into the affine functions $\smash{2\,\dual_i\tr\xx - \height_i}$ of \S\ref{sec:background} shows that $\smash{\deform(\cell_i)}$ is the cell of the generator $\smash{\Fmat^{-t}\dual_i}$ with height $\smash{\height_i + 2\,(\Fmat^{-t}\dual_i)\tr\boldsymbol{\tau}}$.
-The deformed cells are thus a power diagram, generated by any homothety $\smash{s\,\Fmat^{-t}\dual + \translation}$.
-Note that centroids transform by $\Fmat$, as \emph{vectors}, while generators transform by $\smash{\Fmat^{-t}}$, as \emph{covectors}, consistently with their role as normals of $\achievable$.
+Consider an affine map $\deform(\xx) = \Fmat\,\xx + \boldsymbol{\tau}$ with $\det\Fmat > 0$.
+The cells $\smash{\deform(\rest{\cell}_i)}$ tile $\domain = \deform(\rest{\domain})$, and substituting $\smash{\rest{\xx} = \Fmat^{-1}(\xx - \boldsymbol{\tau})}$ into the affine functions $\smash{2\,\rest{\dual}_i\tr\rest{\xx} - \norm{\rest{\dual}_i}^2 + \rest{\weight}_i}$ of \S\ref{sec:background} shows that they form a power diagram.
+Choosing the dilation $\det\Fmat$ among its homotheties \eqref{eq:lifted-homothety}, the deformed cells have the following volumes, centroids, generators, and heights of the lifted generators (\S\ref{sec:background}):
+\begin{subequations}
+  \label{eq:distortion-affine}
+  \begin{empheq}[left={\empheqlbrace\,}]{alignat=2}
+    & \text{volumes} \quad && \cellvol_i = \det\Fmat\,\rest{\cellvol}_i , \label{eq:distortion-affine-volume} \\
+    & \text{centroids} \quad && \centroid_i = \Fmat\,\rest{\centroid}_i + \boldsymbol{\tau} , \label{eq:distortion-affine-centroid} \\
+    & \text{generators} \quad && \dual_i = \det\Fmat\,\Fmat^{-t}\rest{\dual}_i , \label{eq:distortion-affine-generator} \\
+    & \text{heights} \quad && \height_i = \det\Fmat \bigl( \norm{\rest{\dual}_i}^2 - \rest{\weight}_i + 2\,(\Fmat^{-t}\rest{\dual}_i)\tr\boldsymbol{\tau} \bigr) . \label{eq:distortion-affine-height}
+  \end{empheq}
+\end{subequations}
+Note that centroids transform by $\Fmat$, as \emph{vectors}, while generators transform by the cofactor matrix $\smash{\det\Fmat\,\Fmat^{-t}}$, as \emph{area vectors}, consistently with their role as normals of $\achievable$.
+In particular, the generators of the deformed diagram are no longer its centroids, and transporting the rest generators by $\deform$ does not generate it, unless $\deform$ is a similarity.
 
-Next, we maximize $\jointdual_{\distortion'}$ on $\domain'$ with volumes $\smash{\det\Fmat\,\pvol}$, sites $\qq'$, and an energy $\distortion'$ for the deformed domain.
-By \eqref{eq:distortion-generators}, and since generators and volumes determine a unique power diagram \cite{Aurenhammer1998Minkowski}, the maximizer is the deformed diagram $\deform(\cell)$ if and only if
+\paragraph{Prediction from the cage.}
+Each line of \eqref{eq:distortion-affine} can be predicted from the boundary deformation alone, with the Laplacians of the rest state, in a way that applies to any cage map $\deform$:
+\begin{itemize}
+  \item \emph{Volumes.} We set $\smash{\pvol_i = \rest{\cellvol}_i\,\volume(\domain) / \volume(\rest{\domain})}$, which keeps the fraction of the domain occupied by each cell and recovers \eqref{eq:distortion-affine-volume}, since affine maps scale all volumes by $\det\Fmat$.
+  \item \emph{Centroids.} We define the target centroids $\tcentroid$ as the minimizer of the Dirichlet energy \eqref{eq:distortion-dirichlet-energy} with boundary values $\smash{\mathbf{g}_{if} = \deform(\foot_{if})}$, where we extend $\deform$ affinely from each face to its plane, since a foot may lie outside its face.
+  For an affine $\deform$, applying $\deform$ to the second form of \eqref{eq:distortion-closure} shows that $\smash{\tcentroid_i = \deform(\rest{\centroid}_i)}$, which recovers \eqref{eq:distortion-affine-centroid}.
+  \item \emph{Sites.} We predict the generators of the deformed diagram, and use them as the sites $\qq$ of the optimization on $\domain$, defined as the solution of the Neumann problem
+  \begin{equation}
+    \sum\nolimits_{j \sim i} \kappa_{ij}\,(\qq_i - \qq_j) = \pflux_i \quad \forall i ,
+    \label{eq:distortion-sites}
+  \end{equation}
+  where $\smash{\pflux_i}$ is the vector area of the images under $\deform$ of the boundary patches of $\smash{\rest{\cell}_i}$.
+  This problem is solvable since the vector areas of the closed boundary $\partial\domain$ sum to zero, and its solution is unique up to a translation.
+  For an affine $\deform$, Nanson's formula gives $\smash{\pflux_i = \det\Fmat\,\Fmat^{-t}\rest{\flux}_i}$, so, by the first form of \eqref{eq:distortion-closure}, the solution is $\smash{\qq_i = \det\Fmat\,\Fmat^{-t}\rest{\dual}_i + \translation}$, \ie the sites recover the generators \eqref{eq:distortion-affine-generator} up to a translation.
+  \item \emph{Heights.} The heights $\smash{\height_i = \norm{\dual_i}^2 - \weight_i}$ of lifted generators \cite{Aurenhammer1987PowerDiagrams} verify a second identity.
+  For any power diagram, the facet $\face_{ij}$ lies on the hyperplane where $\smash{2\,(\dual_i - \dual_j)\tr\xx}$ equals $\smash{\height_i - \height_j}$, so its outward unit normal $\smash{\nrm_{ij}}$ with respect to $\cell_i$ verifies, on the facet,
+  \begin{equation*}
+    \xx\tr\nrm_{ij} = \frac{\height_j - \height_i}{2\,\norm{\dual_i - \dual_j}} .
+  \end{equation*}
+  Applying the divergence theorem to the field $\xx$, whose divergence is $d$, over each cell then gives
+  \begin{equation}
+    \sum\nolimits_{j \sim i} \frac{\area_{ij}}{\norm{\dual_i - \dual_j}}\,(\height_i - \height_j) = 2\,\moment_i - 2\,d\,\cellvol_i ,
+    \label{eq:distortion-height-identity}
+  \end{equation}
+  where $\smash{\moment_i = \int_{\partial\cell_i \cap \partial\domain} \xx\tr\nrm \, dA}$ is the boundary moment of the cell.
+  We thus define the heights $\pheight$ as the solution of the Neumann problem
+  \begin{equation}
+    \sum\nolimits_{j \sim i} \kappa_{ij}\,(\pheight_i - \pheight_j) = 2\,\pmoment_i - 2\,d\,\pvol_i \quad \forall i ,
+    \label{eq:distortion-heights}
+  \end{equation}
+  where $\pmoment_i$ is the boundary moment of the images under $\deform$ of the boundary patches of $\smash{\rest{\cell}_i}$, and set the reference weights $\smash{\bweight_i = 2\,\qq_i\tr\tcentroid_i - \norm{\tcentroid_i}^2 - \pheight_i}$, which measure the lifted affine function of each site at its target.
+  This problem is solvable since its right-hand sides sum to $\smash{2 \int_{\partial\domain} \xx\tr\nrm\,dA - 2\,d\,\volume(\domain)}$, which vanishes by the divergence theorem, and its solution is unique up to an additive constant.
+  For an affine $\deform$, Nanson's formula scales both the facet measures and the distances between the generators \eqref{eq:distortion-affine-generator} by $\smash{\det\Fmat\,\norm{\Fmat^{-t}\nrm_{ij}}}$, so the deformed diagram has exactly the stiffnesses $\kappa_{ij}$ of the rest state.
+  Its heights \eqref{eq:distortion-affine-height} thus verify \eqref{eq:distortion-heights} by \eqref{eq:distortion-height-identity}, so the solution $\pheight$ recovers them up to an additive constant.
+  Note that the heights do not depend on the translation of the sites, which only adds a common linear function to all lifted affine functions.
+\end{itemize}
+The image of each boundary patch is a planar polygon, a segment in 2D, so $\smash{\pflux_i}$ and $\pmoment_i$ only require the images of its vertices.
+In 2D, a patch from $\mathbf{a}$ to $\mathbf{b}$ along a counterclockwise boundary contributes its image chord $\smash{\deform(\mathbf{b}) - \deform(\mathbf{a})}$ rotated clockwise by a quarter turn to $\smash{\pflux_i}$, and the cross product of $\smash{\deform(\mathbf{a})}$ and $\smash{\deform(\mathbf{b})}$ to $\pmoment_i$.
+In 3D, a triangulated patch contributes $\smash{\tfrac{1}{2} (\mathbf{y}_2 - \mathbf{y}_1) \times (\mathbf{y}_3 - \mathbf{y}_1)}$ to $\smash{\pflux_i}$ and $\smash{\tfrac{1}{2}\, \mathbf{y}_1\tr (\mathbf{y}_2 \times \mathbf{y}_3)}$ to $\pmoment_i$ per triangle with mapped vertices $\mathbf{y}_k$.
+All predictions are thus linear: the targets require one factorization of $\mathrm{K}$, and the sites and heights one factorization of $\mathrm{L}$, shared by their $d \!+\! 1$ right-hand sides.
+For general deformations, however, the targets $\tcentroid$ are a discrete harmonic extension of the cage map, while the power diagram of the sites $\qq$ with heights $\pheight$ realizes neither the centroids $\tcentroid$ nor exactly the volumes $\pvol$, since its stiffnesses differ from those of the rest state, so these predictions are consistent with each other only for affine maps.
+
+\subsection{Joint Dual in Terms of Generators}
+\label{sec:appendix-distortion-generators}
+
+We now rewrite the joint dual of \S\ref{sec:joint-constraints} on $\domain$, with the predicted generators $\qq$ as sites, the predicted centroids $\tcentroid$ as targets, and the predicted volumes $\pvol$, in terms of the generators $\smash{\dual_i = \qq_i + \shift_i}$ instead of the shifts.
+Completing the square as in \eqref{eq:complete-square}, the integrand of the Lagrangian \eqref{eq:joint-lagrangian} for the cell $\cell_i$ becomes $\smash{\norm{\xx - \dual_i}^2 - \norm{\dual_i - \tcentroid_i}^2 - \weight_i}$, where we absorbed the term $\smash{\norm{\qq_i - \tcentroid_i}^2}$ into the weights, \ie
 \begin{equation}
-  \qq'_i - \frac{1}{2 \det\Fmat\,\pvol_i}\, \partial_{\tcentroid_i} \distortion'\bigl( \deform(\centroid) \bigr) = s\,\Fmat^{-t}\dual_i + \translation
-  \label{eq:distortion-affine-condition}
+  \weight_i = \weight^{\shift}_i - \norm{\qq_i - \tcentroid_i}^2 ,
+  \label{eq:distortion-shift-map}
 \end{equation}
-for some $s \!>\! 0$ and $\translation \!\in\! \R^d$.
-This condition explains why $\jointdual_\alpha$ fails to reproduce affine deformations, even with sites and targets transported as $\smash{\qq' \!=\! \deform(\qq)}$ and $\smash{\tcentroid' \!=\! \deform(\tcentroid)}$: both terms on the left of \eqref{eq:distortion-affine-condition} then transform by $\Fmat$, so equality with $\smash{\Fmat^{-t}\dual}$ requires $\smash{\Fmat\tr\Fmat \propto \Id}$, \ie a similarity.
-Instead, \eqref{eq:distortion-affine-condition} is met by two separate requirements:
-\begin{enumerate}
-  \item the energy is stationary at the deformed centroids, \ie its gradient vanishes at $\smash{\tcentroid = \deform(\centroid)}$, and
-  \item the sites are the deformed generators up to a homothety, \ie $\smash{\qq' = s\,\Fmat^{-t}\dual + \translation}$ with $s \!>\! 0$.
-\end{enumerate}
-Then the optimal shifts vanish, and the generators of the maximizer are the sites themselves.
-For the formulation to apply to general deformations of the boundary, both $\distortion'$ and $\qq'$ must be computed from the deformed boundary alone, and both requirements must hold whenever this deformation happens to be affine.
-
-\subsection{Dirichlet Energy}
-\label{sec:appendix-distortion-dirichlet}
-
-We assume that $\domain$ is a polytope, the \emph{cage}, with planar boundary faces $f$ of outward unit normals $\nrm_f$, and that $\domain'$ is given by a continuous map $\deform$ of $\partial\domain$ that is affine on each face.
-The reference is a centroidal power diagram of $\domain$ with volumes $\pvol$, centroids $\centroid$ and, choosing the homothety, generators $\dual \!=\! \centroid$, \eg computed by Lloyd iterations.
-We denote by $\area_{if}$ the measure of the boundary patch $\smash{\cell_i \cap f}$, by $\foot_{if}$ the orthogonal projection of $\centroid_i$ onto the plane of $f$, and by $\smash{\ell_{if} = \norm{\centroid_i - \foot_{if}}}$ its distance.
-On the reference, we define the stiffnesses
+with $\smash{\weight^{\shift}}$ the weights of \S\ref{sec:joint-constraints}.
+The minimization over the partitions then yields
 \begin{equation}
-  \kappa_{ij} = \frac{\area_{ij}}{\norm{\centroid_i - \centroid_j}} ,
-  \qquad
-  \kappa_{if} = \frac{\area_{if}}{\ell_{if}} ,
-  \label{eq:distortion-stiffness}
+  \jointdual(\dual, \weight) = \sum\nolimits_i \int_{\cell_i} \bigl( \norm{\xx - \dual_i}^2 - \norm{\dual_i - \tcentroid_i}^2 \bigr) \, d\xx - \weight_i \bigl( \cellvol_i - \pvol_i \bigr) ,
+  \label{eq:distortion-joint}
 \end{equation}
-where we assume that each centroid lies on the inner side of the planes of its boundary faces, as for a convex cage, so that $\smash{\foot_{if} - \centroid_i = \ell_{if}\,\nrm_f}$.
-These stiffnesses are the coefficients of the volume Hessian \eqref{eq:newton-step} up to a factor of two, augmented by one coefficient per boundary patch.
+where $\cell$ is the power diagram that assigns each point $\xx$ to the cell minimizing $\smash{\norm{\xx - \dual_i}^2 - \norm{\dual_i - \tcentroid_i}^2 - \weight_i}$.
+This objective equals the joint dual \eqref{eq:joint-dual} up to the constant $\smash{\sum_i \pvol_i \norm{\qq_i - \tcentroid_i}^2}$, but the sites no longer appear in it.
+When the targets are the sites, the two weights coincide.
 
-\paragraph{Closure.}
-Since the generators are the centroids, the facet $\face_{ij}$ has outward unit normal $\smash{(\centroid_j - \centroid_i) / \norm{\centroid_j - \centroid_i}}$ with respect to $\cell_i$, while the boundary patch $\smash{\cell_i \cap f}$ has outward unit normal $\nrm_f$.
-The vector areas of a closed polytope sum to zero, so the boundary of each cell yields
+\paragraph{Lifted form.}
+The integrand above equals $\smash{\norm{\xx}^2 - a_i(\xx)}$ with the affine function
 \begin{equation}
-  \sum\nolimits_{j \sim i} \kappa_{ij}\,(\centroid_i - \centroid_j) + \sum\nolimits_{f} \kappa_{if}\,(\centroid_i - \foot_{if}) = 0 .
-  \label{eq:distortion-closure}
+  a_i(\xx) = 2\,\dual_i\tr (\xx - \tcentroid_i) + \norm{\tcentroid_i}^2 + \weight_i ,
+  \label{eq:distortion-affine-function}
 \end{equation}
-Each centroid is thus an average of its neighboring centroids and of its feet on the boundary, weighted by \eqref{eq:distortion-stiffness}, \ie the stiffnesses are generalized barycentric coordinates with linear precision.
-
-\paragraph{Energy.}
-We define the distortion energy as the discrete Dirichlet energy of the targets with the cage map as boundary data,
+so each cell collects the points where $a_i$ is maximal, as in \S\ref{sec:background}.
+The generator $\dual_i$ is the slope of $a_i$, while its value $\smash{a_i(\tcentroid_i) = \norm{\tcentroid_i}^2 + \weight_i}$ at the target is the height $\gamma_i$ of the pivot \eqref{eq:pivot}, so the weight measures this pivot height relative to the paraboloid.
+Since $a_i$ is linear in $(\dual_i, \weight_i)$, the joint dual reads
 \begin{equation}
-  \distortion_\deform(\tcentroid) = \frac{\alpha}{2} \sum\nolimits_{\{i,j\}} \kappa_{ij} \norm{\tcentroid_i - \tcentroid_j}^2 + \frac{\alpha}{2} \sum\nolimits_{i,f} \kappa_{if} \norm{\tcentroid_i - \deform(\foot_{if})}^2 ,
-  \label{eq:distortion-dirichlet}
+  \jointdual(\dual, \weight) = \sum\nolimits_i \pvol_i\, a_i(\tcentroid_i) - \int_{\domain} \max\nolimits_i a_i(\xx) \, d\xx + \text{const} ,
+  \label{eq:distortion-lifted}
 \end{equation}
-where the first sum runs over pairs of neighbors in the reference, and $\alpha \!>\! 0$ is a stiffness, playing the role of the one in $\jointdual_\alpha$.
-This energy is a strictly convex quadratic, since every cell is connected to the boundary through the neighbors of the reference.
+which is concave in $(\dual, \weight)$, since the maximum of affine functions is convex.
 Its gradient is
 \begin{equation}
-  \partial_{\tcentroid_i} \distortion_\deform = \alpha \sum\nolimits_{j \sim i} \kappa_{ij}\,(\tcentroid_i - \tcentroid_j) + \alpha \sum\nolimits_f \kappa_{if}\,\bigl( \tcentroid_i - \deform(\foot_{if}) \bigr) ,
-  \label{eq:distortion-dirichlet-gradient}
-\end{equation}
-so its minimizer $\boldsymbol{\psi}$ solves $d$ sparse linear systems, one per coordinate, and only requires evaluating the cage map at the feet $\foot_{if}$, using the affine extension of $\deform$ from each face $f$ to its plane.
-For an affine $\deform$, we have $\smash{\deform(\foot_{if}) - \deform(\centroid_i) = \Fmat\,(\foot_{if} - \centroid_i)}$, so the gradient \eqref{eq:distortion-dirichlet-gradient} at the deformed centroids $\deform(\centroid)$ is $\Fmat$ times the left-hand side of \eqref{eq:distortion-closure}, which vanishes.
-The energy \eqref{eq:distortion-dirichlet} therefore meets the first requirement of \S\ref{sec:appendix-distortion-affine}, and for $\deform$ the identity, its minimizer is the reference itself.
-For general maps, $\boldsymbol{\psi}$ is a discrete harmonic extension of the cage map evaluated at the centroids, which need not be achievable.
-The maximization of $\jointdual_{\distortion_\deform}$ then returns the diagram whose centroids balance this harmonic extension against the push of the sites in \eqref{eq:distortion-reduced}.
-
-\paragraph{Sites.}
-The second requirement asks for covectors, which we obtain from the same stiffnesses.
-We denote by $\smash{\flux_i = \sum_f \area_{if}\,\nrm_f}$ the vector area of the boundary patches of $\cell_i$, by $\smash{\flux'_i}$ the vector area of their images under $\deform$, and solve
-\begin{equation}
-  \sum\nolimits_{j \sim i} \kappa_{ij}\,(\qq'_i - \qq'_j) = \flux'_i \quad \forall i
-  \label{eq:distortion-sites}
-\end{equation}
-for the sites $\qq'$.
-This is a Neumann problem, solvable since the vector areas of the closed boundary $\partial\domain'$ sum to zero, and its solution is unique up to a translation.
-By \eqref{eq:distortion-closure}, the reference centroids solve \eqref{eq:distortion-sites} with $\smash{\flux'_i = \flux_i}$.
-For an affine $\deform$, Nanson's formula gives $\smash{\flux'_i = \det\Fmat\,\Fmat^{-t}\flux_i}$, and since \eqref{eq:distortion-sites} acts on each coordinate, the solution is $\smash{\qq' = \det\Fmat\,\Fmat^{-t}\centroid + \translation}$.
-These are the deformed generators with dilation $\smash{s = \det\Fmat > 0}$, which meets the second requirement.
-Note that $\smash{\flux'_i}$ only depends on the image of the boundary curves of the patches: in 2D, it is the image chord $\smash{\deform(\mathbf{b}) - \deform(\mathbf{a})}$ of each patch from $\mathbf{a}$ to $\mathbf{b}$, rotated clockwise by a quarter turn for a counterclockwise boundary, and in 3D, it is $\smash{\tfrac{1}{2} \oint \deform(\xx) \times d\deform(\xx)}$ along these curves.
-
-\paragraph{Formulation.}
-In summary, given the reference and the cage map, we prescribe the volumes $\smash{\pvol_i\,\volume(\domain') / \volume(\domain)}$, compute the sites $\qq'$ from \eqref{eq:distortion-sites}, and maximize $\jointdual_{\distortion_\deform}$ on $\domain'$.
-For any affine map and any stiffness $\alpha$, the maximizer is the deformed reference, with zero shifts.
-For general maps, its generators \eqref{eq:distortion-generators} are the covector prediction $\qq'$ corrected by the elastic force of the Dirichlet energy per unit volume, while the weights enforce the volumes exactly and act as a pressure.
-The stiffness interpolates between the diagram generated by the sites $\qq'$ for $\alpha \!\to\! 0$, which needs no shifts, and the targets $\boldsymbol{\psi}$ for $\alpha \!\to\! \infty$, when they are realizable.
-As for $\jointdual_\alpha$, the maximizer is a power diagram only if its generators remain distinct, which holds for small enough $\alpha$ provided the sites $\qq'$ are distinct.
-% TODO: quantitative bound on alpha, analog of eq:regularized-distinct.
-Finally, the centroidal reference is only needed for the linear precision \eqref{eq:distortion-closure} of the Dirichlet energy.
-For a general reference, \eqref{eq:distortion-sites} still applies with $\smash{\kappa_{ij} = \area_{ij} / \norm{\dual_i - \dual_j}}$ and returns the deformed generators, while any energy $\smash{\distortion_\deform(\tcentroid) = \tfrac{1}{2} (\tcentroid - \boldsymbol{\psi})\tr \mathrm{K} (\tcentroid - \boldsymbol{\psi})}$ satisfies the first requirement if its rest state $\boldsymbol{\psi}$ reproduces affine maps, \eg mean value or harmonic coordinates of the reference centroids with respect to the cage.
-
-\subsection{Softened Volumes}
-\label{sec:appendix-distortion-volume}
-
-Following Appendix~\ref{sec:softened-volume}, we soften the volume constraints \eqref{eq:distortion-primal-vol} by scalar slacks $\smash{\cellvol_i - \pvol_i = \pvol_i\,\vslack_i}$, penalized by $\smash{\pvol_i\,(\beta\,\vslack_i^2 - \bweight_i\,\vslack_i)}$ in the objective \eqref{eq:distortion-primal-obj}, with stiffness $\beta \!>\! 0$ and reference weights $\bweight$.
-The same steps as in Appendix~\ref{sec:softened-volume} yield the concave dual
-\begin{equation}
-  \jointdual_{\distortion\beta}(\shift, \weight) = \jointdual_{\distortion}(\shift, \weight) - \frac{1}{4\beta} \sum\nolimits_i \pvol_i\,(\weight_i - \bweight_i)^2 ,
-  \label{eq:distortion-volume-dual}
-\end{equation}
-whose optimal weights follow the equation of state \eqref{eq:softened-volume-state}.
-The shift gradient in \eqref{eq:distortion-gradient} is unchanged, so its optimal targets are no longer the centroids, but
-\begin{equation}
-  \tcentroid_i = \qq_i + \frac{\cellvol_i}{\pvol_i}\,(\centroid_i - \qq_i) ,
-  \label{eq:distortion-volume-targets}
-\end{equation}
-which only differ from the centroids by the volume slacks, while the generators still follow \eqref{eq:distortion-generators}, now with the energy evaluated at these targets.
-Since the constraint \eqref{eq:distortion-primal-cons} is anchored at the sites, these targets translate with the domain and the sites.
-In contrast, anchoring it at the origin would give the targets $\smash{(\cellvol_i / \pvol_i)\,\centroid_i}$, which depend on the choice of origin as soon as the volumes are not exact.
-
-\paragraph{Affine deformations.}
-For an affine map $\deform$, the deformed reference has exact volumes and zero shifts, so its targets are its centroids and \eqref{eq:distortion-volume-targets} holds.
-Since zero shifts give $\smash{\combweight = \weight}$, the equation of state \eqref{eq:softened-volume-state} with zero volume slacks then requires a third condition in addition to those of \S\ref{sec:appendix-distortion-affine}:
-\begin{enumerate}
-  \setcounter{enumi}{2}
-  \item the reference weights are the weights of the deformed generators $\qq'$, up to an additive constant.
-\end{enumerate}
-In terms of heights, the reference weights are $\smash{\bweight_i = \norm{\qq'_i}^2 - \height'_i}$, where the heights $\height'$ of the deformed diagram must again be computed from the deformed boundary alone.
-We obtain them from a second identity of the stiffnesses \eqref{eq:distortion-stiffness}.
-For generators $\dual$ with heights $\height$, the facet $\face_{ij}$ lies on the hyperplane $\smash{2\,(\dual_i - \dual_j)\tr\xx = \height_i - \height_j}$, so its outward unit normal $\smash{\nrm_{ij} = (\dual_j - \dual_i) / \norm{\dual_j - \dual_i}}$ verifies
-\begin{equation*}
-  \int_{\face_{ij}} \xx\tr\nrm_{ij}\,dA = \frac{1}{2}\,\kappa_{ij}\,(\height_j - \height_i) ,
-\end{equation*}
-with the stiffness $\smash{\kappa_{ij} = \area_{ij} / \norm{\dual_i - \dual_j}}$ of \eqref{eq:distortion-stiffness}.
-The divergence theorem applied to the field $\xx$ over the cell $\cell_i$ then gives
-\begin{equation}
-  \sum\nolimits_{j \sim i} \kappa_{ij}\,(\height_i - \height_j) = 2\,g_i - 2\,d\,\cellvol_i ,
+  \partial_{\dual_i} \jointdual = 2\,\cellvol_i\,(\tcentroid_i - \centroid_i) ,
   \qquad
-  g_i = \int_{\partial\cell_i \cap \partial\domain} \xx\tr\nrm \, dA ,
-  \label{eq:distortion-heights}
+  \partial_{\weight_i} \jointdual = \pvol_i - \cellvol_i ,
+  \label{eq:distortion-joint-gradient}
 \end{equation}
-where $g_i$ equals $d$ times the signed volume of the cones joining the origin to the boundary patches of $\cell_i$.
-In 2D, each patch from $\mathbf{a}$ to $\mathbf{b}$ contributes the cross product $\smash{a_1 b_2 - a_2 b_1}$ for a counterclockwise boundary.
+which recovers \eqref{eq:joint-gradient}, since \eqref{eq:distortion-shift-map} is a translation of the multipliers for fixed sites and targets.
+For the same reason, the Hessian blocks are those of \eqref{eq:centroid-hessian}, \eqref{eq:joint-hessian} and \eqref{eq:newton-step}, and the null-space \eqref{eq:joint-nullspace} becomes $\smash{\delta\dual_i = \mu\,\dual_i + \translation}$ and $\smash{\delta\weight_i = \mu\,a_i(\tcentroid_i) + 2\,\translation\tr\tcentroid_i + c}$, \ie the infinitesimal homotheties of the affine functions \eqref{eq:distortion-affine-function}.
 
-We thus compute the heights $\height'$ by solving \eqref{eq:distortion-heights} with the stiffnesses of the reference, the prescribed volumes $\smash{\pvol_i\,\volume(\domain') / \volume(\domain)}$, and the values $g'_i$ of the images of the boundary patches under $\deform$.
-This is again a Neumann problem, solvable since its right-hand sides sum to $\smash{2 \int_{\partial\domain'} \xx\tr\nrm\,dA - 2\,d\,\volume(\domain') = 0}$, with a solution unique up to the additive constant allowed by the third condition.
-For an affine $\deform$, the sites of \eqref{eq:distortion-sites} are the deformed generators with dilation $\smash{s = \det\Fmat}$.
-In this gauge, Nanson's formula scales the facet measures by $\smash{\det\Fmat\,\norm{\Fmat^{-t}\nrm_{ij}}}$ and the generators' distances by the same factor, so the deformed diagram has exactly the stiffnesses of the reference.
-Its heights thus verify \eqref{eq:distortion-heights} with the reference stiffnesses, and the solution $\height'$ recovers them up to a constant, which meets the third condition.
-Note that the heights do not depend on the translation $\translation$ of the sites, since translating all generators only adds a common linear function to the lifted affine functions, which leaves their heights unchanged.
+\subsection{Distortion Energy}
+\label{sec:appendix-distortion-energy}
 
-\paragraph{Formulation.}
-In summary, given the reference and the cage map, two sparse Neumann problems with the reference stiffnesses predict the deformed generators $\qq'$ from \eqref{eq:distortion-sites} and their heights $\height'$ from \eqref{eq:distortion-heights}.
-We then set the reference weights $\smash{\bweight_i = \norm{\qq'_i}^2 - \height'_i}$ and maximize $\jointdual_{\distortion_\deform\beta}$ on $\domain'$.
-For any affine map and any stiffnesses $(\alpha, \beta)$, the maximizer is the deformed reference, with zero shifts and zero volume slacks.
-For general maps, $\alpha$ controls the resistance to shape changes through the Dirichlet energy, while $\beta$ controls the compressibility of the cells, with $\beta \!\to\! \infty$ recovering the exact volumes of \S\ref{sec:appendix-distortion-dirichlet}.
-For a quadratic energy with a positive definite Hessian, such as \eqref{eq:distortion-dirichlet}, the dual \eqref{eq:distortion-volume-dual} is strongly concave and admits a unique maximizer.
+We extend the joint dual by softening both of its constraints.
+As in \S\ref{sec:regularized-joint}, we relax each centroid constraint by a slack $\slack_i$, which we now penalize by a convex distortion energy $\distortion(\slack)$, minimal at $\slack \!=\! 0$, instead of $\smash{\alpha \sum_i \pvol_i \norm{\slack_i}^2}$.
+In addition, we relax each volume constraint by a scalar slack $\vslack_i$, penalized with a stiffness $\beta \!>\! 0$ and reference weights $\bweight$.
+With the sites $\qq$, targets $\tcentroid$, reference weights $\bweight$ and volumes $\pvol$ of \S\ref{sec:appendix-distortion-generators}, the primal problem reads
+\begin{subequations}
+  \label{eq:distortion-primal}
+  \begin{alignat}{3}
+    & \min_{\cell, \slack, \vslack} \quad & &
+    \sum\nolimits_{i} \int_{\cell_i} \!\norm{\xx - \qq_i}^2 d\xx + \distortion(\slack) + \sum\nolimits_{i} \pvol_i \bigl( \beta\,\vslack_i^2 - \bweight_i\,\vslack_i \bigr) \label{eq:distortion-primal-obj} \\
+    & \text{s.t.} \quad & \constraintbrace{16pt}{8pt} & \int_{\cell_i} (\xx - \tcentroid_i) \, d\xx = \pvol_i \, \slack_i \ \ \forall i , \label{eq:distortion-primal-cons} \\
+    & & & \cellvol_i - \pvol_i = \pvol_i \, \vslack_i \ \ \forall i , \label{eq:distortion-primal-vol}
+  \end{alignat}
+\end{subequations}
+where the reference weights $\bweight$ are the predicted weights measured relative to the targets, as in \eqref{eq:distortion-shift-map}.
+With the multipliers $(\dual, \weight)$ of \S\ref{sec:appendix-distortion-generators}, the centroid slacks enter the Lagrangian through the terms $\smash{\distortion(\slack) - \sum_i \mathbf{z}_i(\dual)\tr\slack_i}$, where we denote by $\smash{\mathbf{z}_i(\dual) = 2\,\pvol_i\,(\qq_i - \dual_i)}$ the scaled displacements of the generators from the sites.
+The minimum of these terms over the slacks is $\smash{-\conj{\distortion}(\mathbf{z}(\dual))}$, in terms of the convex conjugate
+\begin{equation}
+  \conj{\distortion}(\mathbf{z}) = \sup\nolimits_{\slack} \ \sum\nolimits_i \mathbf{z}_i\tr\slack_i - \distortion(\slack) .
+  \label{eq:distortion-conjugate-def}
+\end{equation}
+The volume slacks enter the Lagrangian through quadratic terms in $\vslack_i$, minimized at
+\begin{equation*}
+  \vslack_i = \frac{\bweight_i - \weight_i}{2\beta} ,
+\end{equation*}
+which leads to the dual objective
+\begin{equation}
+  \jointdual_{\distortion\beta}(\dual, \weight)
+  = \jointdual(\dual, \weight) - \conj{\distortion}\bigl( \mathbf{z}(\dual) \bigr) - \frac{1}{4\beta} \sum\nolimits_i \pvol_i\,(\weight_i - \bweight_i)^2 .
+  \label{eq:distortion-dual}
+\end{equation}
+Since $\conj{\distortion}$ is convex and $\mathbf{z}$ is affine in $\dual$, the dual $\jointdual_{\distortion\beta}$ is concave for any convex $\distortion$.
+The sites $\qq$ and reference weights $\bweight$ only enter as anchors of the two penalties, which compare each affine function $a_i$ with the one of the anchors in slope and in value at the target, respectively.
+
+\paragraph{Stationary state.}
+At a maximizer, the slacks attaining \eqref{eq:distortion-conjugate-def} and the multipliers verify
+\begin{subequations}
+  \label{eq:distortion-optimality}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    \slack_i &= \frac{\cellvol_i}{\pvol_i}\,(\centroid_i - \tcentroid_i) , \label{eq:distortion-optimality-slack} \\[1mm]
+    \dual_i &= \qq_i - \frac{1}{2\,\pvol_i}\, \partial_{\slack_i} \distortion(\slack) , \label{eq:distortion-optimality-generator} \\[1mm]
+    \weight_i &= \bweight_i + 2\beta \Bigl( 1 - \frac{\cellvol_i}{\pvol_i} \Bigr) , \label{eq:distortion-optimality-weight}
+  \end{empheq}
+\end{subequations}
+where the first condition follows from the generator gradient \eqref{eq:distortion-joint-gradient}, the second from the minimization over the slacks, and the third from the weight gradient.
+The slacks are thus the centroid residuals scaled by the volume ratios, the generators are the sites corrected by the force of $\distortion$ per unit volume, and the weights follow an equation of state, acting as a pressure with the reference weights $\bweight$ as reference pressure.
+
+\paragraph{Quadratic distortion.}
+For a quadratic $\smash{\distortion(\slack) = \tfrac{1}{2} \sum_{i,j} \slack_i\tr \mathrm{M}_{ij}\,\slack_j}$ with a positive definite matrix $\mathrm{M}$ of $d \!\times\! d$ blocks, the supremum \eqref{eq:distortion-conjugate-def} is attained at $\smash{\slack = \mathrm{M}^{-1}\mathbf{z}}$, which gives the closed form
+\begin{equation}
+  \conj{\distortion}(\mathbf{z}) = \frac{1}{2} \sum\nolimits_{i,j} \mathbf{z}_i\tr (\mathrm{M}^{-1})_{ij}\,\mathbf{z}_j .
+  \label{eq:distortion-conjugate}
+\end{equation}
+The dual \eqref{eq:distortion-dual} is then strongly concave for $\beta \!>\! 0$ and admits a unique maximizer, which is a power diagram when its generators are distinct.
+Since $\mathrm{M}^{-1}$ is dense in general, we keep the slacks as unknowns and apply Newton's method to the saddle problem
+\begin{equation}
+  \max_{\dual, \weight} \min_{\slack} \ \jointdual(\dual, \weight) - \sum\nolimits_i \mathbf{z}_i(\dual)\tr\slack_i + \distortion(\slack) - \frac{1}{4\beta} \sum\nolimits_i \pvol_i\,(\weight_i - \bweight_i)^2 ,
+  \label{eq:distortion-saddle}
+\end{equation}
+whose Hessian is sparse whenever $\mathrm{M}$ is.
+For the diagonal penalty $\smash{\mathrm{M} = 2\alpha\,\mathrm{diag}(\pvol_i\,\Id)}$, the conjugate is $\smash{\tfrac{1}{\alpha} \sum_i \pvol_i \norm{\shift_i}^2}$ with $\smash{\shift_i = \dual_i - \qq_i}$, so the limit $\beta \!\to\! \infty$ of \eqref{eq:distortion-dual} recovers $\jointdual_\alpha$ in \eqref{eq:regularized-dual} up to the translation \eqref{eq:distortion-shift-map} of the weights, and \eqref{eq:distortion-optimality-generator} recovers the generators \eqref{eq:regularized-generators}.
+
+\subsection{Dirichlet Distortion}
+\label{sec:appendix-distortion-dirichlet}
+
+We finally combine the rest state of \S\ref{sec:appendix-distortion-rest} with the distortion energy of \S\ref{sec:appendix-distortion-energy}.
+We take the volumes $\pvol$, targets $\tcentroid$, sites $\qq$ and reference weights $\bweight$ predicted from the cage in \S\ref{sec:appendix-distortion-affine}.
+As distortion, we take the increase of the Dirichlet energy \eqref{eq:distortion-dirichlet-energy} of the targets, with the cage map as boundary data, when the targets are displaced by the slacks:
+\begin{equation}
+  \begin{aligned}
+    \distortion(\slack) &= \alpha \bigl( \mathcal{W}_{\deform}(\tcentroid + \slack) - \mathcal{W}_{\deform}(\tcentroid) \bigr) \\
+    &= \frac{\alpha}{2} \sum\nolimits_{\{i,j\}} \kappa_{ij} \norm{\slack_i - \slack_j}^2 + \frac{\alpha}{2} \sum\nolimits_{i,f} \kappa_{if} \norm{\slack_i}^2 ,
+  \end{aligned}
+  \label{eq:distortion-dirichlet}
+\end{equation}
+where $\smash{\mathcal{W}_\deform}$ denotes \eqref{eq:distortion-dirichlet-energy} with boundary values $\smash{\mathbf{g}_{if} = \deform(\foot_{if})}$, and $\alpha \!>\! 0$ is a stiffness.
+The second equality is the exact second-order expansion of the quadratic $\smash{\mathcal{W}_\deform}$ around its minimizer $\tcentroid$: its linear term vanishes, and its quadratic term does not depend on the boundary values.
+The distortion is thus the Dirichlet energy of the slacks with zero boundary data, with Hessian $\smash{\mathrm{M} = \alpha\,\mathrm{K} \otimes \Id_d}$, and by \eqref{eq:distortion-conjugate} its conjugate is
+\begin{equation}
+  \conj{\distortion}(\mathbf{z}) = \frac{1}{2\alpha} \sum\nolimits_{i,j} (\mathrm{K}^{-1})_{ij}\,\mathbf{z}_i\tr\mathbf{z}_j ,
+  \label{eq:distortion-dirichlet-conjugate}
+\end{equation}
+which acts on each coordinate separately.
+In contrast to the diagonal penalty, the distortion penalizes the differences of the slacks between neighboring cells, so the centroid residuals vary smoothly across the diagram.
+
+\paragraph{Affine exactness.}
+If the cage map $\deform$ is affine, the maximizer of \eqref{eq:distortion-dual} is the affine image $\smash{\deform(\rest{\cell})}$ of the rest state, for any stiffnesses $\alpha \!>\! 0$ and $\beta \!>\! 0$, as well as in the limits $\beta \!\to\! 0$ and $\beta \!\to\! \infty$.
+Indeed, by \S\ref{sec:appendix-distortion-affine}, the sites $\qq$ with heights $\pheight$ generate $\smash{\deform(\rest{\cell})}$, so its multipliers in \eqref{eq:distortion-affine-function} are $(\dual, \weight) = (\qq, \bweight)$.
+At these multipliers, both penalties of \eqref{eq:distortion-dual} are minimal, so their gradients vanish.
+Moreover, the cells $\smash{\deform(\rest{\cell})}$ have the centroids $\tcentroid$ and the volumes $\pvol$, so the gradient \eqref{eq:distortion-joint-gradient} of $\jointdual$ vanishes as well.
+The multipliers $(\qq, \bweight)$ are thus a stationary point of the concave objective \eqref{eq:distortion-dual}, and hence its maximizer, with zero slacks by \eqref{eq:distortion-optimality-slack}.
+Note that this argument only uses that the predictions recover \eqref{eq:distortion-affine} and that $\distortion$ is minimal at $\slack \!=\! 0$, so the Dirichlet energy only determines how the diagram responds to deformations that are not affine.
+
+\paragraph{General deformations.}
+For exact volumes, $\beta \!\to\! \infty$, the slacks are the centroid residuals $\smash{\slack = \centroid - \tcentroid}$ by \eqref{eq:distortion-optimality-slack}, and the transport cost $\smash{\int_{\cell_i} \norm{\xx - \qq_i}^2 d\xx}$ equals $\smash{-2\,\pvol_i\,{\qq_i}\tr\centroid_i}$ up to terms whose sum is constant.
+The primal problem \eqref{eq:distortion-primal} then reduces to
+\begin{equation}
+  \min_{\centroid \in \achievable} \ \alpha\,\mathcal{W}_\deform(\centroid) - 2 \sum\nolimits_i \pvol_i\,{\qq_i}\tr\centroid_i ,
+  \label{eq:distortion-reduced}
+\end{equation}
+where the Dirichlet energy pulls the centroids towards the discrete harmonic extension $\tcentroid$ of the cage map, while the predicted sites $\qq$ push them towards the boundary of $\achievable$, where power diagrams lie (\S\ref{sec:background}).
+For finite $\beta$, the volumes may deviate from $\pvol$, penalized in the least-squares sense by $\beta$, and the stiffness ratio $\alpha / \beta$ balances the resistance to shape changes against the compressibility of the cells.
+The volumes $\pvol$ may also be chosen differently from the predicted ones, \eg to grow or shrink individual cells, in which case the heights \eqref{eq:distortion-heights} are computed for these volumes, and the slacks absorb the centroid residuals induced by the volume changes.
+% TODO: quantitative bound on alpha keeping the generators distinct, analog of eq:regularized-distinct.
+
+\paragraph{Free volumes.}
+For $\beta \!\to\! 0$, the volume slacks become free, and the weights are fixed to the reference weights $\bweight$, so each affine function \eqref{eq:distortion-affine-function} can only tilt about its pivot $\smash{(\tcentroid_i, \norm{\tcentroid_i}^2 + \bweight_i)}$, while $\pvol$ only serves as a reference volume in \eqref{eq:distortion-primal-cons}.
+We distinguish two cases.
+With \emph{softened centroids}, the dual \eqref{eq:distortion-dual} reduces to
+\begin{equation}
+  \centroiddual_{\distortion}(\dual) = \jointdual(\dual, \bweight) - \conj{\distortion}\bigl( \mathbf{z}(\dual) \bigr) ,
+  \label{eq:distortion-centroid-soft}
+\end{equation}
+which softens the centroid dual \eqref{eq:centroid-dual} with fixed weights $\bweight$, is strongly concave, and admits a unique maximizer for any targets, whose centroids differ from $\tcentroid$ by slacks that vanish as $\alpha \!\to\! \infty$.
+With \emph{exact centroids}, \ie in the limit $\alpha \!\to\! \infty$, we recover the centroid-constrained problem of \S\ref{sec:centroid-constraints}, \ie the maximization of $\smash{\jointdual(\dual, \bweight)}$ over the generators with targets $\tcentroid$, whose maximizer, when it exists, is the unique power diagram with centroids exactly $\tcentroid$.
+In both cases, the maximizer is the affine image of the rest state for affine maps.
+
+\paragraph{Harmonic limit.}
+With free volumes, the centroids follow the targets $\tcentroid$, exactly for exact centroids and as $\alpha \!\to\! \infty$ for softened centroids.
+Since the rest state is centroidal, its facets are orthogonal to the segments joining neighboring centroids, and the feet are the orthogonal projections of the centroids onto the boundary, so the rest state is an admissible mesh for the two-point flux finite-volume scheme, which converges for the Dirichlet problem in any dimension \cite{Eymard2000FVM}.
+As we refine the rest state, the targets thus converge to the harmonic map $\Phi$ of $\rest{\domain}$ with boundary values $\deform$, evaluated at the rest centroids, \ie $\smash{\tcentroid_i \approx \Phi(\rest{\centroid}_i)}$.
+For exact centroids, the centroids of the deformed power diagram therefore converge to the harmonic map, provided the targets remain realizable by a power diagram with free volumes.
+This assumption may fail when $\Phi$ is not injective, which can happen in 3D even for a convex deformed domain, whereas in 2D the Rad\'{o}--Kneser--Choquet theorem guarantees injectivity in this case.
+% TODO: realizability of the harmonic targets with free volumes under refinement.
 
 \end{document}

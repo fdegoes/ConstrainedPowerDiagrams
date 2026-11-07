@@ -14,7 +14,8 @@ Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:ne
   \begin{algorithmic}[1]
     \Require particles $\qq^k$, velocities $\vel^k$, generators $\dual^k$ and shifted weights $\combweight^k$ of the power diagram with centroids $\qq^k$, volumes $\pvol$, time step $\tstep$
     \State $\pred^{k+1} \gets (1 + \tstep^2)\,\qq^k + \tstep\,\vel^k$ \Comment{\eqref{eq:flow-shake-step-pred}}
-    \State $(\shift, \weight, s, \translation) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $\combweight^k$
+    \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$, warm-started from $\combweight^k$ \Comment{\eqref{eq:volume-dual}}
+    \State $(\shift, \weight, s, \translation) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $\weight^0$
     \State $\qq^{k+1} \gets \pred^{k+1} - s\,\dual^k - \translation$ \Comment{\eqref{eq:flow-shake-step-corr}}
     \State $\vel^{k+1} \gets (\qq^{k+1} - \qq^k) / \tstep$
     \State $\dual^{k+1} \gets \qq^k + \shift$ \Comment{\eqref{eq:shifted-site-pos}}
@@ -48,7 +49,8 @@ Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:ne
   \label{alg:flow-penalty}
   \begin{algorithmic}[1]
     \Require particles $\qq^k$, velocities $\vel^k$, shifted weights $\combweight^k$ of the previous step, volumes $\pvol$, time step $\tstep$, stiffness $\alpha$
-    \State $(\shift, \weight) \gets$ Alg.~\ref{alg:newton} with sites and targets $\qq^k$, initial weights $\combweight^k$
+    \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$, warm-started from $\combweight^k$ \Comment{\eqref{eq:volume-dual}}
+    \State $(\shift, \weight) \gets$ Alg.~\ref{alg:newton} with sites and targets $\qq^k$, initial weights $\weight^0$
     \State $\vel^{k+1} \gets \vel^k - (1 + 1/\alpha)\,\tstep\,\shift$ \Comment{\eqref{eq:flow-softened-step-vel}}
     \State $\qq^{k+1} \gets \qq^k + \tstep\,\vel^{k+1}$ \Comment{\eqref{eq:flow-softened-step-pos}}
     \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2$ \Comment{\eqref{eq:shifted-site-weight}}

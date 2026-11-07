@@ -7,7 +7,8 @@
 
 % We start by reviewing key concepts required by our contributions.
 Before presenting our contributions, we review key concepts underlying our work.
-Here, we consider a bounded domain $\domain$ in $\smash{\R^d}$ and define a \emph{partition} of $\domain$ as a collection of $n$ cells $\smash{\cell \!=\! \{\cell_i\}_{i=1}^n}$ of positive volume that tile $\domain$.
+Here, we consider a bounded and simply connected domain $\domain$ in $\smash{\R^d}$.
+We define a \emph{partition} of $\domain$ as a collection of $n$ cells $\smash{\cell \!=\! \{\cell_i\}_{i=1}^n}$ of positive volume that tile $\domain$.
 We denote the {volume} and {centroid} for each cell $\cell_i$ as
 \begin{subequations}
   \label{eq:cell-quantities}
@@ -33,13 +34,13 @@ Because the cells $\cell$ tile $\domain$, their volumes and centroids must verif
   \end{empheq}
 \end{subequations}
 % 
-where $\domainVol$ and $\centroid_\domain$ are the total volume and the centroid of $\domain$.
+where $\domainVol$ and $\centroid_\domain$ are the volume and the centroid of $\domain$, respectively.
 
 \paragraph{Power diagram.}
 We associate each cell $\cell_i$ with a \emph{weighted site} encoded by a site position $\smash{\qq_i \!\in\! \R^d}$ and a scalar weight $\smash{\weight_i \!\in\! \R}$, which we collect as $\qq \!=\! \{\qq_i\}_{i=1}^n$ and $\weight \!=\! \{\weight_i\}_{i=1}^n$.
 We also assume the sites are pairwise distinct.
 % : two coinciding sites with equal weights have identical power distances and leave the split of their common cell undetermined, while a coinciding site with a smaller weight has an empty cell.
-Computing the \emph{power distance} from a point $\xx$ to a weighted site $i$ as $\smash{\pdist{\xx}{i}}$, we define the \emph{power diagram} of $(\qq,\weight)$ as the partition of $\domain$ that assigns each of point $\smash{\xx \!\in\! \domain}$ to the weighted site of smallest power distance.
+Computing the \emph{power distance} from a point $\xx$ to a weighted site $i$ as $\smash{\pdist{\xx}{i}}$, we define the \emph{power diagram} of $(\qq,\weight)$ as the partition of $\domain$ that assigns each point $\smash{\xx \!\in\! \domain}$ to the weighted site of smallest power distance.
 The cell $\cell_i$ of the resulting power diagram for each $(\qq_i, \weight_i)$ is thus expressed as
 \begin{equation}
   \cell_i = \bigl\{ \xx \in \domain : \pdist{\xx}{i} \le \pdist{\xx}{j} \ \ \forall j \neq i \bigr\} .
@@ -52,12 +53,17 @@ Note also that the power diagram reduces to the classical Voronoi diagram when a
 
 \paragraph{Homothety invariance.}
 Since we assume distinct sites and cells with positive volume, any given set of weighted sites $(\qq,\weight)$ defines a unique power diagram that depends smoothly on $(\qq,\weight)$ \cite[Prop.~1.1]{deGournay2019Differentiation}.
-The converse, however, does not hold, since different weighted sites can generate the same power diagram.
-% 
+The converse, however, does not hold, 
+\begin{wrapfigure}[7]{r}{0.36\columnwidth}
+  \centering
+  \vspace{-1mm}
+  \resizebox{\linewidth}{!}{\input{figures/lifting}}
+\end{wrapfigure}
+since different weighted sites can generate the same power diagram.
 This redundancy is best seen by reparametrizing each weighted site $(\qq_i, \weight_i)$ as a lifted point $\smash{(\qq_i, \height_i) \in \R^{d+1}}$ with {height} $\smash{\height_i \!=\! \norm{\qq_i}^2 \!-\! \weight_i}$ \cite{Aurenhammer1987PowerDiagrams}.
 In terms of lifted points, the power distance can be rewritten as $\smash{\norm{\xx}^2 \!-\! ( 2\,\qq_i\tr\xx \!-\! \height_i )}$, so each cell $\cell_i$ in \eqref{eq:power-cell} collects the points from $\domain$ where the affine function $\smash{2\,\qq_i\tr\xx \!-\! \height_i}$ is maximal.
 % 
-Importantly, these cells remain unchanged when all affine functions are scaled by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx + c}$.
+Importantly, these cells remain unchanged when all affine functions are scaled by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx - c}$.
 % We refer to the positions of the weighted sites that generate a power diagram as its \emph{generators}; they coincide with the sites $\qq$ here, but will differ from them once we introduce shifted sites in \S\ref{sec:contributions}.
 Therefore, the weighted sites that generate the same power diagram as $(\qq, \weight)$ correspond to homotheties of the lifted points \cite{Aurenhammer1987Recognising}, denoted by the group
 \begin{equation}
@@ -75,10 +81,10 @@ $\smash{s\,\qq_i + \translation}$
 and weights 
 $\smash{s\,\weight_i + (s^2 \!-\! s)\norm{\qq_i}^2 + 2s\,\translation\tr\qq_i + \norm{\translation}^2 - c}$, 
 whose quadra\-tic dependence on the sites makes the lifted form \eqref{eq:lifted-homothety} more convenient.
-This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ span the null-spaces of the Hessians of our new formulations.
+This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ always lie in, and generically span, the null-space of the Hessian of our joint formulation.
 
 \paragraph{Energy.}
-Based on \eqref{eq:power-cell}, the power diagram for given weighted sites $(\qq,\weight)$ can be also interpreted as the partition of $\domain$ that minimizes the total power distance among all its partitions, with optimal value
+Based on \eqref{eq:power-cell}, the power diagram for given weighted sites $(\qq,\weight)$ can be interpreted as the partition of $\domain$ that minimizes the total power distance among all its partitions, with optimal value
 \begin{equation}
   \energy(\qq, \weight) = \min_{\cell} \ \sum\nolimits_{i} \int_{\cell_i} \bigl( \pdist{\xx}{i} \bigr) \, d\xx .
   \label{eq:power-diagram}
@@ -122,14 +128,14 @@ Adding back the constraint terms \eqref{eq:volume-constrained-cons} yields the \
 % where only the weights $\weight$ are optimization variables, while the sites $\qq$ and volumes $\pvol$ are fixed data.
 % For all dual objectives throughout our presentation, we list only the optimization variables as arguments and leave the fixed data implicit from the context.
 % 
-The volume-constrained problem in \eqref{eq:volume-constrained} thus reduces to the \emph{unconstrained} maximization of $\dualenergy(\weight)$ over the space of power diagrams, parametri\-zed by the weights $\weight$.
+The volume-constrained problem in \eqref{eq:volume-constrained} thus reduces to the {unconstrained} maximization of $\dualenergy(\weight)$ over the space of power diagrams, parametri\-zed by the weights $\weight$.
 By \eqref{eq:weight-gradient}, the gradient of $\dualenergy$ recovers the volume constraint
 \begin{equation}
   \partial_{\weight_i} \dualenergy = \pvol_i - \cellvol_i ,
   \label{eq:volume-dual-gradient}
 \end{equation}
 so stationary weights are those whose cells realize the prescribed volumes.
-As derived by \citet{deGoes2012BlueNoise}, the Hessian of $\dualenergy$ is a Laplacian matrix on the power diagram connectivity with entries
+As derived by \citet{deGoes2012BlueNoise}, the Hessian of $\dualenergy$ is a (negated) Laplacian matrix on the power diagram connectivity with entries
 \begin{subequations}
   \label{eq:newton-step}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
@@ -152,7 +158,8 @@ Volume-constrained power diagrams play a special role in $\achievable$: the cent
 Moreover, the sites of a power diagram are an outward normal of $\achievable$ at its centroids \cite[Prop.~3.5]{Bourne2026ConvexOrder}, and so are the sites of every element of $\homotheties$ in \eqref{eq:lifted-homothety}.
 % , since scaling preserves the direction of the normal, while translation only adds a component orthogonal to the subspace of \eqref{eq:partition-feasibility-centroid} (in the volume-weighted $\smash{L^2}$ sense).
 These homotheties form the {normal cone} of $\achievable$ at these centroids, \ie the set of all outward normals of supporting hyperplanes, since each of them generates the unique power diagram with the same volumes and centroids \cite[Thm.~4.5]{Bourne2025Inverting}.
-Therefore, power diagrams lie on the boundary of $\achievable$ relative to \eqref{eq:partition-feasibility-centroid}, the rest of this boundary consists of flat faces exposed by coinciding sites, and the interior of $\achievable$ relative to \eqref{eq:partition-feasibility-centroid} includes only centroids of partitions that are not power diagrams.
+Therefore, power diagrams lie on the boundary of $\achievable$ relative to \eqref{eq:partition-feasibility-centroid}.
+The rest of this boundary consists of flat faces exposed by coinciding sites, while its interior includes only centroids of partitions that are not power diagrams.
 Based on these results, we call centroids \emph{achievable} when they belong to $\achievable$, and \emph{realizable} when they are the centroids of a power diagram, while we call centroids \emph{unachievable} when they verify identity \eqref{eq:partition-feasibility-centroid} but do not belong to $\achievable$, \ie when no partition of $\domain$ with volumes $\pvol$ has them as centroids. % \ie the exposed points of $\achievable$.
 %
 We rely on this characterization to determine which power diagrams our formulations return, as detailed next.

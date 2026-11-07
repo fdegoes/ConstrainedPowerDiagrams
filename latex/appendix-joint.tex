@@ -2,13 +2,11 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
-\section{Derivatives and Concavity of $\jointdual$}
+\section{Derivatives of $\jointdual$}
 \label{sec:appendix-joint}
 
-The joint dual $\jointdual(\shift, \weight) = \energy(\dual, \combweight) + \sum\nolimits_i \weight_i \pvol_i$ defined in \eqref{eq:joint-dual} again depends on $(\shift, \weight)$ only through the shifted sites \eqref{eq:shifted-site}, plus the explicit term $\weight_i \pvol_i$.
+The joint dual $\jointdual(\shift, \weight) = \energy(\dual, \combweight) + \sum_i \weight_i \pvol_i$ defined in \eqref{eq:joint-dual} again depends on $(\shift, \weight)$ only through the shifted sites \eqref{eq:shifted-site}, plus the explicit term $\weight_i \pvol_i$.
 Relative to \S\ref{sec:appendix-centroid}, the only new ingredient is the weight reparametrization $\partial_{\weight_i} \combweight_i = 1$ from \eqref{eq:appendix-jac}.
-
-% \paragraph{Gradient.}
 The shift gradient of $\jointdual$ is identical to \eqref{eq:appendix-centroid-grad}, while for the weights the chain rule gives
 \begin{equation}
   \partial_{\weight_i} \jointdual
@@ -18,31 +16,8 @@ The shift gradient of $\jointdual$ is identical to \eqref{eq:appendix-centroid-g
   \label{eq:appendix-joint-grad}
 \end{equation}
 so that stacking the two gradients recovers the joint gradient \eqref{eq:joint-gradient}.
-
-% \paragraph{Hessian.}
-Differentiating a second time, the diagonal $(\shift_i,\shift_i)$ and $(\weight_i,\weight_i)$ blocks are exactly the Hessians we have already computed --- the centroid Hessian of $\centroiddual$ in \eqref{eq:centroid-hessian} and the volume Hessian of $\dualenergy$ in \eqref{eq:newton-step} --- but the joint problem also produces the mixed shift--weight blocks of \eqref{eq:joint-hessian}.
-To handle all blocks at once, we introduce an auxiliary variable that stacks the two multipliers of a site into $\mult_i = [\shift_i, \weight_i] \in \R^{d+1}$ and then define the affine field
-\begin{equation}
-  \psi_i(\xx) = 2\,\shift_i\tr (\xx - \tcentroid_i) + \weight_i = \mult_i\tr \phi_i(\xx) ,
-  \qquad
-  \phi_i(\xx) = \begin{bmatrix} 2(\xx - \tcentroid_i) \\ 1 \end{bmatrix} ,
-  \label{eq:appendix-potential}
-\end{equation}
-through which $\mult_i$ enters the shifted power distance $\norm{\xx - \qq_i}^2 - \psi_i(\xx)$.
-The Hessian is then the facet-based Laplacian assembled from $\phi_i$:
-\begin{subequations}
-  \label{eq:appendix-block}
-  \begin{empheq}[left={\empheqlbrace\,}]{align}
-    \partial^2_{\mult_i \mult_j} \jointdual
-      &= \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_j(\xx)\tr \, dA,
-    \label{eq:appendix-block-off}
-    \\[2mm]
-    \partial^2_{\mult_i \mult_i} \jointdual
-      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_i(\xx)\tr \, dA.
-    \label{eq:appendix-block-diag}
-  \end{empheq}
-\end{subequations}
-Expanding $\phi_i$ splits \eqref{eq:appendix-block} into shift--shift, shift--weight, and weight--weight coefficients, with off-diagonal blocks
+% 
+Applying \eqref{eq:appendix-centroid-hess-chain} a second time, now with $\smash{\partial_{\weight_i} \combweight_i = 1}$, and substituting the energy Hessian \eqref{eq:appendix-energy-hess-off}--\eqref{eq:appendix-energy-hess-diag} gives the off-diagonal blocks
 \begin{subequations}
   \label{eq:appendix-blocks-off}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
@@ -59,36 +34,13 @@ and diagonal blocks
   \label{eq:appendix-blocks-diag}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
     \partial^2_{\shift_i \shift_i\tr} \jointdual
-      &= -\!\sum\nolimits_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i)(\xx - \tcentroid_i)\tr \, dA , \label{eq:appendix-blocks-uu-diag} \\
+      &= -\!\sum_{j \sim i} \frac{2}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i)(\xx - \tcentroid_i)\tr \, dA , \label{eq:appendix-blocks-uu-diag} \\
     \partial^2_{\shift_i \weight_i} \jointdual
-      &= -\!\sum\nolimits_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i) \, dA , \label{eq:appendix-blocks-uw-diag} \\
+      &= -\!\sum_{j \sim i} \frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}}\! (\xx - \tcentroid_i) \, dA , \label{eq:appendix-blocks-uw-diag} \\
     \partial^2_{\weight_i \weight_i} \jointdual
-      &= -\!\sum\nolimits_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-blocks-ww-diag}
+      &= -\!\sum_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-blocks-ww-diag}
   \end{empheq}
 \end{subequations}
-whose shift--shift, shift--weight, and weight--weight parts recover, respectively, the centroid Hessian \eqref{eq:centroid-hessian}, the mixed block \eqref{eq:joint-hessian}, and the volume Hessian \eqref{eq:newton-step}.
-
-% \paragraph{Negative semidefiniteness and null space.}
-Contracting the Hessian with a perturbation $\smash{\delta\mult = \{ (\delta\shift_i, \delta\weight_i) \}}$ again collapses each facet to a scalar square of the form
-\begin{equation*}
-  \delta\mult\tr \nabla^2 \jointdual \, \delta\mult
-    = -\sum\nolimits_{i,j} \frac{1}{2\,\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \bigl( \delta\psi_i(\xx) - \delta\psi_j(\xx) \bigr)^2 \, dA
-    \;\le\; 0 ,
-  \label{eq:appendix-joint-nsd}
-\end{equation*}
-now with variations of the affine field $\smash{\delta\psi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i) + \delta\weight_i}$.
-Hence, $\nabla^2 \jointdual \preceq 0$ and $\jointdual$ is jointly concave.
-As in Appendix~\ref{sec:appendix-centroid}, this quadratic form vanishes exactly when $\smash{\delta\psi_i - \delta\psi_j = \kappa_{ij}\,(a_i - a_j)}$ on every facet, now with $\smash{\delta a_i = \delta\psi_i}$ since the weights also vary.
-The dilation and translation perturbation $\smash{\delta a_i = \mu\,a_i + 2\,\translation\tr\xx + c}$ always satisfies this condition and produces the only solution.
-Matching the linear parts and evaluating at the pivots as in \eqref{eq:appendix-centroid-kernel}, but now solving the latter for the free weight perturbation, gives
-\begin{equation*}
-  \delta\shift_i = \mu\,\dual_i + \translation ,
-  \qquad
-  \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i + c ,
-\end{equation*}
-which is exactly the $(d\!+\!2)$-dimensional family in \eqref{eq:joint-nullspace}.
-One can verify directly that it lies in the null-space, since $\smash{\delta\psi_i - \delta\psi_j = \mu\,(a_i - a_j)}$ vanishes on $\face_{ij}$.
-Here, $\mu$ scales the lifted shifted sites $\smash{(\dual_i, \sheight_i)}$, $\translation$ translates them horizontally, and $c$ translates them vertically, which together form the homotheties \eqref{eq:infinitesimal-homothety} that leave the power diagram unchanged (\S\ref{sec:background}).
-In contrast to $\centroiddual$, these modes are always present because the free weights absorb the weight changes they require.
+whose shift--shift, shift--weight, and weight--weight parts recover the centroid Hessian \eqref{eq:centroid-hessian}, the mixed block \eqref{eq:joint-hessian}, and the volume Hessian \eqref{eq:newton-step}, respectively.
 
 \end{document}

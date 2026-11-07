@@ -32,7 +32,7 @@
 \newcommand{\dualenergy}{\mathcal{F}}        % dual objective of the volume-constrained problem, \dualenergy(\weight)
 \newcommand{\centroiddual}{\mathcal{G}}      % dual objective of the centroid-constrained problem, \centroiddual(\shift)
 \newcommand{\jointdual}{\mathcal{H}}         % dual objective of the joint volume+centroid problem, \jointdual(\shift,\weight)
-\newcommand{\distortion}{\mathcal{D}}         % distortion energy of the targets, \distortion(\tcentroid) (appendix sec:appendix-distortion)
+\newcommand{\distortion}{\mathcal{D}}         % distortion energy of the centroid slacks, \distortion(\slack) (appendix sec:appendix-distortion)
 \newcommand{\Id}{\mathrm{I}}                 % identity matrix (\Id_d for d x d)
 
 % Power distance from x to weighted site i:  \pdist{\xx}{i}
@@ -59,7 +59,6 @@
 
 % Lifting of a power diagram (Background, shifted power diagrams)
 \newcommand{\height}{h}                      % lifted height of a weighted site, \height_i = \norm{\qq_i}^2 - \weight_i
-\newcommand{\sheight}{\tilde{\height}}       % lifted height of a shifted weighted site, \sheight_i = \norm{\dual_i}^2 - \combweight_i
 
 % Softened centroid constraints and variational time stepping
 \newcommand{\slack}{\mathbf{r}}              % centroid slack of the softened primal, \slack_i
@@ -71,7 +70,13 @@
 \newcommand{\Cmat}{\mathrm{C}}               % constraint rows of the constrained integrator, \Cmat\,\shift = (\sum_i \pvol_i \shift_i\tr \dual^k_i, \sum_i \pvol_i \shift_i)
 \newcommand{\Nmat}{\mathrm{N}}               % negated Hessian of \jointdual augmented by the constraint rows, used in the block elimination of the constrained Newton step
 
-% Distortion energies and affine deformations (appendix sec:appendix-distortion)
+% Cage deformations of power diagrams (appendix sec:appendix-distortion)
+\newcommand{\rest}[1]{\widehat{#1}}           % rest-state decoration, \rest{\centroid}_i, \rest{\domain}
+\newcommand{\conj}[1]{#1^{\ast}}             % convex conjugate, \conj{\distortion}
+\newcommand{\pheight}{\overline{\height}}    % heights predicted from the cage, \pheight_i
+\newcommand{\pflux}{\overline{\flux}}        % vector areas of the mapped boundary patches, \pflux_i
+\newcommand{\moment}{b}                      % boundary moment of a cell, \moment_i = \int x.n dA
+\newcommand{\pmoment}{\overline{\moment}}    % boundary moments of the mapped boundary patches, \pmoment_i
 \newcommand{\deform}{\phi}                   % cage map of the domain boundary, \deform_f on each boundary face f
 \newcommand{\Fmat}{\mathrm{F}}               % linear part of an affine map, \deform(\xx) = \Fmat\xx + \boldsymbol{\tau}
 \newcommand{\flux}{\mathbf{f}}               % boundary vector area of a cell, \flux_i = \sum_f \area_{if} \nrm_f
