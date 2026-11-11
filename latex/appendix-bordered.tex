@@ -6,7 +6,7 @@
 \label{sec:appendix-bordered}
 
 We detail next the Newton step of Algorithm~\ref{alg:flow-constrained-newton}, which solves \eqref{eq:flow-line-constraint} by maximizing $\jointdual$ subject to the linear constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans}.
-
+% 
 First, we stack the shifts and weights into $\smash{\mathbf{z} \!=\! (\shift, \weight)}$ and the constraint multipliers into $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d) \in \R^{d+1}}$.
 We also write the dilation constraint \eqref{eq:flow-line-constraint-dil} as the row $\smash{\mathbf{a} = (\{\pvol_i\,\dual^k_i\}_i, 0)}$ and the translation constraint \eqref{eq:flow-line-constraint-trans} along each axis $\mathbf{e}_j$ as the row $\smash{\mathbf{b}_j = (\{\pvol_i\,\mathbf{e}_j\}_i, 0)}$, both with zero entries on the weights.
 We then collect these $d \!+\! 1$ rows into the auxiliary matrix
@@ -24,8 +24,7 @@ Additionally, we denote the gradient \eqref{eq:joint-gradient} by $\smash{\mathb
 which is the negated Hessian of $\jointdual$ regularized by $\hreg\,\mathrm{diag}(\pvol)$ with a small $\hreg \!>\! 0$ to remove its null-space.
 Since the Hessian is negative semi-definite, $\Nmat$ is positive definite.
 Moreover, $\Nmat$ shares the same sparsity as the Hessian, so it admits a sparse Cholesky factorization.
-% with the translation $\smash{\translation = (t_1, \dots, t_d)}$, and the Newton step $\delta\mathbf{z}$, 
-
+% 
 With this notation, we then solve the bordered system
 \begin{equation}
   \begin{bmatrix} \Nmat & \Cmat\tr \\ \Cmat & 0 \end{bmatrix}

@@ -6,7 +6,7 @@
 \label{sec:appendix-prelim}
 
 Both our objectives $\centroiddual$ and $\jointdual$ are the plain power diagram energy $\energy$ in \eqref{eq:power-diagram} evaluated at the shifted weighted sites $(\dual, \combweight)$ of \eqref{eq:shifted-site}.
-We summarize here the ingredients shared by the next two appendices: the Jacobian of \eqref{eq:shifted-site} and the derivatives of \eqref{eq:power-diagram}.
+We summarize here the derivatives used by the next two appendices.
 % 
 The first-order derivatives of the reparametrization \eqref{eq:shifted-site} are
 \begin{equation}
@@ -48,6 +48,6 @@ and diagonals
       &= -\!\sum_{j \sim i} \frac{1}{2}\frac{\area_{ij}}{\norm{\dual_i - \dual_j}} , \label{eq:appendix-energy-hess-ll-diag}
   \end{empheq}
 \end{subequations}
-where the site--site diagonal carries an extra interior term $2\,\cellvol_i\,\Id$ from the explicit dependence of $\partial_{\dual_i}\energy$ on $\dual_i$, and otherwise each diagonal is the negated neighbor sum of its off-diagonal counterpart.
+where the site--site diagonal carries an extra interior term $2\,\cellvol_i\,\Id$ from the explicit dependence of $\partial_{\dual_i}\energy$ on $\dual_i$, while each diagonal is the negated neighbor sum of its off-diagonal counterpart.
 
 \end{document}

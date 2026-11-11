@@ -7,9 +7,9 @@
 
 % We start by reviewing key concepts required by our contributions.
 Before presenting our contributions, we review key concepts underlying our work.
-Here, we consider a bounded and simply connected domain $\domain$ in $\smash{\R^d}$.
+Here, we consider a bounded and simply-connected domain $\domain$ in $\smash{\R^d}$.
 We define a \emph{partition} of $\domain$ as a collection of $n$ cells $\smash{\cell \!=\! \{\cell_i\}_{i=1}^n}$ of positive volume that tile $\domain$.
-We denote the {volume} and {centroid} for each cell $\cell_i$ as
+We compute the {volume} and {centroid} for each cell $\cell_i$ via
 \begin{subequations}
   \label{eq:cell-quantities}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
@@ -38,10 +38,8 @@ where $\domainVol$ and $\centroid_\domain$ are the volume and the centroid of $\
 
 \paragraph{Power diagram.}
 We associate each cell $\cell_i$ with a \emph{weighted site} encoded by a site position $\smash{\qq_i \!\in\! \R^d}$ and a scalar weight $\smash{\weight_i \!\in\! \R}$, which we collect as $\qq \!=\! \{\qq_i\}_{i=1}^n$ and $\weight \!=\! \{\weight_i\}_{i=1}^n$.
-We also assume the sites are pairwise distinct.
-% : two coinciding sites with equal weights have identical power distances and leave the split of their common cell undetermined, while a coinciding site with a smaller weight has an empty cell.
 Computing the \emph{power distance} from a point $\xx$ to a weighted site $i$ as $\smash{\pdist{\xx}{i}}$, we define the \emph{power diagram} of $(\qq,\weight)$ as the partition of $\domain$ that assigns each point $\smash{\xx \!\in\! \domain}$ to the weighted site of smallest power distance.
-The cell $\cell_i$ of the resulting power diagram for each $(\qq_i, \weight_i)$ is thus expressed as
+The cell $\cell_i$ of the resulting power diagram is thus expressed as
 \begin{equation}
   \cell_i = \bigl\{ \xx \in \domain : \pdist{\xx}{i} \le \pdist{\xx}{j} \ \ \forall j \neq i \bigr\} .
   \label{eq:power-cell}
@@ -50,38 +48,8 @@ Since the quadratic terms $\smash{\|\xx\|^2}$ in \eqref{eq:power-cell} cancel, t
 We call two cells $\cell_i$ and $\cell_j$ {neighbors}, symbolized as $i \!\sim\! j$, when they share a common facet, which we denote $\face_{ij}$ of measure $\area_{ij}$. %, and which lies on the hyperplane of equal power distance to the sites $i$ and $j$.
 For instance, a cell in 2D is a polygon whose $\cellvol_i$ is an {area} and a facet is a line segment whose measure $\area_{ij}$ is a {length}, while a cell in 3D is a polyhedron whose $\cellvol_i$ is a {volume} and a facet has measure $\area_{ij}$ equal to an {area}.
 Note also that the power diagram reduces to the classical Voronoi diagram when all weights are equal.
-
-\paragraph{Homothety invariance.}
-Since we assume distinct sites and cells with positive volume, any given set of weighted sites $(\qq,\weight)$ defines a unique power diagram that depends smoothly on $(\qq,\weight)$ \cite[Prop.~1.1]{deGournay2019Differentiation}.
-The converse, however, does not hold, 
-\begin{wrapfigure}[7]{r}{0.36\columnwidth}
-  \centering
-  \vspace{-1mm}
-  \resizebox{\linewidth}{!}{\input{figures/lifting}}
-\end{wrapfigure}
-since different weighted sites can generate the same power diagram.
-This redundancy is best seen by reparametrizing each weighted site $(\qq_i, \weight_i)$ as a lifted point $\smash{(\qq_i, \height_i) \in \R^{d+1}}$ with {height} $\smash{\height_i \!=\! \norm{\qq_i}^2 \!-\! \weight_i}$ \cite{Aurenhammer1987PowerDiagrams}.
-In terms of lifted points, the power distance can be rewritten as $\smash{\norm{\xx}^2 \!-\! ( 2\,\qq_i\tr\xx \!-\! \height_i )}$, so each cell $\cell_i$ in \eqref{eq:power-cell} collects the points from $\domain$ where the affine function $\smash{2\,\qq_i\tr\xx \!-\! \height_i}$ is maximal.
-% 
-Importantly, these cells remain unchanged when all affine functions are scaled by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx - c}$.
-% We refer to the positions of the weighted sites that generate a power diagram as its \emph{generators}; they coincide with the sites $\qq$ here, but will differ from them once we introduce shifted sites in \S\ref{sec:contributions}.
-Therefore, the weighted sites that generate the same power diagram as $(\qq, \weight)$ correspond to homotheties of the lifted points \cite{Aurenhammer1987Recognising}, denoted by the group
-\begin{equation}
-  \homotheties(\qq, \weight) = 
-  \Bigl\{ 
-    \bigl\{ s\,(\qq_i, \height_i) + (\translation, c) \bigr\}_{i=1}^n 
-    \;\text{with}\; 
-    s \!\in\! \R^{+},\ \translation \!\in\! \R^d,\ c \!\in\! \R 
-  \Bigr\}.
-  \label{eq:lifted-homothety}
-\end{equation}
-% where the same $(s, \translation, c)$ applies to all lifted points , Memari2012PrimalDual}.
-In terms of weighted sites, each element of $\homotheties(\qq, \weight)$ has sites 
-$\smash{s\,\qq_i + \translation}$ 
-and weights 
-$\smash{s\,\weight_i + (s^2 \!-\! s)\norm{\qq_i}^2 + 2s\,\translation\tr\qq_i + \norm{\translation}^2 - c}$, 
-whose quadra\-tic dependence on the sites makes the lifted form \eqref{eq:lifted-homothety} more convenient.
-This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ always lie in, and generically span, the null-space of the Hessian of our joint formulation.
+Since we only consider partitions with cells of positive volume, the weighted sites are required to be pairwise distinct.
+Any such input $(\qq,\weight)$ then defines a unique power diagram that depends smoothly on each weighted site \cite[Prop.~1.1]{deGournay2019Differentiation}.
 
 \paragraph{Energy.}
 Based on \eqref{eq:power-cell}, the power diagram for given weighted sites $(\qq,\weight)$ can be interpreted as the partition of $\domain$ that minimizes the total power distance among all its partitions, with optimal value
@@ -149,6 +117,41 @@ As derived by \citet{deGoes2012BlueNoise}, the Hessian of $\dualenergy$ is a (ne
   \end{empheq}
 \end{subequations}
 Therefore, this Hessian is negative semi-definite with the constant vector in its kernel, reflecting that adding a common constant to all weights leaves the power diagram unchanged.
+
+\paragraph{Homothety invariance.}
+% \begin{wrapfigure}[7]{r}{0.36\columnwidth}
+%   \centering
+%   \vspace{-1mm}
+%   \resizebox{\linewidth}{!}{\input{figures/lifting}}
+% \end{wrapfigure}
+While weighted sites define a unique power diagram, the converse does not hold, since different weighted sites can generate the same power diagram.
+This redundancy is best seen by reparametrizing each weighted site $(\qq_i, \weight_i)$ as a lifted point $\smash{(\qq_i, \height_i) \in \R^{d+1}}$ with {height} $\smash{\height_i \!=\! \norm{\qq_i}^2 \!-\! \weight_i}$ \cite{Aurenhammer1987PowerDiagrams}.
+\begin{wrapfigure}[7]{r}{0.36\columnwidth}
+  \centering
+  \vspace{-1mm}
+  \resizebox{\linewidth}{!}{\input{figures/lifting}}
+\end{wrapfigure}
+In terms of lifted points, the power distance is rewritten as $\smash{\norm{\xx}^2 \!-\! ( 2\,\qq_i\tr\xx \!-\! \height_i )}$, so each cell $\cell_i$ in \eqref{eq:power-cell} collects the points from $\domain$ where $\smash{2\,\qq_i\tr\xx \!-\! \height_i}$ is maximal (see inset).
+% 
+Importantly, these cells remain unchanged when all affine functions are scaled by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx - c}$.
+% We refer to the positions of the weighted sites that generate a power diagram as its \emph{generators}; they coincide with the sites $\qq$ here, but will differ from them once we introduce shifted sites in \S\ref{sec:contributions}.
+Therefore, the weighted sites that generate the same power diagram as $(\qq, \weight)$ correspond to homotheties of the lifted points \cite{Aurenhammer1987Recognising}, denoted by 
+\begin{equation}
+  \homotheties(\qq, \weight) = 
+  \Bigl\{ 
+    \bigl\{ s\,(\qq_i, \height_i) + (\translation, c) \bigr\}_{i=1}^n 
+    \;\text{with}\; 
+    s \!\in\! \R^{+},\ \translation \!\in\! \R^d,\ c \!\in\! \R 
+  \Bigr\}.
+  \label{eq:lifted-homothety}
+\end{equation}
+% where the same $(s, \translation, c)$ applies to all lifted points , Memari2012PrimalDual}.
+In terms of weighted sites, each element of $\homotheties(\qq, \weight)$ has sites 
+$\smash{s\,\qq_i + \translation}$ 
+and weights 
+$\smash{s\,\weight_i + (s^2 \!-\! s)\norm{\qq_i}^2 + 2s\,\translation\tr\qq_i + \norm{\translation}^2 - c}$, 
+whose quadra\-tic dependence on the sites makes the lifted form \eqref{eq:lifted-homothety} more convenient.
+This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ span the null-space of the Hessian of our joint formulation.
 
 \paragraph{Achievable centroids.}
 Finally, we summarize results by \citet{Bourne2025Inverting, Bourne2026ConvexOrder} that describe the set of centroids achievable by all partitions of $\domain$ with prescribed volumes.

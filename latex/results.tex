@@ -5,6 +5,23 @@
 \section{Results}
 \label{sec:results}
 
+\subsection{Implementation}
+\label{sec:results-implementation}
+
+% TODO: describe the implementation (geogram, sparse Cholesky, Houdini) and the remaining safeguards of the Newton solves (distance clamp, restarts).
+The regularized negated Hessian of our Newton solves (Algorithm~\ref{alg:hessian-reg}) adds a pair term that pushes back on steps changing the separation $d$ of close generator pairs, with stiffness
+\begin{equation}
+  \frac{\rho(d;\, r_\mathrm{core}, r_\mathrm{pair})}{\rho_{\max}} =
+  \begin{cases}
+    \epsilon + (1 - \epsilon) \bigl(1 - \frac{d}{r_\mathrm{core}}\bigr)^2 & d < r_\mathrm{core} , \\[2pt]
+    \epsilon \bigl(\frac{r_\mathrm{pair} - d}{r_\mathrm{pair} - r_\mathrm{core}}\bigr)^2 & r_\mathrm{core} \le d < r_\mathrm{pair} , \\[2pt]
+    0 & d \ge r_\mathrm{pair} ,
+  \end{cases}
+  \label{eq:results-pair-reg}
+\end{equation}
+and $\epsilon \!=\! 10^{-3}$.
+Within the core radius $r_\mathrm{core}$, the stiffness rises to $\rho_{\max}$ as the pair merges, and between $r_\mathrm{core}$ and the pair radius $r_\mathrm{pair}$, it decays from $\epsilon\,\rho_{\max}$ to zero, so that $\rho$ is continuous and only pairs closer than $r_\mathrm{pair}$ are affected.
+
 \subsection{Inverse Tessellations}
 \label{sec:results-inverse}
 

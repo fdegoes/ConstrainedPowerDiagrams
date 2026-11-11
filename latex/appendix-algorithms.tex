@@ -2,25 +2,33 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
+% Long Require / Return text, kept clear of the comment column.
+\newcommand{\algwrap}[1]{\parbox[t]{0.72\linewidth}{\raggedright #1}}
+
 \section{Algorithms}
 \label{sec:appendix-algorithms}
 
 We summarize the time steps of the constrained (\S\ref{sec:flow-constrained}) and penalty-based (\S\ref{sec:flow-penalty}) integrators, together with the Newton solves they rely on.
-Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:newton}) regularize the negated Hessian by $\smash{\hreg\,\mathrm{diag}(\pvol)}$ with a small $\hreg \!>\! 0$, and backtrack the step size via the line search of Algorithm~\ref{alg:line-search}, which rebuilds the power diagram at every trial step.
+The Newton solves of $\jointdual$ and $\jointdual_\alpha$ (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:newton}) take Levenberg--Marquardt steps (Algorithm~\ref{alg:lm-step}), while the solve of $\dualenergy$ (Algorithm~\ref{alg:volume}) backtracks the Newton step via the line search of Algorithm~\ref{alg:line-search}.
+Both rebuild the power diagram at every trial step.
+In all of them, the negated Hessian receives a regularization (Algorithm~\ref{alg:hessian-reg}) that makes it positive definite and keeps the generators distinct, without changing the gradient, and hence the solution.
+The solves stop when the residual of every cell is small relative to its scale: a volume error for the weight entry is measured relative to $\pvol_i$, while the centroid residual for the shift entry is relative to $\smash{2\pvol_i^{(d+1)/d}}$, which compensates the factor $2$ of the gradient \eqref{eq:joint-gradient}, so that $\tau_\shift$ bounds the centroid error in units of the cell size $\smash{r_i \!=\! \pvol_i^{1/d}}$.
+Our implementation (and all reported results) uses the defaults $\tau_\weight \!=\! 10^{-9}$ and $\tau_\shift \!=\! 0.1$ for static solves, but $\tau_\shift \!=\! \tau_\weight$ within the integrators, whose updates use the shifts directly.
 
 \begin{algorithm}[H]
   \caption{Time step of the constrained integrator (\S\ref{sec:flow-constrained}).}
   \label{alg:flow-constrained}
   \begin{algorithmic}[1]
-    \Require particles $\qq^k$, velocities $\vel^k$, generators $\dual^k$ and shifted weights $\combweight^k$ of the power diagram with centroids $\qq^k$, volumes $\pvol$, time step $\tstep$
+    \Require \algwrap{particles $\qq^k$, velocities $\vel^k$, generators $\dual^k$ and shifted weights $\combweight^k$ of the power diagram with centroids $\qq^k$, volumes $\pvol$, time step $\tstep$}
     \State $\pred^{k+1} \gets (1 + \tstep^2)\,\qq^k + \tstep\,\vel^k$ \Comment{\eqref{eq:flow-shake-step-pred}}
-    \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$, warm-started from $\combweight^k$ \Comment{\eqref{eq:volume-dual}}
+    \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$ \Comment{\eqref{eq:volume-dual}}
+    \Statex \hspace{\algorithmicindent} by Alg.~\ref{alg:volume}, warm-started from $\combweight^k$
     \State $(\shift, \weight, s, \translation) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $\weight^0$
     \State $\qq^{k+1} \gets \pred^{k+1} - s\,\dual^k - \translation$ \Comment{\eqref{eq:flow-shake-step-corr}}
     \State $\vel^{k+1} \gets (\qq^{k+1} - \qq^k) / \tstep$
     \State $\dual^{k+1} \gets \qq^k + \shift$ \Comment{\eqref{eq:shifted-site-pos}}
     \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2 + 2\,\shift\tr (\qq^k - \pred^{k+1})$ \Comment{\eqref{eq:shifted-site-weight}}
-    \State \Return particles $\qq^{k+1}$, velocities $\vel^{k+1}$, generators $\dual^{k+1}$ and shifted weights $\combweight^{k+1}$
+    \State \Return \algwrap{particles $\qq^{k+1}$, velocities $\vel^{k+1}$, generators $\dual^{k+1}$ and shifted weights $\combweight^{k+1}$}
   \end{algorithmic}
 \end{algorithm}
 
@@ -28,19 +36,22 @@ Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:ne
   \caption{Bordered Newton solve of \eqref{eq:flow-line-constraint} (Appendix~\ref{sec:appendix-bordered}).}
   \label{alg:flow-constrained-newton}
   \begin{algorithmic}[1]
-    \Require sites $\qq$, targets $\tcentroid$, direction $\dual^k$, initial weights $\weight^0$, volumes $\pvol$, regularization $\hreg \!>\! 0$, tolerance $\tau$
+    \Require \algwrap{sites $\qq$, targets $\tcentroid$, direction $\dual^k$, initial weights $\weight^0$, volumes $\pvol$, tolerances $\tau_\weight, \tau_\shift$}
     \State build the constraint matrix $\Cmat = [\mathbf{a}, \mathbf{b}_1, \dots, \mathbf{b}_d]\tr$ \Comment{\eqref{eq:appendix-constraint-matrix}}
-    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$
+    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$, $\mu \gets 10^{-3}$
     \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}$ \Comment{\eqref{eq:shifted-site}}
-    \Repeat
-      \State $\mathbf{g} \gets \nabla\jointdual(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}}
-      \State $\Nmat \gets -\nabla^2\jointdual(\mathbf{z}) + \hreg\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:appendix-bordered-matrix}}
+    \Loop
+      \State $\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i \gets \nabla\jointdual(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}}
+      \State $r_\shift \gets \max_i \norm{\mathbf{g}^\shift_i} / (2\pvol_i^{(d+1)/d})$ \Comment{shift residual}
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\gamma = \min(1, r_\shift / r^0_\shift)$
       \State solve for $\mathbf{z}_0$, $\mathbf{z}_a$, $\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-solve}}
       \State solve for the gauge $(s, \translation)$ \Comment{\eqref{eq:flow-constrained-elimination-gauge}}
-      \State $\delta\mathbf{z} \gets \mathbf{z}_0 - s\,\mathbf{z}_a - \sum_j t_j\,\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-update}}
-      \State $\mathbf{z} \gets$ Alg.~\ref{alg:line-search} with $\mathbf{z}$, $\delta\mathbf{z}$, and $\alpha = \infty$
-    \Until{$\norm{\mathbf{g} - 2 \Cmat\tr (s, \translation)} < \tau$} \Comment{\eqref{eq:flow-constrained-newton}}
-    \State \Return $(\shift, \weight)$ and the gauge $(s, \translation)$
+      \State $\mathbf{r} = (\mathbf{r}^\shift_i, r^\weight_i)_i \gets \mathbf{g} - 2 \Cmat\tr (s, \translation)$ \Comment{\eqref{eq:flow-constrained-newton}}
+      \If{$\lvert r^\weight_i \rvert \le \tau_\weight\,\pvol_i$ and $\norm{\mathbf{r}^\shift_i} \le 2\tau_\shift\,\pvol_i^{(d+1)/d}$ for all $i$}
+        \State \Return $(\shift, \weight)$ and the gauge $(s, \translation)$
+      \EndIf
+      \State $(\mathbf{z}, \mu) \gets$ Alg.~\ref{alg:lm-step} with $\mathbf{z}$, $\mathbf{g}$, $\Nmat$, $\mu$, $\Cmat$, and $\alpha = \infty$
+    \EndLoop
   \end{algorithmic}
 \end{algorithm}
 
@@ -48,13 +59,15 @@ Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:ne
   \caption{Time step of the penalty-based integrator (\S\ref{sec:flow-penalty}).}
   \label{alg:flow-penalty}
   \begin{algorithmic}[1]
-    \Require particles $\qq^k$, velocities $\vel^k$, shifted weights $\combweight^k$ of the previous step, volumes $\pvol$, time step $\tstep$, stiffness $\alpha$
-    \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$, warm-started from $\combweight^k$ \Comment{\eqref{eq:volume-dual}}
-    \State $(\shift, \weight) \gets$ Alg.~\ref{alg:newton} with sites and targets $\qq^k$, initial weights $\weight^0$
+    \Require \algwrap{particles $\qq^k$, velocities $\vel^k$, shifted weights $\combweight^k$ of the previous step, volumes $\pvol$, time step $\tstep$, stiffness $\alpha$}
+    \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$ \Comment{\eqref{eq:volume-dual}}
+    \Statex \hspace{\algorithmicindent} by Alg.~\ref{alg:volume}, warm-started from $\combweight^k$
+    \State $(\shift, \weight) \gets$ Alg.~\ref{alg:newton} with sites and targets $\qq^k$
+    \Statex \hspace{\algorithmicindent} and initial weights $\weight^0$
     \State $\vel^{k+1} \gets \vel^k - (1 + 1/\alpha)\,\tstep\,\shift$ \Comment{\eqref{eq:flow-softened-step-vel}}
     \State $\qq^{k+1} \gets \qq^k + \tstep\,\vel^{k+1}$ \Comment{\eqref{eq:flow-softened-step-pos}}
     \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2$ \Comment{\eqref{eq:shifted-site-weight}}
-    \State \Return particles $\qq^{k+1}$, velocities $\vel^{k+1}$ and shifted weights $\combweight^{k+1}$
+    \State \Return \algwrap{particles $\qq^{k+1}$, velocities $\vel^{k+1}$ and shifted weights $\combweight^{k+1}$}
   \end{algorithmic}
 \end{algorithm}
 
@@ -62,30 +75,98 @@ Both Newton solves (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:ne
   \caption{Newton solve of $\jointdual_\alpha$ or of $\jointdual$.}
   \label{alg:newton}
   \begin{algorithmic}[1]
-    \Require sites $\qq$, targets $\tcentroid$, initial weights $\weight^0$, volumes $\pvol$, stiffness $\alpha$ (optional), regularization $\hreg \!>\! 0$, tolerance $\tau$
-    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$
+    \Require \algwrap{sites $\qq$, targets $\tcentroid$, initial weights $\weight^0$, volumes $\pvol$, stiffness $\alpha$ (optional), tolerances $\tau_\weight, \tau_\shift$}
+    \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$, $\mu \gets 10^{-3}$
     \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}$ \Comment{\eqref{eq:shifted-site}}
-    \Repeat
-      \State $\mathbf{g} \gets \nabla\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}, \eqref{eq:regularized-gradient-shift}}
-      \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z}) + \hreg\,\mathrm{diag}(\pvol)$ \Comment{\eqref{eq:appendix-bordered-matrix}}
-      \State solve $\Nmat\,\delta\mathbf{z} = \mathbf{g}$
-      \State $\mathbf{z} \gets$ Alg.~\ref{alg:line-search} with $\mathbf{z}$ and $\delta\mathbf{z}$
-    \Until{$\norm{\mathbf{g}} < \tau$}
-    \State \Return $(\shift, \weight)$
+    \Loop
+      \State $\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i \gets \nabla\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}, \eqref{eq:regularized-gradient-shift}}
+      \State $r_\shift \gets \max_i \norm{\mathbf{g}^\shift_i} / (2\pvol_i^{(d+1)/d})$ \Comment{shift residual}
+      \If{$\lvert g^\weight_i \rvert \le \tau_\weight\,\pvol_i$ for all $i$ and $r_\shift \le \tau_\shift$}
+        \State \Return $(\shift, \weight)$
+      \EndIf
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\gamma = \min(1, r_\shift / r^0_\shift)$
+      \State $(\mathbf{z}, \mu) \gets$ Alg.~\ref{alg:lm-step} with $\mathbf{z}$, $\mathbf{g}$, $\Nmat$, $\mu$, and $\alpha$
+    \EndLoop
   \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}[H]
-  \caption{Backtracking line search on $\jointdual_\alpha$ or on $\jointdual$.}
+  \caption{Levenberg--Marquardt step on $\jointdual_\alpha$ or on $\jointdual$.}
+  \label{alg:lm-step}
+  \begin{algorithmic}[1]
+    \Require \algwrap{multipliers $\mathbf{z}$, gradient $\mathbf{g}$, matrix $\Nmat$, damping $\mu$, constraints $\Cmat$ (optional), stiffness $\alpha$}
+    \State $\mathrm{D} \gets \mathrm{diag}(\Nmat)$, $\nu \gets 2$
+    \Loop
+      \State solve $(\Nmat + \mu\,\mathrm{D})\,\delta\mathbf{z} = \mathbf{g}$, subject to $\Cmat\,\delta\mathbf{z} = 0$ \Comment{\eqref{eq:flow-constrained-elimination-update}}
+      \State $\mathbf{z}' \gets \mathbf{z} + \delta\mathbf{z}$
+      \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}'$ \Comment{\eqref{eq:shifted-site}}
+      \State $\rho \gets \bigl(\jointdual_\alpha(\mathbf{z}') - \jointdual_\alpha(\mathbf{z})\bigr) / \bigl(\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}\bigr)$ \Comment{gain ratio}
+      \If{no cell is empty and $\rho > 10^{-4}$}
+        \State \Return \algwrap{$\mathbf{z}'$, its power diagram, and $\mu \max\bigl(\tfrac{1}{3}, 1 - (2\rho - 1)^3\bigr)$}
+      \EndIf
+      \State $\mu \gets \nu\,\mu$
+      \State $\nu \gets 2\,\nu$
+    \EndLoop
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Regularized negated Hessian of $\jointdual_\alpha$, $\jointdual$, or $\dualenergy$.}
+  \label{alg:hessian-reg}
+  \begin{algorithmic}[1]
+    \Require \algwrap{power diagram at $\mathbf{z}$, volumes $\pvol$, activity $\gamma \in [0, 1]$}
+    \State $\ell \gets \frac{1}{n} \sum_i r_i$ \Comment{mean cell size}
+    \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:appendix-blocks-off}, \eqref{eq:appendix-blocks-diag}}
+    \State $\rho_{\max} \gets 10 \max_i \sum_{k=1}^{d} \Nmat_{\shift_{ik}\shift_{ik}}$ \Comment{pair stiffness scale}
+    \State $r_\mathrm{pair} \gets 0.3\,\gamma\,\ell$ \Comment{pair radius}
+    \State $r_\mathrm{core} \gets 0.05\,\gamma\,\ell$ \Comment{core radius}
+    \ForAll{facets $\face_{ij}$ with $d_{ij} = \norm{\dual_j - \dual_i} < r_\mathrm{pair}$}
+      \State $\mathbf{e} \gets (\dual_j - \dual_i) / d_{ij}$
+      \State $\rho_{ij} \gets \rho(d_{ij};\, r_\mathrm{core}, r_\mathrm{pair})$ \Comment{pair stiffness \eqref{eq:results-pair-reg}}
+      \State $\Nmat_{\shift_i\shift_i} \mathrel{+}= \rho_{ij}\,\mathbf{e}\mathbf{e}\tr$
+      \State $\Nmat_{\shift_j\shift_j} \mathrel{+}= \rho_{ij}\,\mathbf{e}\mathbf{e}\tr$
+    \EndFor
+    \State $\Nmat_{\shift_i\shift_i} \mathrel{+}= \hreg\,\pvol_i\,r_i^2\,\mathrm{I}$ for all $i$ \Comment{shift regularization}
+    \State $\Nmat_{\weight_i\weight_i} \mathrel{+}= \hreg\,\pvol_i$ for all $i$ \Comment{weight regularization}
+    \State \Return $\Nmat$
+  \end{algorithmic}
+\end{algorithm}
+
+Without shifts, as for $\dualenergy$, there is no pair term and only the weight regularization applies.
+The pair stiffness $\rho$ is defined in \eqref{eq:results-pair-reg}, and the callers set the activity $\gamma$ to the ratio of the current shift residual $r_\shift$ to its value $r^0_\shift$ at the first iteration, capped at one, so that the pair term fades out as the solve converges.
+We use $\hreg \!=\! 10^{-4}$, for which $\hreg$ has units of inverse squared length on both blocks.
+When the predicted increase in Algorithm~\ref{alg:lm-step} is below the round-off of $\jointdual_\alpha$, a trial is accepted instead if it decreases the residual without decreasing $\jointdual_\alpha$ beyond round-off.
+
+\begin{algorithm}[H]
+  \caption{Newton solve of $\dualenergy$.}
+  \label{alg:volume}
+  \begin{algorithmic}[1]
+    \Require \algwrap{sites $\qq$, initial weights $\weight^0$, volumes $\pvol$, tolerance $\tau_\weight$}
+    \State $\weight \gets \weight^0$
+    \State build the power diagram of the sites $\qq$ with weights $\weight$
+    \Loop
+      \State $\mathbf{g} \gets \nabla\dualenergy(\weight)$ \Comment{\eqref{eq:volume-dual}}
+      \If{$\lvert g_i \rvert \le \tau_\weight\,\pvol_i$ for all $i$}
+        \State \Return $\weight$
+      \EndIf
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\weight$ with $\gamma = 0$
+      \State solve $\Nmat\,\delta\weight = \mathbf{g}$
+      \State $\weight \gets$ Alg.~\ref{alg:line-search} with $\weight$ and $\delta\weight$
+    \EndLoop
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Backtracking line search on $\dualenergy$.}
   \label{alg:line-search}
   \begin{algorithmic}[1]
-    \Require sites $\qq$, targets $\tcentroid$, multipliers $\mathbf{z}$, step $\delta\mathbf{z}$, volumes $\pvol$, stiffness $\alpha$
+    \Require \algwrap{sites $\qq$, weights $\weight$, step $\delta\weight$, volumes $\pvol$}
     \State $\omega \gets 1$
     \Loop
-      \State $\mathbf{z}' \gets \mathbf{z} + \omega\,\delta\mathbf{z}$
-      \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}'$ \Comment{\eqref{eq:shifted-site}}
-      \If{no cell is empty and $\jointdual_\alpha(\mathbf{z}') > \jointdual_\alpha(\mathbf{z})$}
-        \State \Return $\mathbf{z}'$ and its power diagram
+      \State $\weight' \gets \weight + \omega\,\delta\weight$
+      \State build the power diagram of the sites $\qq$ with weights $\weight'$
+      \If{no cell is empty and $\dualenergy(\weight') > \dualenergy(\weight)$}
+        \State \Return $\weight'$ and its power diagram
       \EndIf
       \State $\omega \gets \omega / 2$
     \EndLoop
