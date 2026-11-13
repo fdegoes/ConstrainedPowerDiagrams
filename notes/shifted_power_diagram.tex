@@ -1,0 +1,355 @@
+\documentclass[11pt,a4paper]{article}
+\input{alias}
+
+\title{Shifted Power Diagrams and Affine Transformations}
+\author{Fernando de Goes}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Definitions}\label{sec:definitions}
+
+Throughout this manuscript, we denote $\domain \subset \RR{d}$ as the domain of interest, which is partitioned into power cells $\cells = \{\cells_i\}$ so that $\domain = \bigcup_i \cells_i$.
+The boundary of the domain $\domain$ is indicated by $\boundary{\domain}$, and similarly the boundary of a cell $\cells_i$ is $\boundary{\cells}_i$.
+The volume of the domain $\domain$ is denoted as $\volume{\domain}$, and similarly the volume of a cell $\cells_i$ is $\volume{\cells_i}$.
+The barycenter of the domain $\domain$ is denoted as $\centers$, and similarly the barycenter of each cell $\cells_i$ is $\centers_i$.
+
+\subsection{Power Diagram}\label{sec:power-diagram}
+
+A \emph{power diagram} defined by $n$ sites $\sites \!=\! \{ \sites_i \in \RR{d} \}$ with weights $\weights \!=\!\{ \weight_i \in \R \}$ assigns each point $\xx$ to the site minimizing the power distance:
+\begin{equation}
+  \mathrm{pow}_i(\xx) = \|\xx - \sites_i\|^2 - \weight_i.
+\end{equation}
+The \emph{potential} of site $i$ is defined as
+\begin{equation}\label{eq:potential}
+  \potential_i = \|\sites_i\|^2 - \weight_i,
+\end{equation}
+so that $\mathrm{pow}_i(\xx) = \|\xx\|^2 - 2\sites_i^t\xx + \potential_i$, and the \emph{lifted point} associated with site $i$ is $(\sites_i,\, \potential_i) \in \RR{d+1}$.
+This induces a partition $\cells\!=\!\{\cells_i\}$ of a domain $\domain$ into \emph{power cells}
+\begin{equation}
+  \cells_i = \{\xx \in \domain : \mathrm{pow}_i(\xx) \leq \mathrm{pow}_j(\xx),\; \forall j \neq i\}.
+\end{equation}
+
+\emph{Variational characterization.} The power diagram is the partition $\cells$ minimizing
+\begin{equation}
+\label{eq:pdEnergy}
+\pdEnergy(\cells) = \sum_i \int_{\cells_i} \left(\|\xx - \sites_i\|^2 - \weight_i\right) d\xx
+\end{equation}
+over all partitions of $\domain$.
+
+
+
+\subsection{Shifted Power Diagram}\label{sec:shifted-pd}
+
+A \emph{shifted power diagram} generalizes a power diagram by giving each site $\sites_i$ both a weight $\weight_i$ and a shift vector $\shifts_i$.
+We then define the \emph{dual site} as:
+\begin{equation}
+  \duals_i = \sites_i + \shifts_i.
+\end{equation}
+In a shifted power diagram, the cell boundaries are halfplanes governed by $\duals_i$, not $\sites_i$.
+The potential \eqref{eq:potential} is accordingly redefined using the dual sites:
+\begin{equation}\label{eq:potential-shifted}
+  \potential_i = \|\duals_i\|^2 - \weight_i.
+\end{equation}
+The power cells are defined with respect to the dual sites:
+\begin{equation}
+  \cells_i = \{\xx \in \domain : \|\xx - \duals_i\|^2 - \weight_i \leq \|\xx - \duals_j\|^2 - \weight_j,\; \forall j \neq i\}.
+\end{equation}
+
+\emph{Variational characterization.} The shifted power diagram is the partition $\cells$ minimizing
+\begin{equation}
+\label{eq:spdEnergy}
+\spdEnergy(\cells, \duals, \weights) = \sum_i \int_{\cells_i} \left(\|\xx - \duals_i\|^2 - \weight_i\right) d\xx
+\end{equation}
+over all partitions of $\domain$.
+
+
+\subsection{Faces Shared by Cells}
+\label{sec:faces}
+
+We denote by $\face_{ij}$ the $(d\!-\!1)$-dimensional boundary shared by adjacent cells ${\cells}_i$ and ${\cells}_j$, by $A_{ij}$ the measure of $\face_{ij}$, by $\centers_{ij}$ the barycenter of $\face_{ij}$, and by $l_{ij} = \|{\duals}_i - {\duals}_j\|$ the distance between the dual sites. 
+These quantities define the stiffness weight $\star_{ij} = A_{ij}/l_{ij}$, with which we can express the linear precision property of the dual sites with respect to their neighbors:
+\begin{equation}
+\label{eq:linear_precision}
+\sum_{j \sim i} \star_{ij} \left(\duals_i - \duals_j\right) = 0.
+\end{equation}
+
+Moreover, the face $\face_{ij}$ corresponds to a halfplane described by $\mathrm{pow}_i(\xx) = \mathrm{pow}_j(\xx)$. 
+Expanding these terms gives the halfplane condition
+\begin{equation}
+\label{eq:halfplane}
+2(\duals_j - \duals_i)^t \xx
+=
+\left(\|\duals_j\|^2 - \weight_j\right) - \left(\|\duals_i\|^2 - \weight_i\right)
+=
+\potential_j - \potential_i.
+\end{equation}
+
+We then define the \emph{discrete divergence} between $i$ and $j$ as the scalar:
+\begin{equation}
+\label{eq:discrete-div}
+\begin{aligned}
+\div_{ij}
+&= \frac{1}{l_{ij}} \int_{\face_{ij}} \left( \duals_j - \duals_i \right)^t \xx \, dx \\
+&= \star_{ij} \left( \duals_j - \duals_i \right)^t \centers_{ij} \\
+&= \frac12 \star_{ij} \left(\potential_j - \potential_i\right),
+\end{aligned}
+\end{equation}
+where the last equality is due to \eqref{eq:halfplane}.
+
+We can next define a discrete divergence per site $i$ as:
+\begin{equation}\label{eq:div-sum}
+\div_{i}
+=
+\sum_{j \sim i} \div_{ij}
+= 
+\frac12 \sum_{j \sim i} \star_{ij} \left(\potential_j - \potential_i\right).
+\end{equation}
+%
+Due to \eqref{eq:linear_precision}, we can rearrange \eqref{eq:div-sum} by adding the term $\smash{0 = \sum_{j \sim i} \star_{ij}\duals_i^t(\duals_i - \duals_j)}$, yielding:
+\begin{equation}
+\label{eq:discrete-div2}
+\div_i
+= 
+\frac12 \sum_{j \sim j} \star_{ij} \left( \|\duals_i - \duals_j\|^2 + \weight_j - \weight_i\right)
+=
+d \volume{\cells_i}.
+\end{equation}
+\subsection{Rest Configuration}\label{sec:rest}
+
+Given a rest domain  $\rest{\domain} \subset \RR{d}$, we designate a rest configuration as a (non-shifted) power diagram on $\rest{\domain}$, with sites $\rest{\sites}_i \in \rest{\domain}$ and weights $\rest{\weight}_i \in \mathbb{R}$.
+The domain $\rest{\domain}$ is partitioned into rest power cells $\rest{\cells}_i$ with $\rest{\domain} = \bigcup_i \rest{\cells}_i$.
+The cell volumes $\volume{\rest{\cells}_i}$ and stiffness weights $\rest{\star}_{ij} = \rest{A}_{ij}/\rest{l}_{ij}$ are all computed from this rest state and held fixed throughout (see \S\ref{sec:faces}).
+The deformed configuration is then measured relative to $(\rest{\sites}_i, \rest{\weight}_i)$.
+The \emph{rest potential} is defined as $\rest{\potential}_i = \|\rest{\sites}_i\|^2 - \rest{\weight}_i$.
+
+The \emph{linearized cell volume} is defined using the discrete divergence \eqref{eq:discrete-div} with stiffness weights $\rest{\star}_{ij}$ fixed from the rest configuration:
+\begin{equation}
+\label{eq:lin-vol}
+v_i = \frac{1}{2d} \sum_{j \sim i} \rest{\star}_{ij} \left(\potential_j - \potential_i\right).
+\end{equation}
+This is a first-order approximation of the true cell volume $\volume{\cells_i}$.
+
+
+\section{Affine Transformation of a Power Diagram}\label{sec:affine}
+
+We now ask how the halfplane condition in \eqref{eq:halfplane} transforms when the domain is mapped by an invertible affine map $\yy = A\xx + \mathbf{t}$.
+The primal sites transform as:
+\begin{equation}\label{eq:primal-site}
+  \sites_i = A\rest{\sites}_i + \mathbf{t}.
+\end{equation}
+A point $\yy$ belongs to cell $i$ in the transformed diagram if and only if
+$\xx = A^{-1}(\yy - \mathbf{t})$ belongs to cell $i$ in the original diagram.
+Substituting into \eqref{eq:halfplane}:
+\begin{equation}
+  2(\rest{\sites}_j - \rest{\sites}_i)^t A^{-1}(\yy - \mathbf{t})
+  = \|\rest{\sites}_j\|^2 - \rest{\weight}_j - \|\rest{\sites}_i\|^2 + \rest{\weight}_i.
+\end{equation}
+Using $(\rest{\sites}_j - \rest{\sites}_i)^t A^{-1} = \bigl(A^{-t}(\rest{\sites}_j - \rest{\sites}_i)\bigr)^t$, this becomes
+\begin{equation}\label{eq:boundary-transformed}
+  2\bigl(A^{-t}\rest{\sites}_j - A^{-t}\rest{\sites}_i\bigr)^t \yy
+  = \|\rest{\sites}_j\|^2 - \rest{\weight}_j - \|\rest{\sites}_i\|^2 + \rest{\weight}_i
+    + 2\bigl(A^{-t}(\rest{\sites}_j - \rest{\sites}_i)\bigr)^t \mathbf{t}.
+\end{equation}
+The halfplane boundary in $\yy$-space has normal direction $A^{-t}(\rest{\sites}_j - \rest{\sites}_i)$, \emph{not} $A(\rest{\sites}_j - \rest{\sites}_i)$.
+
+\subsection{Matching to a Shifted Power Diagram}
+
+To match \eqref{eq:halfplane} to \eqref{eq:boundary-transformed}, we need
+$(\duals_i - \duals_j) \propto A^{-t}(\rest{\sites}_i - \rest{\sites}_j)$ for all pairs $i,j$, which is satisfied by
+\begin{equation}\label{eq:dual-site}
+  \boxed{\duals_i = A^{-t}\rest{\sites}_i + \mathbf{t}.}
+\end{equation}
+% 
+The shift is therefore
+\begin{equation}\label{eq:shift}
+  \boxed{\shifts_i = \duals_i - \sites_i = \bigl(A^{-t} - A\bigr)\rest{\sites}_i,}
+\end{equation}
+Note that the shift vanishes if and only if $A^{-t} = A$, i.e.\ $A$ is orthogonal.
+
+\emph{Global translation freedom.} The cell boundaries in \eqref{eq:halfplane} depend only on differences $(\duals_j - \duals_i)$, so replacing $\duals_i \mapsto \duals_i + \mathbf{c}$ for any fixed vector $\mathbf{c} \in \RR{d}$ leaves the diagram unchanged. 
+Equivalently, the shift is defined only up to a global additive constant: $\shifts_i \mapsto \shifts_i + \mathbf{c}$ produces the same partition. 
+To obtain more concise expressions, we fix this freedom by setting $\mathbf{c} = \mathbf{t}$, which yields $\duals_i = A^{-t}\rest{\sites}_i + \mathbf{t}$ and $\shifts_i = (A^{-t} - A)\rest{\sites}_i$ as stated in \eqref{eq:shift}.
+
+Substituting $\duals_i = A^{-t}\rest{\sites}_i + \mathbf{t}$ into the right-hand side of \eqref{eq:halfplane} and expanding:
+\begin{equation}
+  \|A^{-t}\rest{\sites}_j + \mathbf{t}\|^2 - \weight_j - \|A^{-t}\rest{\sites}_i + \mathbf{t}\|^2 + \weight_i
+  = \|\rest{\sites}_j\|^2 - \rest{\weight}_j - \|\rest{\sites}_i\|^2 + \rest{\weight}_i
+    + 2\bigl(A^{-t}(\rest{\sites}_j - \rest{\sites}_i)\bigr)^t \mathbf{t}.
+\end{equation}
+The cross-terms $2(A^{-t}\rest{\sites}_k)^t \mathbf{t}$ cancel on both sides, leaving
+\begin{equation}
+  \rest{\sites}_j^t(A^{-1}A^{-t})\rest{\sites}_j - \weight_j
+  - \rest{\sites}_i^t(A^{-1}A^{-t})\rest{\sites}_i + \weight_i
+  = \|\rest{\sites}_j\|^2 - \rest{\weight}_j - \|\rest{\sites}_i\|^2 + \rest{\weight}_i.
+\end{equation}
+This holds for all $i,j$ if and only if
+\begin{equation}\label{eq:weight}
+  \boxed{\weight_i = \rest{\weight}_i + \rest{\sites}_i^t\!\left((A^tA)^{-1} - I\right)\rest{\sites}_i + c}
+\end{equation}
+for an arbitrary constant $c \in \R$ common to all sites.
+With loss of generality, we set $c = 0$, and we further assume the normalization $\sum_i \rest{\weight}_i = 0$ on the rest weights, so that the deformed weights satisfy $\sum_i \weight_i = \sum_i \rest{\sites}_i^t\!\left((A^tA)^{-1} - I\right)\rest{\sites}_i$.
+
+Substituting \eqref{eq:dual-site} and \eqref{eq:weight} into the potential $\potential_i = \|\duals_i\|^2 - \weight_i$ yields
+\begin{equation}\label{eq:potential-affine}
+  \potential_i = \rest{\potential}_i + 2\duals_i^t \mathbf{t} - \|\mathbf{t}\|^2,
+\end{equation}
+Hence the potential differences satisfy $\potential_i - \potential_j = \rest{\potential}_i - \rest{\potential}_j + 2(\duals_i - \duals_j)^t\mathbf{t}$.
+
+\subsection{Summary}
+\label{sec:affine_summary}
+\begin{center}
+\renewcommand{\arraystretch}{1.6}
+\begin{tabular}{llll}
+\toprule
+\textbf{Parameter} & \textbf{Expression} & \textbf{Description} & \textbf{Eq.} \\
+\midrule
+Primal site & $\sites_i = A\rest{\sites}_i + \mathbf{t}$ & Geometric image of original site & \eqref{eq:primal-site}\\
+Dual site   & $\duals_i = A^{-t}\rest{\sites}_i + \mathbf{t}$ & Governs cell boundaries & \eqref{eq:dual-site}\\
+Shift       & $\shifts_i = (A^{-t} - A)\,\rest{\sites}_i$ & Non-zero iff $A$ is non-orthogonal & \eqref{eq:shift}\\
+Weight      & $\weight_i = \rest{\weight}_i + \rest{\sites}_i^t\bigl((A^tA)^{-1} - I\bigr)\rest{\sites}_i$ & Corrects for metric distortion & \eqref{eq:weight}\\
+Potential   & $\potential_i = \rest{\potential}_i + 2\duals_i^t\mathbf{t} - \|\mathbf{t}\|^2$ & Shifts by a term affine in $\duals_i$ & \eqref{eq:potential-affine}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Remark.} The need for a shift arises because affine maps apply $A$ to \emph{position vectors} but $A^{-t}$ (the contragredient) to \emph{normal vectors}. Power diagram boundaries are half-planes whose normals are determined by site differences, so after a non-orthogonal affine map the dual sites $\duals_i$ governing boundaries are no longer the geometric images $\sites_i$ of the original sites.
+
+\paragraph{Preservation of linearized volumes.}
+Remarkably, $v_i \equiv \volume{\rest{\cells}_i}$ for any affine transformation of the rest configuration.
+Substituting \eqref{eq:dual-site} and \eqref{eq:weight} into \eqref{eq:lin-vol}, the potential differences satisfy $\potential_j - \potential_i = \rest{\potential}_j - \rest{\potential}_i + 2(\duals_j - \duals_i)^t\mathbf{t}$, and the extra term drops out by the linear precision identity in \eqref{eq:linear_precision}, leaving $v_i = (1/2d) \sum_{j\sim i}\rest{\star}_{ij}(\rest{\potential}_j - \rest{\potential}_i) = \volume{\rest{\cells}_i}$.
+
+
+\section{Energy Functional}\label{sec:energy}
+
+\subsection{Dirichlet Energy}\label{sec:dirEnergy}
+
+We first define a site-centric version of the Dirichlet energy as:
+\begin{empheq}[box=\fcolorbox{blue!40}{blue!5}]{equation}\label{eq:dirEnergy0}
+\hatDirEnergy(\sites, \duals, \weights)
+= \frac{1}{2} \sum_{i \sim j} \rest{\star}_{ij} \|\duals_i - \duals_j\|^2
++ \frac{1}{4d} \sum_{i \sim j} \rest{\star}_{ij} \bigl(\potential_i - \potential_j\bigr)^2
++ \sum_i \volume{\rest{\cells}_i}\,\|\duals_i - \sites_i\|^2.
+\end{empheq}
+
+The first term is the standard Dirichlet energy of the dual sites $\duals_i$, and the second is the Dirichlet energy of the potential $\potential_i$; together they coincide with the Dirichlet energy of the lifted dual sites $(\duals_i,\, \potential_i) \in \RR{d+1}$.
+The third term penalizes the shift $\shifts_i$.
+
+We then introduce a diagram-centric version of the Dirichlet energy $\dirEnergy$:
+\begin{equation}\label{eq:dirEnergy-def}
+\dirEnergy(\sites, \duals, \weights, \cells)
+= \spdEnergy(\duals, \weights, \cells)
++ \frac{\volume{\domain}}{\volume{\rest{\domain}}} \hatDirEnergy(\sites, \duals, \weights).
+\end{equation}
+Note that the partition $\cells$ minimizing $\dirEnergy$ for fixed $(\sites, \duals, \weights)$ is simply the corresponding shifted power diagram produced by $\spdEnergy$ in \eqref{eq:spdEnergy}.
+
+The gradients of \eqref{eq:dirEnergy-def} are:
+\begin{subequations}\label{eq:dirEnergy-grad}
+\begin{empheq}[left=\empheqlbrace\,]{align}
+&\partial_{\weight_i} \dirEnergy
+  = \frac{\volume{\domain}}{\volume{\rest{\domain}}} v_i - \volume{\cells_i}
+\label{eq:dirEnergy-grad-w} \\[4pt]
+&\partial_{\sites_i} \dirEnergy
+  = \frac{\volume{\domain}}{\volume{\rest{\domain}}} 2\volume{\rest{\cells}_i}\,(\sites_i - \duals_i)
+\label{eq:dirEnergy-grad-p} \\[4pt]
+&\partial_{\duals_i} \dirEnergy
+  = \frac{\volume{\domain}}{\volume{\rest{\domain}}} \left[
+    \sum_{j \sim i} \rest{\star}_{ij}\,(\duals_i - \duals_j)
+    - 2 v_i \duals_i
+    + 2\volume{\rest{\cells}_i}\,(\duals_i - \sites_i)
+  \right]
+  + 2\volume{\cells_i}(\duals_i - \centers_i)
+\label{eq:dirEnergy-grad-q}
+\end{empheq}
+\end{subequations}
+
+\begin{mdframed}[backgroundcolor=blue!5, linecolor=blue!40, linewidth=1pt]
+\textbf{Remark.} When $\domain$ is an affine deformation of $\rest{\domain}$ with map $\yy = A\xx + \mathbf{t}$, the expressions in \S\ref{sec:affine_summary} are stationary conditions for $\dirEnergy$: \eqref{eq:dirEnergy-grad-p} vanishes because $\sites_i = \duals_i$ iff $A = A^{-t}$ (i.e., $A$ is orthogonal), and in general $\sites_i \neq \duals_i$; \eqref{eq:dirEnergy-grad-w} vanishes when $v_i = \volume{\cells_i}$, consistent with the linearized volume matching the true cell volume; and \eqref{eq:dirEnergy-grad-q} vanishes by the balance between the discrete Laplacian of $\duals_i$, the shift penalty, and the barycenter condition.
+\end{mdframed}
+
+% A key ingredient of the formulation is the \emph{effective weight}
+% \begin{equation}\label{eq:eff-weight}
+%   \omega_i = \weight_i \,\frac{v_i}{\rest{V}_i}
+% \end{equation}
+% which is the quantity used to define the power cells $\cells_i$ in the shifted power diagram (\S\ref{sec:shifted-pd}). It modulates the raw weight $\weight_i$ by the linearized volume ratio $v_i / \rest{V}_i$, coupling the weight parameter to the geometric deformation of the cell. When the diagram is close to the rest configuration, $v_i \approx \rest{V}_i$ and $\omega_i \approx \weight_i$; as the cell deforms, $\omega_i$ adjusts to preserve the balance between cell volume and weight. Recall from \S\ref{sec:lin-vol} that $\overline{v}_i = \rest{V}_i$, so at the rest configuration $\omega_i$ reduces exactly to $\rest{\weight}_i$.
+
+% \subsection{Constrained Energy}\label{sec:constrainedEnergy}
+
+% Consider the constrained optimization:
+% \begin{subequations}\label{eq:constrained}
+% \begin{equation}\label{eq:constrained-obj}
+% \min_{\sites,\, \cells,\, \mathbf{a}} \;
+% \sum_i \int_{\cells_i} \left( \|\xx - \sites_i\|^2 - \rest{\weight}_i\right)\, d\xx
+% + \frac{\nu}{2} \sum_i a_i^2
+% \end{equation}
+% \begin{empheq}[left={\text{subject to}\quad\empheqlbrace\,}]{align}
+% &\int_{\cells_i} \!\left( \xx - \sites_i \right) d\xx = 0
+% \quad \forall\, i \label{eq:constrained-constr-bary} \\[4pt]
+% &\volume{\cells_i} + a_i = \volume{\rest{\cells}_i}
+% \quad \forall\, i \label{eq:constrained-constr-vol}
+% \end{empheq}
+% \end{subequations}
+
+% The solution to \eqref{eq:constrained} is equivalent to solving the unconstrained minimization:
+% \begin{equation}\label{eq:constrainedEnergy-def}
+% \begin{split}
+% \cEnergy(\weights,\, \sites,\, \duals,\, \cells) = &\sum_i \int_{\cells_i} \!\left( \|\duals_i - \sites_i\|^2 - \| \xx - \duals_i \|^2 \right) d\xx \\
+% &+ \sum_i \weight_i \left( \volume{\cells_i} - \volume{\rest{\cells}_i} \right) + \frac{\volume{\rest{\cells}_i}}{2\nu} \sum_i \left( \weight_i - \rest{\weight}_i \right)^2.
+% \end{split}
+% \end{equation}
+% For fixed $(\weights, \sites, \duals)$, the partition $\cells$ minimizing $\cEnergy$ is the shifted power diagram with sites $\sites_i$, dual sites $\duals_i$, and weights $\weight_i + \|\duals_i - \sites_i\|^2$.
+% The gradients of \eqref{eq:constrainedEnergy-def} are:
+% \begin{subequations}\label{eq:constrainedEnergy-grad}
+% \begin{empheq}[left=\empheqlbrace\,]{align}
+% &\partial_{\weight_i} \cEnergy
+% = \volume{\cells_i} - \volume{\rest{\cells}_i} + \volume{\rest{\cells}_i}\left(\weight_i - \rest{\weight}_i\right) / \nu
+% \label{eq:constrainedEnergy-grad-w} \\[4pt]
+% &\partial_{\sites_i} \cEnergy
+% = 2\volume{\cells_i}\left(\sites_i - \duals_i\right)
+% \label{eq:constrainedEnergy-grad-p} \\[4pt]
+% &\partial_{\duals_i} \cEnergy
+% = 2\volume{\cells_i}\left(\centers_i - \sites_i\right)
+% \label{eq:constrainedEnergy-grad-q}
+% \end{empheq}
+% \end{subequations}
+
+% \subsection{Elasticity-like Energy}\label{sec:elasticEnergy}
+
+% \begin{equation}\label{eq:elasticEnergy-obj}
+% \elasticEnergy(\sites,\, \weights,\, \duals,\, \cells)
+% =
+% \frac{\kappa}{2} \sum_{i \sim j} \rest{\star}_{ij} \| \sites_i - \sites_j \|^2
+% + \dirEnergy(\sites,\, \weights,\, \duals,\, \cells)
+% + \cEnergy(\sites,\, \weights,\, \duals,\, \cells)
+% \end{equation}
+% The gradients of \eqref{eq:elasticEnergy-obj} are:
+% \begin{subequations}\label{eq:elasticEnergy-grad}
+% \begin{empheq}[left=\empheqlbrace\,]{align}
+% &\partial_{\weight_i} \elasticEnergy
+% = \partial_{\weight_i} \dirEnergy + \partial_{\weight_i} \cEnergy
+% \label{eq:elasticEnergy-grad-w} \\[4pt]
+% &\partial_{\sites_i} \elasticEnergy
+% = \kappa \sum_{j \sim i} \rest{\star}_{ij} \left(\sites_i - \sites_j\right)
+% + \partial_{\sites_i} \dirEnergy + \partial_{\sites_i} \cEnergy
+% \label{eq:elasticEnergy-grad-p} \\[4pt]
+% &\partial_{\duals_i} \elasticEnergy
+% = \partial_{\duals_i} \dirEnergy + \partial_{\duals_i} \cEnergy
+% \label{eq:elasticEnergy-grad-q}
+% \end{empheq}
+% \end{subequations}
+
+% \paragraph{Iterative solver.}
+% Suppose $\domain$ is a deformed configuration of $\rest{\domain}$.
+% We initialize $\duals_i = \sites_i$ and $\sites_i$ by solving \eqref{eq:elasticEnergy-grad-p} set to zero.
+% We then alternate (1) solve for $\weights$ and $\duals$ by minimizing $\elasticEnergy$ with fixed $\sites$ via \eqref{eq:elasticEnergy-grad-w} and \eqref{eq:elasticEnergy-grad-q}; and (2) update $\sites$ by solving \eqref{eq:elasticEnergy-grad-p} set to zero with fixed $\weights$ and $\duals$, which amounts to a diffusion equation on the primal sites driven by the current $\duals$.
+
+% % \begin{thebibliography}{9}
+% % \bibitem[de~Goes(2014)]{degoes_phd}
+% %   F.~de Goes,
+% %   \emph{Weighted Triangulations for Geometry Processing},
+% %   PhD thesis, 2014.
+% %   \url{https://fdegoes.github.io/docs/fdegoes-phd.pdf}
+% % \end{thebibliography}
+
+\end{document}

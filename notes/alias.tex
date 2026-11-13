@@ -1,0 +1,53 @@
+% TEXROOT=shifted_power_diagram.tex
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage[authoryear,square]{natbib}
+\setcitestyle{aysep={ }}
+\usepackage{hypernat}
+\makeatletter
+\renewcommand\hyper@natlinkbreak[2]{#1}
+\makeatother
+\usepackage{mathtools}
+\usepackage{empheq}
+\usepackage{bm}
+\usepackage{xcolor}
+\usepackage{mdframed}
+
+% Shorthand macros
+\newcommand{\xx}{x} %\mathbf{x}}
+\newcommand{\yy}{y} %\mathbf{y}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\RR}[1]{\R^{#1}}
+\newcommand{\Id}{\mathbb{I}}
+
+\newcommand{\grad}{\mathbf{G}}
+\renewcommand{\div}{\tau}
+
+\newcommand{\centers}{\mathbf{b}}
+\newcommand{\shifts}{\mathbf{u}}
+\newcommand{\sites}{\mathbf{p}}
+\newcommand{\duals}{\mathbf{q}}
+\newcommand{\weight}{w}
+\newcommand{\weights}{\mathbf{w}}
+\newcommand{\potential}{\phi}
+\newcommand{\potentials}{\bm{\phi}}
+
+\newcommand{\domain}{\Omega}
+\newcommand{\cells}{\mathcal{V}}
+\newcommand{\boundary}[1]{\partial#1}
+\newcommand{\volume}[1]{|#1|}
+\newcommand{\face}{\mathcal{A}}
+
+\newcommand{\rest}[1]{\overline{#1}}
+
+\newcommand{\pdEnergy}{\widehat{\mathcal{E}}}
+\newcommand{\spdEnergy}{\mathcal{E}}
+\newcommand{\dirEnergy}{\mathcal{D}}
+\newcommand{\hatDirEnergy}{\hat{\mathcal{D}}}
+\newcommand{\elasticEnergy}{\mathcal{F}}
+\newcommand{\cEnergy}{\mathcal{C}}
