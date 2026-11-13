@@ -1,0 +1,318 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{20}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[Andersen(1983)]%
+        {Andersen1983Rattle}
+\bibfield{author}{\bibinfo{person}{Hans~C. Andersen}.}
+  \bibinfo{year}{1983}\natexlab{}.
+\newblock \showarticletitle{Rattle: A ``velocity'' version of the {Shake}
+  algorithm for molecular dynamics calculations}.
+\newblock \bibinfo{journal}{\emph{J. Comput. Phys.}} \bibinfo{volume}{52},
+  \bibinfo{number}{1} (\bibinfo{year}{1983}), \bibinfo{pages}{24--34}.
+\newblock
+
+
+\bibitem[Aurenhammer(1987a)]%
+        {Aurenhammer1987PowerDiagrams}
+\bibfield{author}{\bibinfo{person}{Franz Aurenhammer}.}
+  \bibinfo{year}{1987}\natexlab{a}.
+\newblock \showarticletitle{Power Diagrams: Properties, Algorithms and
+  Applications}.
+\newblock \bibinfo{journal}{\emph{SIAM J. Comput.}} \bibinfo{volume}{16},
+  \bibinfo{number}{1} (\bibinfo{year}{1987}), \bibinfo{pages}{78--96}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1137/0216006}
+\showDOI{\tempurl}
+
+
+\bibitem[Aurenhammer(1987b)]%
+        {Aurenhammer1987Recognising}
+\bibfield{author}{\bibinfo{person}{Franz Aurenhammer}.}
+  \bibinfo{year}{1987}\natexlab{b}.
+\newblock \showarticletitle{Recognising Polytopical Cell Complexes and
+  Constructing Projection Polyhedra}.
+\newblock \bibinfo{journal}{\emph{Journal of Symbolic Computation}}
+  \bibinfo{volume}{3}, \bibinfo{number}{3} (\bibinfo{year}{1987}),
+  \bibinfo{pages}{249--255}.
+\newblock
+
+
+\bibitem[Aurenhammer et~al\mbox{.}(1998)]%
+        {Aurenhammer1998Minkowski}
+\bibfield{author}{\bibinfo{person}{Franz Aurenhammer},
+  \bibinfo{person}{Friedrich Hoffmann}, {and} \bibinfo{person}{Boris Aronov}.}
+  \bibinfo{year}{1998}\natexlab{}.
+\newblock \showarticletitle{Minkowski-Type Theorems and Least-Squares
+  Clustering}.
+\newblock \bibinfo{journal}{\emph{Algorithmica}} \bibinfo{volume}{20},
+  \bibinfo{number}{1} (\bibinfo{year}{1998}), \bibinfo{pages}{61--76}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/PL00009187}
+\showDOI{\tempurl}
+
+
+\bibitem[Bourne et~al\mbox{.}(2026)]%
+        {Bourne2026ConvexOrder}
+\bibfield{author}{\bibinfo{person}{David~P. Bourne}, \bibinfo{person}{Thomas~O.
+  Gallou\"{e}t}, \bibinfo{person}{Quentin M\'{e}rigot}, {and}
+  \bibinfo{person}{Andrea Natale}.} \bibinfo{year}{2026}\natexlab{}.
+\newblock \showarticletitle{Semi-discrete convex order and {Laguerre}
+  tessellation fitting}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2606.29913}}
+  (\bibinfo{year}{2026}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.48550/arXiv.2606.29913}
+\showDOI{\tempurl}
+
+
+\bibitem[Bourne et~al\mbox{.}(2025)]%
+        {Bourne2025Inverting}
+\bibfield{author}{\bibinfo{person}{David~P. Bourne}, \bibinfo{person}{Mason
+  Pearce}, {and} \bibinfo{person}{Steven~M. Roper}.}
+  \bibinfo{year}{2025}\natexlab{}.
+\newblock \showarticletitle{Inverting {Laguerre} Tessellations: Recovering
+  Tessellations from the Volumes and Centroids of Their Cells Using Optimal
+  Transport}.
+\newblock \bibinfo{journal}{\emph{ESAIM: Mathematical Modelling and Numerical
+  Analysis}}  \bibinfo{volume}{59} (\bibinfo{year}{2025}),
+  \bibinfo{pages}{841--871}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1051/m2an/2025004}
+\showDOI{\tempurl}
+
+
+\bibitem[de~Goes(2014)]%
+        {deGoes2014Thesis}
+\bibfield{author}{\bibinfo{person}{Fernando de Goes}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Geometric Discretization through Primal-Dual
+  Meshes}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}.
+  \bibinfo{school}{California Institute of Technology}.
+\newblock
+
+
+\bibitem[de~Goes et~al\mbox{.}(2013)]%
+        {deGoes2013Masonry}
+\bibfield{author}{\bibinfo{person}{Fernando de Goes}, \bibinfo{person}{Pierre
+  Alliez}, \bibinfo{person}{Houman Owhadi}, {and} \bibinfo{person}{Mathieu
+  Desbrun}.} \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{On the Equilibrium of Simplicial Masonry
+  Structures}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Graphics (Proc.\
+  SIGGRAPH)}} \bibinfo{volume}{32}, \bibinfo{number}{4} (\bibinfo{year}{2013}),
+  \bibinfo{pages}{93:1--93:10}.
+\newblock
+
+
+\bibitem[de~Goes et~al\mbox{.}(2012)]%
+        {deGoes2012BlueNoise}
+\bibfield{author}{\bibinfo{person}{Fernando de Goes},
+  \bibinfo{person}{Katherine Breeden}, \bibinfo{person}{Victor Ostromoukhov},
+  {and} \bibinfo{person}{Mathieu Desbrun}.} \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Blue Noise through Optimal Transport}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Graphics (Proc.\ SIGGRAPH
+  Asia)}} \bibinfo{volume}{31}, \bibinfo{number}{6}, Article
+  \bibinfo{articleno}{171} (\bibinfo{year}{2012}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2366145.2366190}
+\showDOI{\tempurl}
+
+
+\bibitem[de~Goes et~al\mbox{.}(2015)]%
+        {deGoes2015PowerParticles}
+\bibfield{author}{\bibinfo{person}{Fernando de Goes}, \bibinfo{person}{Corentin
+  Wallez}, \bibinfo{person}{Jin Huang}, \bibinfo{person}{Dmitry Pavlov}, {and}
+  \bibinfo{person}{Mathieu Desbrun}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Power Particles: An Incompressible Fluid Solver
+  Based on Power Diagrams}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Graphics (Proc.\
+  SIGGRAPH)}} \bibinfo{volume}{34}, \bibinfo{number}{4}, Article
+  \bibinfo{articleno}{50} (\bibinfo{year}{2015}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2766901}
+\showDOI{\tempurl}
+
+
+\bibitem[de~Gournay et~al\mbox{.}(2019)]%
+        {deGournay2019Differentiation}
+\bibfield{author}{\bibinfo{person}{Fr\'{e}d\'{e}ric de Gournay},
+  \bibinfo{person}{Jonas Kahn}, {and} \bibinfo{person}{L\'{e}o Lebrat}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Differentiation and Regularity of Semi-Discrete
+  Optimal Transport with Respect to the Parameters of the Discrete Measure}.
+\newblock \bibinfo{journal}{\emph{Numer. Math.}} \bibinfo{volume}{141},
+  \bibinfo{number}{2} (\bibinfo{year}{2019}), \bibinfo{pages}{429--453}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/s00211-018-1000-4}
+\showDOI{\tempurl}
+
+
+\bibitem[Gallou\"{e}t and M\'{e}rigot(2018)]%
+        {Gallouet2018Lagrangian}
+\bibfield{author}{\bibinfo{person}{Thomas~O. Gallou\"{e}t} {and}
+  \bibinfo{person}{Quentin M\'{e}rigot}.} \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{A {Lagrangian} Scheme \`{a} la {Brenier} for the
+  Incompressible {Euler} Equations}.
+\newblock \bibinfo{journal}{\emph{Foundations of Computational Mathematics}}
+  \bibinfo{volume}{18}, \bibinfo{number}{4} (\bibinfo{year}{2018}),
+  \bibinfo{pages}{835--865}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/s10208-017-9355-y}
+\showDOI{\tempurl}
+
+
+\bibitem[Hairer et~al\mbox{.}(2006)]%
+        {Hairer2006GNI}
+\bibfield{author}{\bibinfo{person}{Ernst Hairer}, \bibinfo{person}{Christian
+  Lubich}, {and} \bibinfo{person}{Gerhard Wanner}.}
+  \bibinfo{year}{2006}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Geometric Numerical Integration:
+  Structure-Preserving Algorithms for Ordinary Differential Equations}
+  (\bibinfo{edition}{2nd} ed.)}. \bibinfo{series}{Springer Series in
+  Computational Mathematics}, Vol.~\bibinfo{volume}{31}.
+\newblock \bibinfo{publisher}{Springer}, \bibinfo{address}{Berlin}.
+\newblock
+
+
+\bibitem[Hormann and Sukumar(2008)]%
+        {Hormann2008MaxEnt}
+\bibfield{author}{\bibinfo{person}{Kai Hormann} {and} \bibinfo{person}{N.
+  Sukumar}.} \bibinfo{year}{2008}\natexlab{}.
+\newblock \showarticletitle{Maximum Entropy Coordinates for Arbitrary
+  Polytopes}.
+\newblock \bibinfo{journal}{\emph{Computer Graphics Forum}}
+  \bibinfo{volume}{27}, \bibinfo{number}{5} (\bibinfo{year}{2008}),
+  \bibinfo{pages}{1513--1520}.
+\newblock
+\newblock
+\shownote{Proceedings of SGP 2008}.
+
+
+\bibitem[Liu et~al\mbox{.}(2009)]%
+        {Liu2009CVT}
+\bibfield{author}{\bibinfo{person}{Yang Liu}, \bibinfo{person}{Wenping Wang},
+  \bibinfo{person}{Bruno L\'{e}vy}, \bibinfo{person}{Feng Sun},
+  \bibinfo{person}{Dong-Ming Yan}, \bibinfo{person}{Lin Lu}, {and}
+  \bibinfo{person}{Chenglei Yang}.} \bibinfo{year}{2009}\natexlab{}.
+\newblock \showarticletitle{On Centroidal {Voronoi} Tessellation---Energy
+  Smoothness and Fast Computation}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Graphics}}
+  \bibinfo{volume}{28}, \bibinfo{number}{4}, Article \bibinfo{articleno}{101}
+  (\bibinfo{year}{2009}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1559755.1559758}
+\showDOI{\tempurl}
+
+
+\bibitem[Lloyd(1982)]%
+        {Lloyd1982Quantization}
+\bibfield{author}{\bibinfo{person}{Stuart~P. Lloyd}.}
+  \bibinfo{year}{1982}\natexlab{}.
+\newblock \showarticletitle{Least Squares Quantization in {PCM}}.
+\newblock \bibinfo{journal}{\emph{IEEE Transactions on Information Theory}}
+  \bibinfo{volume}{28}, \bibinfo{number}{2} (\bibinfo{year}{1982}),
+  \bibinfo{pages}{129--137}.
+\newblock
+
+
+\bibitem[Marsden and West(2001)]%
+        {marsden2001discrete}
+\bibfield{author}{\bibinfo{person}{Jerrold~E. Marsden} {and}
+  \bibinfo{person}{Matthew West}.} \bibinfo{year}{2001}\natexlab{}.
+\newblock \showarticletitle{Discrete mechanics and variational integrators}.
+\newblock \bibinfo{journal}{\emph{Acta Numerica}}  \bibinfo{volume}{10}
+  (\bibinfo{year}{2001}), \bibinfo{pages}{357--514}.
+\newblock
+
+
+\bibitem[Memari et~al\mbox{.}(2012)]%
+        {Memari2012PrimalDual}
+\bibfield{author}{\bibinfo{person}{Pooran Memari}, \bibinfo{person}{Patrick
+  Mullen}, {and} \bibinfo{person}{Mathieu Desbrun}.}
+  \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Parametrization of Generalized Primal-Dual
+  Triangulations}. In \bibinfo{booktitle}{\emph{Proceedings of the 20th
+  International Meshing Roundtable}},
+  \bibfield{editor}{\bibinfo{person}{William~Roshan Quadros}} (Ed.).
+  \bibinfo{publisher}{Springer Berlin Heidelberg}, \bibinfo{address}{Berlin,
+  Heidelberg}, \bibinfo{pages}{237--253}.
+\newblock
+\showISBNx{978-3-642-24734-7}
+
+
+\bibitem[Ryckaert et~al\mbox{.}(1977)]%
+        {Ryckaert1977Shake}
+\bibfield{author}{\bibinfo{person}{Jean-Paul Ryckaert},
+  \bibinfo{person}{Giovanni Ciccotti}, {and} \bibinfo{person}{Herman J.~C.
+  Berendsen}.} \bibinfo{year}{1977}\natexlab{}.
+\newblock \showarticletitle{Numerical integration of the {Cartesian} equations
+  of motion of a system with constraints: molecular dynamics of n-alkanes}.
+\newblock \bibinfo{journal}{\emph{J. Comput. Phys.}} \bibinfo{volume}{23},
+  \bibinfo{number}{3} (\bibinfo{year}{1977}), \bibinfo{pages}{327--341}.
+\newblock
+
+
+\bibitem[Xin et~al\mbox{.}(2016)]%
+        {Xin2016CentroidalPower}
+\bibfield{author}{\bibinfo{person}{Shi-Qing Xin}, \bibinfo{person}{Bruno
+  L\'{e}vy}, \bibinfo{person}{Zhonggui Chen}, \bibinfo{person}{Lei Chu},
+  \bibinfo{person}{Yaohui Yu}, \bibinfo{person}{Changhe Tu}, {and}
+  \bibinfo{person}{Wenping Wang}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Centroidal Power Diagrams with Capacity
+  Constraints: Computation, Applications, and Extension}.
+\newblock \bibinfo{journal}{\emph{ACM Transactions on Graphics (Proc.\ SIGGRAPH
+  Asia)}} \bibinfo{volume}{35}, \bibinfo{number}{6}, Article
+  \bibinfo{articleno}{244} (\bibinfo{year}{2016}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2980179.2982428}
+\showDOI{\tempurl}
+
+
+\end{thebibliography}
