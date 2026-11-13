@@ -118,6 +118,14 @@ ls /pixar/d2/sets/*/bin/{gcc,g++,cmake,python3*} /dist/sw/*/bin/python3* 2>/dev/
 `find` over these trees can be slow. Raise `-maxdepth` only if nothing
 shows up.
 
+Known good (surveyed on 2026-11-13, RHEL 9 workstation): everything is in
+`/pixar/d2/sets/vfx2025.002`: SuiteSparse 5.10 (prefix = the set), Boost 1.85
+(`include/`), `bin/python3.11` (use `UNPINNED=1`), cmake 3.30 and ninja. `config.sh`
+runs that set's cmake itself (the `cmake` on `PATH` may be 3.2.1, which has no
+`--build -j`: build with `make -C build -j"$(nproc)" <targets>`). The VFX sets only have Eigen 3.2.8, too old: use
+`$HOME/mylibs/eigen337` (3.3.7). `config.sh` picks these by default; check
+that its first line shows them, and still record them in the report.
+
 How to choose:
 
 - **SuiteSparse.** The prefix must have `cholmod.h` and all of
@@ -191,7 +199,7 @@ SUITESPARSE_PATH=<suitesparse prefix> \
 EIGEN3_PATH=<eigen dir> \
 CC=<gcc> CXX=<g++> \
 sh config.sh
-cmake --build build -j"$(nproc)" --target pp_core benchBourne makeSynthetic \
+make -C build -j"$(nproc)" pp_core benchBourne makeSynthetic \
     testPowerDiagram testVolumeSolver testJointDual testDualSolvers
 ```
 

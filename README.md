@@ -50,7 +50,12 @@ to override it.
 geogram is compiled as a static library inside this build. The sparse
 Cholesky of the Newton systems is SuiteSparse's CHOLMOD on macOS and Linux
 (`-DPP_SPARSE_SOLVER=Cholmod`, with `-DSUITESPARSE_DIR=<prefix>`; config.sh
-uses `~/MyLibs/SuiteSparse-5.4-arm64` on macOS). Set
+uses `~/MyLibs/SuiteSparse-5.4-arm64` on macOS). On Linux, config.sh looks
+for SuiteSparse in `/pixar/d2/sets/vfx2025.002`, then `~/mylibs/SuiteSparse`,
+and for Eigen ≥ 3.3 in the same set, then `~/mylibs/eigen337`; override them
+with `SUITESPARSE_PATH` and `EIGEN3_PATH`. It also runs that set's cmake
+(override with `CMAKE`), so build with `make -C build -j8` if the cmake on
+`PATH` is older than 3.12. Set
 `PP_SPARSE_SOLVER=Accelerate` (macOS) or `Eigen` to switch backends.
 
 ## Datasets and benchmarks

@@ -27,17 +27,49 @@ EXTRA="$EXTRA -DPP_BUILD_HOUDINI=${PP_BUILD_HOUDINI}"
 if [ "$(uname -s)" = "Linux" ]
 then
     # Linux (Pixar workstations). The compilers are CC/CXX if set, else the
-    # system's; they need C++17 (geogram). Eigen defaults to the VFX set's.
+    # system's; they need C++17 (geogram). SuiteSparse and Eigen default to the
+    # first match below; SUITESPARSE_PATH and EIGEN3_PATH override them.
     : "${HFS:=/dist/sw/houdini/22.0}"
-    VFX="/pixar/d2/sets/vfx2018.006"
-    if [ -z "${EIGEN3_PATH}" ] && [ -f "${VFX}/include/eigen3/Eigen/Core" ]; then
-        EIGEN3_PATH="${VFX}/include/eigen3"
-    fi
-    # TODO: SuiteSparse install prefix (include/cholmod.h, lib/libcholmod.so).
-    : "${SUITESPARSE_PATH:=}"
     : "${PP_SPARSE_SOLVER:=Cholmod}"
+    VFX="/pixar/d2/sets/vfx2025.002"
+
+    # SuiteSparse prefix: needs include/cholmod.h and lib/libcholmod.so.
+    if [ "${PP_SPARSE_SOLVER}" = "Cholmod" ] && [ -z "${SUITESPARSE_PATH:-}" ]; then
+        for d in "${VFX}" "$HOME/mylibs/SuiteSparse"; do
+            if [ -f "$d/include/cholmod.h" ] && { [ -f "$d/lib/libcholmod.so" ] || [ -f "$d/lib64/libcholmod.so" ]; }; then
+                SUITESPARSE_PATH="$d"
+                break
+            fi
+        done
+        if [ -z "${SUITESPARSE_PATH:-}" ]; then
+            echo "config.sh: no SuiteSparse found (tried ${VFX}, ~/mylibs/SuiteSparse)." >&2
+            echo "config.sh: set SUITESPARSE_PATH=<prefix>, or PP_SPARSE_SOLVER=Eigen." >&2
+            exit 1
+        fi
+    fi
+    : "${SUITESPARSE_PATH:=}"
+
+    # Eigen >= 3.3. The VFX sets only have 3.2.8, so they are used only if newer.
+    if [ -z "${EIGEN3_PATH}" ]; then
+        for d in "${VFX}/include/eigen3" "$HOME/mylibs/eigen337"; do
+            m="$d/Eigen/src/Core/util/Macros.h"
+            if [ -f "$m" ] && [ "$(sed -n 's/^#define EIGEN_WORLD_VERSION //p' "$m")" -ge 3 ] \
+                && [ "$(sed -n 's/^#define EIGEN_MAJOR_VERSION //p' "$m")" -ge 3 ]; then
+                EIGEN3_PATH="$d"
+                break
+            fi
+        done
+    fi
+    echo "config.sh: SuiteSparse = ${SUITESPARSE_PATH:-none}, Eigen = ${EIGEN3_PATH:-default}"
+
+    # cmake >= 3.18: the VFX set's, unless CMAKE is set (the cmake on PATH may be 3.2).
+    if [ -z "${CMAKE:-}" ] && [ -x "${VFX}/bin/cmake" ]; then
+        CMAKE="${VFX}/bin/cmake"
+    fi
+    : "${CMAKE:=cmake}"
+    echo "config.sh: cmake = $CMAKE"
     export HFS
-    cmake -S . -B "${BUILD_DIR}" \
+    "${CMAKE}" -S . -B "${BUILD_DIR}" \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DEIGEN3_INCLUDE_DIR="${EIGEN3_PATH:-$HOME/MyLibs/eigen-3.4.0}" \
