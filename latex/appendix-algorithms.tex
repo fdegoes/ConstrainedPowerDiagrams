@@ -11,9 +11,7 @@
 We summarize the time steps of the constrained (\S\ref{sec:flow-constrained}) and penalty-based (\S\ref{sec:flow-penalty}) integrators, together with the Newton solves they rely on.
 The Newton solves of $\jointdual$ and $\jointdual_\alpha$ (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:newton}) take Levenberg--Marquardt steps (Algorithm~\ref{alg:lm-step}), while the solve of $\dualenergy$ (Algorithm~\ref{alg:volume}) backtracks the Newton step via the line search of Algorithm~\ref{alg:line-search}.
 Both rebuild the power diagram at every trial step.
-In all of them, the negated Hessian receives a regularization (Algorithm~\ref{alg:hessian-reg}) that makes it positive definite and keeps the generators distinct, without changing the gradient, and hence the solution.
-The solves stop when the residual of every cell is small relative to its scale: a volume error for the weight entry is measured relative to $\pvol_i$, while the centroid residual for the shift entry is relative to $\smash{2\pvol_i^{(d+1)/d}}$, which compensates the factor $2$ of the gradient \eqref{eq:joint-gradient}, so that $\tau_\shift$ bounds the centroid error in units of the cell size $\smash{r_i \!=\! \pvol_i^{1/d}}$.
-Our implementation (and all reported results) uses the defaults $\tau_\weight \!=\! 10^{-9}$ and $\tau_\shift \!=\! 0.1$ for static solves, but $\tau_\shift \!=\! \tau_\weight$ within the integrators, whose updates use the shifts directly.
+In all of them, the negated Hessian is assembled and regularized by Algorithm~\ref{alg:hessian-reg}, as described in \S\ref{sec:results-implementation}, and the solves stop under the test \eqref{eq:results-termination}.
 
 \begin{algorithm}[H]
   \caption{Time step of the constrained integrator (\S\ref{sec:flow-constrained}).}
@@ -43,11 +41,11 @@ Our implementation (and all reported results) uses the defaults $\tau_\weight \!
     \Loop
       \State $\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i \gets \nabla\jointdual(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}}
       \State $r_\shift \gets \max_i \norm{\mathbf{g}^\shift_i} / (2\pvol_i^{(d+1)/d})$ \Comment{shift residual}
-      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\gamma = \min(1, r_\shift / r^0_\shift)$
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\sigma = \min(1, r_\shift / r^0_\shift)$ and $\beta$
       \State solve for $\mathbf{z}_0$, $\mathbf{z}_a$, $\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-solve}}
       \State solve for the gauge $(s, \translation)$ \Comment{\eqref{eq:flow-constrained-elimination-gauge}}
       \State $\mathbf{r} = (\mathbf{r}^\shift_i, r^\weight_i)_i \gets \mathbf{g} - 2 \Cmat\tr (s, \translation)$ \Comment{\eqref{eq:flow-constrained-newton}}
-      \If{$\lvert r^\weight_i \rvert \le \tau_\weight\,\pvol_i$ and $\norm{\mathbf{r}^\shift_i} \le 2\tau_\shift\,\pvol_i^{(d+1)/d}$ for all $i$}
+      \If{$\mathbf{r}$ passes the test \eqref{eq:results-termination}} \Comment{in place of $\nabla\jointdual$}
         \State \Return $(\shift, \weight)$ and the gauge $(s, \translation)$
       \EndIf
       \State $(\mathbf{z}, \mu) \gets$ Alg.~\ref{alg:lm-step} with $\mathbf{z}$, $\mathbf{g}$, $\Nmat$, $\mu$, $\Cmat$, and $\alpha = \infty$
@@ -81,10 +79,10 @@ Our implementation (and all reported results) uses the defaults $\tau_\weight \!
     \Loop
       \State $\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i \gets \nabla\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}, \eqref{eq:regularized-gradient-shift}}
       \State $r_\shift \gets \max_i \norm{\mathbf{g}^\shift_i} / (2\pvol_i^{(d+1)/d})$ \Comment{shift residual}
-      \If{$\lvert g^\weight_i \rvert \le \tau_\weight\,\pvol_i$ for all $i$ and $r_\shift \le \tau_\shift$}
+      \If{$\mathbf{g}$ passes the test \eqref{eq:results-termination}}
         \State \Return $(\shift, \weight)$
       \EndIf
-      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\gamma = \min(1, r_\shift / r^0_\shift)$
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\sigma = \min(1, r_\shift / r^0_\shift)$ and $\beta$
       \State $(\mathbf{z}, \mu) \gets$ Alg.~\ref{alg:lm-step} with $\mathbf{z}$, $\mathbf{g}$, $\Nmat$, $\mu$, and $\alpha$
     \EndLoop
   \end{algorithmic}
@@ -95,46 +93,44 @@ Our implementation (and all reported results) uses the defaults $\tau_\weight \!
   \label{alg:lm-step}
   \begin{algorithmic}[1]
     \Require \algwrap{multipliers $\mathbf{z}$, gradient $\mathbf{g}$, matrix $\Nmat$, damping $\mu$, constraints $\Cmat$ (optional), stiffness $\alpha$}
-    \State $\mathrm{D} \gets \mathrm{diag}(\Nmat)$, $\nu \gets 2$
-    \Loop
-      \State solve $(\Nmat + \mu\,\mathrm{D})\,\delta\mathbf{z} = \mathbf{g}$, subject to $\Cmat\,\delta\mathbf{z} = 0$ \Comment{\eqref{eq:flow-constrained-elimination-update}}
+    \State $\mathrm{D} \gets \mathrm{diag}(\Nmat)$
+    \For{$k = 1, 2, \dots$} \Comment{trials}
+      \State solve $(\Nmat + \mu\,\mathrm{D})\,\delta\mathbf{z} = \mathbf{g}$, subject to $\Cmat\,\delta\mathbf{z} = 0$ \Comment{\eqref{eq:results-lm-step}, \eqref{eq:flow-constrained-elimination-update}}
       \State $\mathbf{z}' \gets \mathbf{z} + \delta\mathbf{z}$
       \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}'$ \Comment{\eqref{eq:shifted-site}}
-      \State $\rho \gets \bigl(\jointdual_\alpha(\mathbf{z}') - \jointdual_\alpha(\mathbf{z})\bigr) / \bigl(\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}\bigr)$ \Comment{gain ratio}
-      \If{no cell is empty and $\rho > 10^{-4}$}
-        \State \Return \algwrap{$\mathbf{z}'$, its power diagram, and $\mu \max\bigl(\tfrac{1}{3}, 1 - (2\rho - 1)^3\bigr)$}
+      \State $\varrho \gets \bigl(\jointdual_\alpha(\mathbf{z}') - \jointdual_\alpha(\mathbf{z})\bigr) / \bigl(\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}\bigr)$ \Comment{gain ratio}
+      \If{no cell is empty and $\varrho > 10^{-4}$}
+        \State \Return \algwrap{$\mathbf{z}'$, its power diagram, and $\mu \max\bigl(\tfrac{1}{3}, 1 - (2\varrho - 1)^3\bigr)$}
       \EndIf
-      \State $\mu \gets \nu\,\mu$
-      \State $\nu \gets 2\,\nu$
-    \EndLoop
+      \State $\mu \gets 2^k\,\mu$ \Comment{rejected}
+    \EndFor
   \end{algorithmic}
 \end{algorithm}
 
 \begin{algorithm}[H]
-  \caption{Regularized negated Hessian of $\jointdual_\alpha$, $\jointdual$, or $\dualenergy$.}
+  \caption{Regularized negated Hessian of $\jointdual_\alpha$, $\jointdual$, or $\dualenergy$ (\S\ref{sec:results-implementation}).}
   \label{alg:hessian-reg}
   \begin{algorithmic}[1]
-    \Require \algwrap{power diagram at $\mathbf{z}$, volumes $\pvol$, activity $\gamma \in [0, 1]$}
-    \State $\ell \gets \frac{1}{n} \sum_i r_i$ \Comment{mean cell size}
-    \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z})$ \Comment{\eqref{eq:appendix-blocks-off}, \eqref{eq:appendix-blocks-diag}}
-    \State $\rho_{\max} \gets 10 \max_i \sum_{k=1}^{d} \Nmat_{\shift_{ik}\shift_{ik}}$ \Comment{pair stiffness scale}
-    \State $r_\mathrm{pair} \gets 0.3\,\gamma\,\ell$ \Comment{pair radius}
-    \State $r_\mathrm{core} \gets 0.05\,\gamma\,\ell$ \Comment{core radius}
-    \ForAll{facets $\face_{ij}$ with $d_{ij} = \norm{\dual_j - \dual_i} < r_\mathrm{pair}$}
+    \Require \algwrap{power diagram at $\mathbf{z}$, volumes $\pvol$, activity $\sigma \in [0, 1]$, radius ratio $\beta$}
+    \State $\bar{r} \gets (\lvert\domain\rvert / n)^{1/d}$, $\hreg \gets 10^{-3}$ \Comment{average cell size}
+    \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z})$, with $\norm{\dual_i - \dual_j} \ge \hreg\,\bar{r}$ \Comment{\eqref{eq:appendix-blocks-off}, \eqref{eq:appendix-blocks-diag}}
+    \State $\mathrm{B}_i \gets \Nmat_{\shift_i\shift_i}$ for all $i$ \Comment{before the pair terms}
+    \State $R \gets \beta\,\sigma\,\bar{r}$ \Comment{pair radius}
+    \ForAll{facets $\face_{ij}$ with $d_{ij} = \norm{\dual_j - \dual_i} < R$}
       \State $\mathbf{e} \gets (\dual_j - \dual_i) / d_{ij}$
-      \State $\rho_{ij} \gets \rho(d_{ij};\, r_\mathrm{core}, r_\mathrm{pair})$ \Comment{pair stiffness \eqref{eq:results-pair-reg}}
-      \State $\Nmat_{\shift_i\shift_i} \mathrel{+}= \rho_{ij}\,\mathbf{e}\mathbf{e}\tr$
-      \State $\Nmat_{\shift_j\shift_j} \mathrel{+}= \rho_{ij}\,\mathbf{e}\mathbf{e}\tr$
+      \State $\rho^{\max}_{ij} \gets 2 \max(\mathbf{e}\tr\mathrm{B}_i\,\mathbf{e},\, \mathbf{e}\tr\mathrm{B}_j\,\mathbf{e})$
+      \State $\rho_{ij} \gets \rho^{\max}_{ij}\,(1 - d_{ij}/R)^4$ \Comment{\eqref{eq:results-pair-reg}}
+      \State $\Nmat_{\shift_i\shift_i} \mathrel{+}= \rho_{ij}\,\mathbf{e}\mathbf{e}\tr$, \ $\Nmat_{\shift_j\shift_j} \mathrel{+}= \rho_{ij}\,\mathbf{e}\mathbf{e}\tr$
     \EndFor
-    \State $\Nmat_{\shift_i\shift_i} \mathrel{+}= \hreg\,\pvol_i\,r_i^2\,\mathrm{I}$ for all $i$ \Comment{shift regularization}
+    \State $\Nmat_{\shift_i\shift_i} \mathrel{+}= \hreg\,\pvol_i\,r_i^2\,\mathrm{I}$ for all $i$, with $r_i = \pvol_i^{1/d}$ \Comment{shift regularization}
     \State $\Nmat_{\weight_i\weight_i} \mathrel{+}= \hreg\,\pvol_i$ for all $i$ \Comment{weight regularization}
     \State \Return $\Nmat$
   \end{algorithmic}
 \end{algorithm}
 
 Without shifts, as for $\dualenergy$, there is no pair term and only the weight regularization applies.
-The pair stiffness $\rho$ is defined in \eqref{eq:results-pair-reg}, and the callers set the activity $\gamma$ to the ratio of the current shift residual $r_\shift$ to its value $r^0_\shift$ at the first iteration, capped at one, so that the pair term fades out as the solve converges.
-We use $\hreg \!=\! 10^{-4}$, for which $\hreg$ has units of inverse squared length on both blocks.
+The callers set the activity $\sigma$ to the ratio of the current shift residual $r_\shift$ to its value $r^0_\shift$ at the first iteration, capped at one, so that the pair term fades out as the solve converges, and the radius ratio to $\beta \!=\! 0.3$.
+If Algorithm~\ref{alg:newton} or~\ref{alg:flow-constrained-newton} stops without converging, after $100$ iterations or when Algorithm~\ref{alg:lm-step} rejects $60$ trials in a row, it restarts from its initial multipliers with $\beta$ doubled, up to three times.
 When the predicted increase in Algorithm~\ref{alg:lm-step} is below the round-off of $\jointdual_\alpha$, a trial is accepted instead if it decreases the residual without decreasing $\jointdual_\alpha$ beyond round-off.
 
 \begin{algorithm}[H]
@@ -146,10 +142,10 @@ When the predicted increase in Algorithm~\ref{alg:lm-step} is below the round-of
     \State build the power diagram of the sites $\qq$ with weights $\weight$
     \Loop
       \State $\mathbf{g} \gets \nabla\dualenergy(\weight)$ \Comment{\eqref{eq:volume-dual}}
-      \If{$\lvert g_i \rvert \le \tau_\weight\,\pvol_i$ for all $i$}
+      \If{$\max_i \lvert g_i \rvert / \pvol_i \le \tau_\weight$} \Comment{\eqref{eq:results-termination}}
         \State \Return $\weight$
       \EndIf
-      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\weight$ with $\gamma = 0$
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\weight$ with $\sigma = 0$
       \State solve $\Nmat\,\delta\weight = \mathbf{g}$
       \State $\weight \gets$ Alg.~\ref{alg:line-search} with $\weight$ and $\delta\weight$
     \EndLoop

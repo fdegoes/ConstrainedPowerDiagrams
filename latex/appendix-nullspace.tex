@@ -127,25 +127,30 @@ for some scalars $\kappa_{ij} \!=\! \kappa_{ji}$, one per pair of neighbors.
 In terms of the lifted generators $(\dual_i, \height_i)$, \eqref{eq:appendix-kappa} reads
 \begin{equation}
   (\delta\dual_j - \delta\dual_i,\, \delta\height_j - \delta\height_i) = \kappa_{ij}\,(\dual_j - \dual_i,\, \height_j - \height_i) ,
+  \label{eq:appendix-lifted-edge}
 \end{equation}
 \ie a null-space perturbation may stretch each lifted edge but not rotate it.
 These edges connect neighboring generators and form the graph dual to the power diagram, and their projections $\dual_j - \dual_i$ are orthogonal to the facets $\face_{ij}$.
 In the following, we characterize the admissible stretch factors $\kappa_{ij}$, which identify the additional null-space modes arising from the combinatorics of the dual graph.
 
 \paragraph{Closed 1-forms}
-To this end, we extend the work of \citet{deGoes2013Masonry}, which parametrized the orthogonal duals of a 2D triangulation by closed discrete 1-forms, to power diagrams in $\R^d$.
-In our setting, we define $\smash{\omega_{ij} = \kappa_{ij}\,(\dual_j - \dual_i,\, \height_j - \height_i)}$ as a $(d+1)$-sized vector-valued discrete 1-form on the dual graph of our power diagram.
-As in \citet{deGoes2013Masonry}, a choice of $\kappa$ is admissible if $\omega$ is \emph{closed}, \ie it sums to zero around every elementary cycle of the dual graph, where an elementary cycle links the cells that meet at a face of codimension two of the power diagram.
-Since we assumed a simply-connected domain $\domain$ in \S\ref{sec:background}, these elementary cycles generate all cycles of the dual graph, so no harmonic 1-forms exist and every closed $\omega$ is also \emph{exact}, \ie $\smash{\omega_{ij} = (\delta\dual_j - \delta\dual_i,\, \delta\height_j - \delta\height_i)}$.
-Integrating $\omega$ thus yields a perturbation of the lifted generators, unique up to a common offset in $\R^{d+1}$.
-The null-space of $\nabla^2\jointdual$ is thus parametrized by the scalars $\kappa_{ij}$ for which $\omega$ is closed, together with the $d+1$ offsets, while the null-space of $\nabla^2\centroiddual$ is its subspace with $\delta\weight_i = \delta a_i(\tcentroid_i) = 0$.
+To this end, we build on \citet{deGoes2013Masonry}, who parametrized all orthogonal duals of a fixed 2D triangulation, \ie all power diagrams of fixed generators, by closed discrete 1-forms on its edges.
+Our setting is the reciprocal one, since the power diagram is fixed and we seek the perturbations of its generators, but both live on the same complex, the graph dual to the power diagram, whose elementary cycles link the cells that meet at a face of codimension two of the power diagram.
+We thus split \eqref{eq:appendix-lifted-edge} into its planar part, which defines the $d$-vector-valued discrete 1-form $\smash{\omega_{ij} = \kappa_{ij}\,(\dual_j - \dual_i)}$ on the dual graph, and its height part, which defines the scalar 1-form $\smash{\kappa_{ij}\,(\height_j - \height_i)}$.
+A choice of $\kappa$ is admissible if $\omega$ is \emph{closed}, \ie it sums to zero around every elementary cycle.
+Since we assumed a simply-connected domain $\domain$ in \S\ref{sec:background}, these elementary cycles generate all cycles of the dual graph, so no harmonic 1-forms exist and every closed $\omega$ is also \emph{exact}, \ie $\smash{\omega_{ij} = \delta\dual_j - \delta\dual_i}$, which determines $\delta\dual$ up to a common translation $\translation$.
+The height part then requires no additional condition.
+Since $\smash{a_i(\xx) = a_j(\xx)}$ on $\face_{ij}$, we have $\smash{\height_j - \height_i = 2\,(\dual_j - \dual_i)\tr\xx}$ for any point $\xx$ of the supporting hyperplane of $\face_{ij}$, and choosing $\xx$ on the face of codimension two shared by all the facets of an elementary cycle yields $\smash{\sum \kappa_{ij}\,(\height_j - \height_i) = 2\,\xx\tr \sum \omega_{ij} = 0}$ around it.
+Closedness of $\omega$ thus implies closedness of the height part, which integrates to $\delta\height$ up to a common offset $c$.
+This scalar 1-form is the counterpart of the 1-form of \citet{deGoes2013Masonry}, given by the weight differences $\smash{\combweight_j - \combweight_i}$ in our notation: by $\smash{\height_i = \norm{\dual_i}^2 - \combweight_i}$, the height part $\smash{\delta\height_j - \delta\height_i}$ differs from the variation $\smash{\delta\combweight_i - \delta\combweight_j}$ of their 1-form by the exact term $\smash{\delta\norm{\dual_j}^2 - \delta\norm{\dual_i}^2}$, and its closedness around an elementary cycle linearizes their condition that the facets of the cycle meet at a common point, which here holds by construction since the cells are fixed.
+The null-space of $\nabla^2\jointdual$ is thus parametrized by the scalars $\kappa_{ij}$ for which $\omega$ is closed, together with the $d+1$ offsets $(\translation, c)$, while the null-space of $\nabla^2\centroiddual$ is its subspace with $\delta\weight_i = \delta a_i(\tcentroid_i) = 0$.
 
 \paragraph{Blocks}
 For a power diagram with generators in general position, every face of codimension two of the power diagram (\eg a vertex in 2D, an edge in 3D) is shared by exactly three cells $(i,j,k)$, whose generators span a triangle of the dual triangulation.
-Their generators are not collinear, since the facets $\face_{ij}$, $\face_{jk}$ and $\face_{ki}$ would otherwise be parallel and could not meet along a common face, so the lifted edges $\smash{(\dual_j - \dual_i,\, \height_j - \height_i)}$ and $\smash{(\dual_k - \dual_j,\, \height_k - \height_j)}$ are linearly independent.
+Their generators are not collinear, since the facets $\face_{ij}$, $\face_{jk}$ and $\face_{ki}$ would otherwise be parallel and could not meet along a common face, so the edges $\dual_j - \dual_i$ and $\dual_k - \dual_j$ are linearly independent.
 The closedness condition $\smash{\omega_{ij} + \omega_{jk} + \omega_{ki} = 0}$ then reduces to
 \begin{equation}
-  (\kappa_{ij} - \kappa_{ki})\,(\dual_j - \dual_i,\, \height_j - \height_i) + (\kappa_{jk} - \kappa_{ki})\,(\dual_k - \dual_j,\, \height_k - \height_j) = 0 ,
+  (\kappa_{ij} - \kappa_{ki})\,(\dual_j - \dual_i) + (\kappa_{jk} - \kappa_{ki})\,(\dual_k - \dual_j) = 0 ,
 \end{equation}
 which forces $\kappa_{ij} \!=\! \kappa_{jk} \!=\! \kappa_{ki}$.
 Therefore, $\kappa$ is constant over every set of dual edges connected through dual triangles.
@@ -156,16 +161,14 @@ Since the dual
 \end{wrapfigure}
 triangles generate all dual cycles, these sets are exactly the \emph{blocks} of the dual graph \citep{Diestel2017Graph}, \ie its maximal subgraphs that remain connected after removing any single node, and a constant $\kappa$ per block always defines a closed 1-form (see inset).
 The null-space of $\nabla^2\jointdual$ thus has dimension $(b - 1) + (d + 2)$, where $b$ is the number of blocks.
-When the dual graph is a single block, we have $b\!=\!1$, $\kappa \equiv \mu$ and $\smash{\omega_{ij} = \mu\,(\dual_j - \dual_i,\, \height_j - \height_i)}$, so the only solutions are the $d\!+\!2$ homotheties as in \eqref{eq:infinitesimal-homothety}.
+When the dual graph is a single block, we have $b\!=\!1$, $\kappa \equiv \mu$ and $\smash{\omega_{ij} = \mu\,(\dual_j - \dual_i)}$, so the only solutions are the $d\!+\!2$ homotheties as in \eqref{eq:infinitesimal-homothety}.
 Since every step from \eqref{eq:appendix-null-condition} to this count is an equivalence, this argument characterizes the null-space of $\nabla^2\jointdual$ completely, and the homothetic modes derived above are exactly its single-block instance.
-On domains that are not simply connected, the blocks must be replaced by the classes of facets linked through dual triangles, and the count is further reduced by the conditions that $\omega$ integrates to zero around each hole.
+On domains that are not simply connected, the blocks must be replaced by the classes of facets linked through dual triangles, and the count is further reduced by the conditions that $\omega$ and its height part integrate to zero around each hole, where the latter no longer follows from the former since the facets around a hole share no common point.
 % The simplest instance is the volume Hessian \eqref{eq:newton-step}, for which $\delta\shift = 0$ makes each $\delta a_i = \delta\weight_i$ constant, so \eqref{eq:appendix-kappa} forces $\kappa \equiv 0$ and $\omega = 0$, leaving only the common offset $\delta\weight_i = c$.
 
 \paragraph{Cut cells}
 When the dual graph has $b \!\ge\! 2$ blocks, the additional $b \!-\! 1$ modes beyond the homotheties come from the arrangement of the cells, since each block carries its own constant $\kappa$.
 Distinct blocks only meet at \emph{cut cells}, \ie cells $\cell_i$ whose removal splits $\domain$ into two or more parts, or equivalently dual nodes shared by several blocks, known as cut vertices in graph theory \citep{Diestel2017Graph}, such as the orange cell $i$ in the inset above.
-Setting $\delta a_k(\xx) \!=\! 0$ on all but one side of cell $i$ and $\smash{\delta a_k(\xx) \!=\! \kappa\,(a_k(\xx) - a_i(\xx))}$ for every cell $k$ on the remaining side applies an infinitesimal dilation about cell $i$ to that side only.
-Each cut cell shared by $m$ blocks thus contributes $m \!-\! 1$ independent modes, one per side beyond the first, which together account for the $b \!-\! 1$ additional modes.
 
 \paragraph{Bridges}
 A block may also reduce to a single dual edge between two cut cells, or between a cut cell and a cell with no other neighbor, in which case the facet itself separates the domain.
@@ -179,6 +182,24 @@ We thus define a
 Its scalar $\kappa_{ij}$ is then free, which is one of the $b \!-\! 1$ modes counted above, and setting $\delta a_k(\xx) = 0$ on the side of cell $j$ and $\smash{\delta a_k(\xx) = \kappa_{ij}\,(a_i(\xx) - a_j(\xx))}$ for every cell $k$ on the side of cell $i$ rotates all the lifted hyperplanes on that side about the facet.
 For instance, a cell $i$ with a single neighbor $j$ is separated by the bridge $\face_{ij}$, and $j$ is a cut cell unless it also has no other neighbor.
 
+\paragraph{Structure of the combinatorial modes}
+The blocks, cut cells and bridges of a power diagram are found in $O(n \!+\! m)$ time, with $m$ the number of facets, by a single depth-first search of its dual graph \citep{Hopcroft1973Algorithm}, whose edges are the facets of positive measure, \ie the off-diagonal blocks of $\nabla^2\jointdual$.
+They are organized by the \emph{block--cut tree} of the dual graph \citep{Diestel2017Graph}, which links each cut cell to the blocks that contain it.
+We root this tree at an arbitrary block, and assign to every other block $B$ its parent cut cell $c_B$ and its \emph{arm} $S_B$, \ie the cells of $B$ and of all the blocks below it, except $c_B$.
+Since $\kappa$ is constant on $B$, integrating $\omega$ from $c_B$ shows that the lifted generators of $B$ undergo an infinitesimal homothety centered at the lifted generator of $c_B$, so the null-space modes compose homotheties along the tree.
+A basis of the $b \!-\! 1$ combinatorial modes is thus given by one \emph{arm mode} per non-root block $B$,
+\begin{equation}
+  \delta a_k(\xx) = a_k(\xx) - a_{c_B}(\xx) \ \ \text{for } k \in S_B ,
+  \qquad
+  \delta a_k(\xx) = 0 \ \ \text{otherwise} ,
+  \label{eq:appendix-arm-mode}
+\end{equation}
+which dilates the arm about its cut cell and leaves the rest of the diagram fixed.
+Each arm mode satisfies \eqref{eq:appendix-null-condition}, since it is a homothety within $S_B$, it vanishes outside $S_B \cup \{c_B\}$, and $\delta a_k - \delta a_{c_B} = a_k - a_{c_B}$ vanishes on the facets $\face_{k c_B}$, the only ones linking $S_B$ to the other cells.
+The arm modes are independent, since the mode of $B$ sets $\kappa \!=\! 1$ on $B$ and its descendants and $\kappa \!=\! 0$ elsewhere, and together with the $d \!+\! 2$ homotheties they span the null-space of $\nabla^2\jointdual$.
+Unlike the homotheties, which move every generator, each arm mode is supported on its arm, and for a bridge it reduces to the rotation about the facet described above.
+For $\nabla^2\centroiddual$, a combination of arm modes and homotheties must also verify $\delta a_k(\tcentroid_k) = 0$ for all $k$, which, as for the homotheties, requires the pivots of each arm to lie on a common hyperplane, and thus does not hold for generic targets.
+
 \paragraph{Strips}
 \begin{wrapfigure}[4]{r}{0.42\columnwidth}
 \vspace{1mm}
@@ -186,7 +207,5 @@ For instance, a cell $i$ with a single neighbor $j$ is separated by the bridge $
   \resizebox{\linewidth}{!}{\input{figures/nullspace-strip}}
 \end{wrapfigure}
 Finally, a \emph{strip} of $n$ parallel cells has a path as its dual graph, whose $n \!-\! 1$ edges are all bridges and whose $n \!-\! 2$ interior cells are all cut cells, so it has $b = n \!-\! 1$ blocks and $n \!-\! 2$ additional modes (see inset).
-
-% For $\nabla^2\centroiddual$, an arrangement mode must also satisfy the pivot conditions $\delta a_i(\tcentroid_i) = 0$; for instance, the rotation of a boundary cell with a single neighbor $j$ about its facet is realizable only if $\tcentroid_i$ lies on the supporting hyperplane $\{\xx : a_i(\xx) = a_j(\xx)\}$.
 
 \end{document}

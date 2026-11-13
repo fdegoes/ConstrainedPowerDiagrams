@@ -5,27 +5,116 @@
 \section{Results}
 \label{sec:results}
 
-\subsection{Implementation}
+\subsection{Implementation Details}
 \label{sec:results-implementation}
 
-% TODO: describe the implementation (geogram, sparse Cholesky, Houdini) and the remaining safeguards of the Newton solves (distance clamp, restarts).
-The regularized negated Hessian of our Newton solves (Algorithm~\ref{alg:hessian-reg}) adds a pair term that pushes back on steps changing the separation $d$ of close generator pairs, with stiffness
+We implemented our method in C++, using Eigen \cite{Eigen} for linear algebra and the supernodal sparse Cholesky factorization of Apple's Accelerate framework \cite{Accelerate} for the Newton's step solves.
+To compute the power diagrams, we made use of the \emph{Geogram} library\cite{Geogram}, which builds the regular triangulation of the weighted sites and clips their cells against a simplicial mesh of $\domain$ (triangles in 2D, tetrahedra in 3D) based on the restricted Voronoi diagram algorithm \cite{Yan2009RVD}.
+The same traversal integrates the volumes, centroids, and facet moments needed by the gradient \eqref{eq:joint-gradient} and the Hessian \eqref{eq:joint-hessian}.
+These integrals are computed in parallel with standard C++ threads over a partition of the mesh of $\domain$, while the factorization runs on a single thread.
+
+We maximize a chosen objective, either $\jointdual$ in \eqref{eq:joint-gradient} or $\jointdual_\alpha$ in \eqref{eq:regularized-gradient-shift}, with Newton's method (Algorithm~\ref{alg:newton}), whose steps are damped as in the Levenberg--Marquardt method \cite[\S10.3]{Nocedal2006} (Algorithm~\ref{alg:lm-step}).
+To do so, we denote the gradient vector by $\smash{\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i}$ and its negated Hessian matrix by $\Nmat$.
+Stacking the shifts and weights into $\smash{\mathbf{z} = (\shift, \weight)}$, each damped Newton step solves
 \begin{equation}
-  \frac{\rho(d;\, r_\mathrm{core}, r_\mathrm{pair})}{\rho_{\max}} =
-  \begin{cases}
-    \epsilon + (1 - \epsilon) \bigl(1 - \frac{d}{r_\mathrm{core}}\bigr)^2 & d < r_\mathrm{core} , \\[2pt]
-    \epsilon \bigl(\frac{r_\mathrm{pair} - d}{r_\mathrm{pair} - r_\mathrm{core}}\bigr)^2 & r_\mathrm{core} \le d < r_\mathrm{pair} , \\[2pt]
-    0 & d \ge r_\mathrm{pair} ,
-  \end{cases}
+  (\Nmat + \mu \operatorname{diag}\Nmat)\,\delta\mathbf{z} = \mathbf{g} ,
+  \label{eq:results-lm-step}
+\end{equation}
+where the damping $\mu$ follows the standard update of \citet{Nielsen1999Damping} with its defaults.
+More concretely, we start with $\smash{\mu \!=\! 10^{-3}}$ and measure each step by the gain ratio $\varrho$ between the actual increase of the objective versus the increase $\smash{\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}}$ predicted by its quadratic model.
+A step is accepted if $\varrho > 10^{-4}$ and no cell is empty, in which case $\mu$ is multiplied by $\smash{\max\bigl({1}/{3}, 1 - (2\varrho - 1)^3\bigr)}$, so that it decreases by up to a factor $3$ when the model is accurate.
+Otherwise, the step is rejected and recomputed with a larger damping, where the $k$-th consecutive rejection multiplies $\mu$ by $2^k$, so that $\mu$ grows quickly when the model is poor.
+
+A key component of our implementation is the assembly of $\Nmat$ (Algorithm~\ref{alg:hessian-reg}).
+To ensure that $\Nmat$ is positive definite, we incorporated two regularization strategies that modify $\Nmat$ but not $\mathbf{g}$, so they change the path of the iterates but not the maximizer.
+In the following, we set the parameter $\hreg \!=\! 10^{-3}$ and refer to the size of each cell as $\smash{r_i = \pvol_i^{1/d}}$ and, similarly, $\smash{\bar{r} = (\lvert\domain\rvert / n)^{1/d}}$ for the average volume.
+The first regularization term adds $\smash{\hreg\,\pvol_i\,r_i^2}$ to the diagonal shift entries and $\smash{\hreg\,\pvol_i}$ to the diagonal weight entries of each site $i$.
+% 
+To prevent two neighboring generators to collapse onto each other, we include another regularization to $\Nmat$ that stiffens it along the separation of every close pair.
+For each facet $\face_{ij}$, let $\smash{d_{ij} = \norm{\dual_j - \dual_i}}$ and $\smash{\mathbf{e}_{ij} = (\dual_j - \dual_i) / d_{ij}}$.
+We then add the rank-one term $\smash{\rho_{ij}\,\mathbf{e}_{ij}\mathbf{e}_{ij}\tr}$ to the shift--shift diagonal blocks of both $i$ and $j$, which shortens the component of the shift update (and thus of each generator) along $\mathbf{e}_{ij}$, while leaving its tangential motion and all other sites unchanged.
+% The term is added to the diagonal blocks only, not as a spring coupling $i$ and $j$, so it damps the motion of each generator along $\mathbf{e}_{ij}$, and hence also their common translation in that direction.
+We set its stiffness to
+\begin{equation}
+  \rho_{ij} = \rho^{\max}_{ij} \Bigl(1 - \frac{d_{ij}}{R}\Bigr)^{4}
+  \quad \text{for } d_{ij} < R , \qquad
+  \rho_{ij} = 0 \quad \text{otherwise} ,
   \label{eq:results-pair-reg}
 \end{equation}
-and $\epsilon \!=\! 10^{-3}$.
-Within the core radius $r_\mathrm{core}$, the stiffness rises to $\rho_{\max}$ as the pair merges, and between $r_\mathrm{core}$ and the pair radius $r_\mathrm{pair}$, it decays from $\epsilon\,\rho_{\max}$ to zero, so that $\rho$ is continuous and only pairs closer than $r_\mathrm{pair}$ are affected.
+which only affects pairs closer than the radius $R$, rising steeply towards $\smash{\rho^{\max}_{ij}}$ as the pair merges.
+We set the maximum stiffness of each pair from the curvature of its own two sites along the pair, \ie $\smash{\rho^{\max}_{ij} = 2 \max(\mathbf{e}_{ij}\tr \Nmat_{ii}\, \mathbf{e}_{ij},\, \mathbf{e}_{ij}\tr \Nmat_{jj}\, \mathbf{e}_{ij})}$, where $\Nmat_{ii}$ is the shift--shift diagonal block of the negated Hessian for site $i$.
+% The pair term is thus measured against the very stiffness it competes with, which does not depend on the choice of axes and adapts to anisotropic blocks, since a long shared facet makes a site stiff across the facet but soft along it, and it scales automatically with the domain, the number of cells, and their volumes.
+The radius starts at $R \!=\! 0.3\,\bar{r}$ and shrinks in proportion to the shift residual as the solve converges.
+This pairing term thus acts at a fraction of the cell size during the first iterations, and fades out near convergence, so that it does not slow down the final Newton iterations.
 
-\subsection{Inverse Tessellations}
+To terminate our Newton solves, we adopted a max-norm criterion that verifies if every cell meets both its volume and its centroid constraint to a relative tolerance, \ie when the gradient verifies
+\begin{equation}
+  \max_i \frac{\lvert g^\weight_i \rvert}{\pvol_i} \le \tau
+  \quad\text{and}\quad
+  \max_i \frac{\norm{\mathbf{g}^\shift_i}}{2\,\pvol_i^{(d+1)/d}} \le \tau .
+  \label{eq:results-termination}
+\end{equation}
+By \eqref{eq:joint-gradient}, the first residual is the relative volume error $\smash{\lvert \cellvol_i - \pvol_i \rvert / \pvol_i}$ and the second equals $\smash{(\cellvol_i / \pvol_i)\,\norm{\tcentroid_i - \centroid_i} / r_i}$, so $\tau$ bounds the centroid error of each cell invariant to the scale of $\domain$.
+% We set $\tau_\weight \!=\! \tau_\shift \!=\! 10^{-8}$ in all examples, except within the time steps of the integrators of \S\ref{sec:flow}, where we use $\tau_\weight \!=\! \tau_\shift \!=\! 10^{-4}$.
+
+\subsection{Reconstructing Power Diagrams}
 \label{sec:results-inverse}
 
-% TODO: compare our joint and softened formulations (Sec. 4) against the inverse/fitting examples of Bourne et al.
+In this section, we use the joint formulation of \S\ref{sec:joint-constraints} to reconstruct a power diagram from target volumes and centroids, \ie to find generators and weights whose cells have the prescribed volumes $\pvol_i$ and centroids $\tcentroid_i$, and we compare it with the methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder}.
+
+\paragraph{Motivation}
+This reconstruction arises in materials science, where power diagrams are a standard model of polycrystalline materials such as steel, whose grains tessellate the material and are represented by the cells of a diagram \cite{Lyckegaard2011Laguerre, Quey2018Optimal}.
+A power diagram describes $n$ grains with only $n$ generators and weights, and its cells are convex polytopes that can be meshed directly for simulation.
+The available data about the grains come in two forms.
+Far-field X-ray diffraction (3DXRD) does not image the grains, but estimates the volume and centroid of each grain from its diffraction spots, so that reconstructing their shapes amounts to finding a power diagram whose cells have the measured volumes and centroids \cite{Petrich2019Reconstruction, Bourne2025Inverting}.
+Imaging techniques, such as electron backscatter diffraction (EBSD) in 2D, or serial-section EBSD and diffraction contrast tomography in 3D, instead produce grain maps that assign each pixel or voxel to a grain, which a power diagram compresses into convex cells \cite{Spettl2016Fitting, Alpers2023GrainMaps, Bourne2025Inverting}.
+Counting the pixels or voxels of each grain gives the volumes and centroids of a partition of the domain, which are therefore achievable (\S\ref{sec:background}), but not realizable in general, since real grains are not power cells.
+Volumes and centroids measured by 3DXRD, in turn, carry measurement errors, and need not even be achievable.
+\citet{Bourne2025Inverting} showed that a power diagram is uniquely determined by the volumes and centroids of its cells, which distinguishes two cases.
+When the data are \emph{realizable}, \ie they are the volumes and centroids of some power diagram, this diagram is the maximizer of $\jointdual$ (\S\ref{sec:joint-constraints}), and a solver should recover it to the accuracy requested.
+When the data come from measurements, such as grain maps or 3DXRD, no power diagram matches them exactly in general, and only a fit is possible, which we compute as the maximizer of the softened objective $\jointdual_\alpha$ (\S\ref{sec:regularized-joint}).
+
+\paragraph{Test problems}
+For realizable data, we use the examples of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder}: the Voronoi diagram of $n \!=\! 20$ random generators in the unit square, recovered from a random start or from the targets, and a power diagram with $n \!=\! 728$ equal cells whose generators lie on a cross-shaped part of a regular grid.
+Since these examples are small, we complement them with a synthetic benchmark whose solution is known by construction.
+For each case, we sample generators in the unit square, prescribe volumes, solve for the weights of the power diagram of these generators with these volumes, and take its volumes and centroids as the targets, so that the data are realizable up to round-off.
+The generators are placed by dart throwing with a minimum distance of $\rho\,h$ between any two of them, where $h \!=\! \sqrt{1/n}$ is the mean cell size, and $\rho \!\in\! \{0.8, 0.5, 0.25\}$ sets three levels of noise in their spacing.
+The volumes are either equal, which requires nonzero weights that grow with the noise, or the volumes of the Voronoi cells of the generators, which vary across cells while the weights vanish (Fig.~\ref{fig:synthetic-gallery}).
+We generate $20$ sizes from $n \!=\! 10$ to $n \!=\! 10^4$, spaced logarithmically, with five random seeds per configuration, for $600$ cases in total, and start every solve from the sites $\qq \!=\! \tcentroid$.
+For data that are not realizable, we use the examples of \citet{Bourne2025Inverting} with perturbed centroids, and the EBSD map of a single-phase steel with $n \!=\! 243$ grains in a $252.25\,\mu\mathrm{m}$ square used in both of their works, which was provided to them by Tata Steel and is distributed with their code \cite{Bourne2025Inverting, Bourne2026ConvexOrder}.
+
+\paragraph{Fixed weights}
+The synthetic benchmark also tests whether the volumes need to be unknowns at all.
+Since each case comes from a known diagram with generators $\dual^\star_i$ and weights $\weight^\star_i$, we can instead maximize the centroid dual $\centroiddual$ (\S\ref{sec:centroid-constraints}) over the shifts alone, with sites $\qq \!=\! \tcentroid$ and the weights fixed to $\smash{\weight_i = \weight^\star_i - \norm{\dual^\star_i - \tcentroid_i}^2}$.
+By \eqref{eq:shifted-site}, the shifts $\smash{\shift_i = \dual^\star_i - \tcentroid_i}$ then give back the generators $\dual^\star_i$ and the shifted weights $\combweight_i \!=\! \weight^\star_i$, so the maximizer of $\centroiddual$ is the synthetic diagram itself, and it is unique since fixing the weights removes the homotheties of $\jointdual$.
+This information is not available in practice, and should only make the problem easier.
+Over the $600$ cases, maximizing $\jointdual$ recovers the diagram in $598$, and the two remaining solves stop at the iteration limit with residuals within three times the tolerance $10^{-8}$.
+Maximizing $\centroiddual$ fails in $77$ cases, all but two of them with equal volumes.
+In $62$ of them, the initial diagram of the sites $\tcentroid$ with the weights $\weight$ already has empty cells, between $1$ and $33$, so that no step can be taken: an empty cell contributes neither to the gradient nor to the Hessian of $\centroiddual$, and the iterates must keep every cell non-empty.
+This happens at mid and high noise only, where equal volumes require uneven weights, and for every case at high noise from $n \!\approx\! 10^3$ on.
+In the other $15$, one cell shrinks to zero volume along the iterations while $\centroiddual$ stays below its maximum, so the iterates stall.
+When it converges, maximizing $\centroiddual$ takes about $9$ iterations at every size, against $13$ to $32$ for $\jointdual$.
+Knowing the weights thus does not help a solver that only moves the shifts: with the weights as unknowns, the initial diagram is a volume solve whose cells are never empty, and every iterate can restore a shrinking cell by raising its weight.
+
+\paragraph{Termination of the comparison}
+Each method stops on its own rule with tolerance $10^{-8}$, and we measure the rule of the other at its solution.
+Ours stops on \eqref{eq:results-termination}, and at its solution we evaluate the rule of the sequential quadratic programming of \citet{Bourne2025Inverting}, a relative change of their objective between iterations below $10^{-8}$ (their code uses $10^{-10}$), which detects stagnation rather than accuracy.
+Conversely, their method stops on this rule, and we evaluate \eqref{eq:results-termination} at its solution.
+The data of these comparisons are realizable, so \eqref{eq:results-termination} always uses the gradient of $\jointdual$.
+We do not use the Frank--Wolfe gap of \citet{Bourne2026ConvexOrder} as a termination.
+Its paper sets no tolerance, the tolerances of its code ($10^{-14}$ to $10^{-16}$) are at the level of round-off for a gap that is quadratic in the error, and on the cross-shaped example its iterations end at their limit without meeting it, so the gap is better read as a convergence measure than as a stopping rule.
+Their Frank--Wolfe iterations have no other rule, so they stop on \eqref{eq:results-termination}, or at a time limit.
+With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1)$, which is the maximization of $\jointdual_\alpha$ with $\alpha \!=\! t - 1$, so their residual of $\jointdual$ cannot fall much below $1/t$.
+
+% TODO (once the runs are done): timing and comparisons of the methods under the different terminations.
+% - Realizable cases (benchmarks/bourne/run_realizable.py, benchmarks/synthetic/run_synthetic.py): our max H vs.
+%   their SLSQP on H (2025) and Frank-Wolfe (2026): iterations, OT solves / diagram builds, wall-clock time, failures.
+% - Approximate cases (benchmarks/bourne/run_approximate.py): our max H_alpha (alpha sweep, and alpha = t - 1 as their
+%   dilation) vs. their methods.
+% - Terminations: report both cross-comparisons. Their methods stop on the change of their objective (SLSQP ftol)
+%   or on the Frank-Wolfe gap, not on the centroid residual: run them until our per-cell L-infinity residual is met,
+%   and evaluate their rules on our iterates.
+% - Synthetic benchmark: scaling with n, per noise level and volume distribution.
 % Test cases from the papers (in bib/):
 % - [Bourne2025Inverting, Sec. 5.1, Figs. 1-2]: recover a Laguerre diagram from the areas and centroids of its cells (2D, random generators).
 % - [Bourne2025Inverting, Sec. 5.2, Figs. 3-7]: fit to synthetic data perturbed with small (0.001) and larger (0.05) noise; minimum-distance constraint active.
@@ -33,6 +122,29 @@ Within the core radius $r_\mathrm{core}$, the stiffness rises to $\rho_{\max}$ a
 % - [Bourne2026ConvexOrder, Sec. 6.3.1, Figs. 8-14]: reconstruction with N = 20 and N = 728 on [0,1]^2, t = 1250; subgradient vs Frank-Wolfe convergence.
 % - [Bourne2026ConvexOrder, Sec. 6.3.2, Figs. 15-16]: EBSD image of single-phase steel, N = 243 grains, domain [0, 252.25]^2, t = 10.
 % Metrics to report: centroid residual, volume error, iterations / volume solves, wall-clock time, and failures (merged generators).
+
+% Panels generated by benchmarks/synthetic/gallery.py.
+\begin{figure}[t]
+  \centering
+  \newcommand{\gallerypanel}[2]{\includegraphics[width=0.29\columnwidth]{figures/synthetic/synthetic-noise#1-#2.pdf}}
+  \newcommand{\galleryrow}[1]{\rotatebox{90}{\parbox{0.29\columnwidth}{\centering\footnotesize #1}}}
+  \newcommand{\gallerycol}[1]{\footnotesize #1}
+  \setlength{\tabcolsep}{1pt}
+  \begin{tabular}{@{}c@{\hspace{2pt}}ccc@{}}
+    & \gallerycol{low noise} & \gallerycol{mid noise} & \gallerycol{high noise} \\[1pt]
+    \galleryrow{uniform volumes} & \gallerypanel{0}{uniform} & \gallerypanel{1}{uniform} & \gallerypanel{2}{uniform} \\
+    \galleryrow{Voronoi volumes} & \gallerypanel{0}{voronoi} & \gallerypanel{1}{voronoi} & \gallerypanel{2}{voronoi} \\
+  \end{tabular}
+  \caption{%
+    Synthetic power diagrams with $n \!=\! 10$ cells in the unit square, for low, mid and high noise in the generators (columns, $\rho = 0.8$, $0.5$ and $0.25$) and the two volume distributions (rows).
+    The generators (black dots) are placed by dart throwing with a minimum distance of $\rho\,h$ between any two of them, where $h \!=\! \sqrt{1/n}$ is the mean cell size, so that a smaller $\rho$ gives a less uniform spacing.
+    The prescribed volumes are equal (\emph{uniform}) or the volumes of the Voronoi cells of the generators (\emph{Voronoi}); the weights $\weight_i$ are those of the power diagram of the generators with these volumes.
+    The disk around each generator is schematic and illustrates its weight, not its power circle: since the weights of a diagram are defined up to a common constant, we subtract their mean $\overline{\weight}$ and set the radius of disk $i$ to $0.04 + 0.03\,(\weight_i - \overline{\weight}) / \weight_{\max}$, where $\weight_{\max}$ is the largest $|\weight_j - \overline{\weight}|$ over all six diagrams, so that disk sizes are comparable across panels.
+    The Voronoi diagrams have equal weights and are drawn without disks.
+    Each generator keeps its color across the two diagrams of a column, which share the same generators.
+  }
+  \label{fig:synthetic-gallery}
+\end{figure}
 
 \subsection{Incompressible Flows}
 \label{sec:results-flows}

@@ -7,7 +7,7 @@
 
 We detail next the Newton step of Algorithm~\ref{alg:flow-constrained-newton}, which solves \eqref{eq:flow-line-constraint} by maximizing $\jointdual$ subject to the linear constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans}.
 % 
-First, we stack the shifts and weights into $\smash{\mathbf{z} \!=\! (\shift, \weight)}$ and the constraint multipliers into $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d) \in \R^{d+1}}$.
+We use the multipliers $\mathbf{z}$, the gradient $\mathbf{g}$, and the regularized negated Hessian $\Nmat$ of $\jointdual$ from \S\ref{sec:results-implementation}, and stack the constraint multipliers into $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d) \in \R^{d+1}}$.
 We also write the dilation constraint \eqref{eq:flow-line-constraint-dil} as the row $\smash{\mathbf{a} = (\{\pvol_i\,\dual^k_i\}_i, 0)}$ and the translation constraint \eqref{eq:flow-line-constraint-trans} along each axis $\mathbf{e}_j$ as the row $\smash{\mathbf{b}_j = (\{\pvol_i\,\mathbf{e}_j\}_i, 0)}$, both with zero entries on the weights.
 We then collect these $d \!+\! 1$ rows into the auxiliary matrix
 \begin{equation}
@@ -16,16 +16,9 @@ We then collect these $d \!+\! 1$ rows into the auxiliary matrix
 \end{equation}
 so that the constraints \eqref{eq:flow-line-constraint-dil} and \eqref{eq:flow-line-constraint-trans} read $\Cmat\,\mathbf{z} = 0$.
 % 
-Additionally, we denote the gradient \eqref{eq:joint-gradient} by $\smash{\mathbf{g} \!=\! \nabla\jointdual(\mathbf{z})}$ and the matrix
-\begin{equation}
-  \Nmat = -\nabla^2\jointdual(\mathbf{z}) + \hreg\,\mathrm{diag}(\pvol),
-  \label{eq:appendix-bordered-matrix}
-\end{equation}
-which is the negated Hessian of $\jointdual$ regularized by $\hreg\,\mathrm{diag}(\pvol)$ with a small $\hreg \!>\! 0$ to remove its null-space.
-Since the Hessian is negative semi-definite, $\Nmat$ is positive definite.
-Moreover, $\Nmat$ shares the same sparsity as the Hessian, so it admits a sparse Cholesky factorization.
+Since $\Nmat$ is sparse and positive definite, it admits a sparse Cholesky factorization.
 % 
-With this notation, we then solve the bordered system
+Rather than reparametrizing the unknowns to satisfy the constraints, which would destroy this sparsity, we enforce them by bordering $\Nmat$ with the $d \!+\! 1$ rows of $\Cmat$, \ie we solve the saddle-point system
 \begin{equation}
   \begin{bmatrix} \Nmat & \Cmat\tr \\ \Cmat & 0 \end{bmatrix}
   \begin{bmatrix} \delta\mathbf{z} \\ \boldsymbol{\nu} \end{bmatrix}
@@ -45,8 +38,8 @@ Eliminating $\delta\mathbf{z}$ from the first row of \eqref{eq:flow-constrained-
   \end{aligned}
   \right.
 \end{equation}
-which share a single factorization of $\Nmat$.
-Substituting into the last row $\Cmat\,\delta\mathbf{z} = 0$ yields the dense $(d \!+\! 1) \times (d \!+\! 1)$ system
+sharing a single factorization of $\Nmat$, so that the bordering only adds $d \!+\! 1$ back-substitutions to an unconstrained Newton step.
+Substituting them into $\Cmat\,\delta\mathbf{z} = 0$ yields the dense $(d \!+\! 1) \times (d \!+\! 1)$ system
 \begin{equation}
     \begin{bmatrix}
       \mathbf{a}\tr\mathbf{z}_a & \mathbf{a}\tr\mathbf{z}_{b_1} & \cdots & \mathbf{a}\tr\mathbf{z}_{b_d} \\

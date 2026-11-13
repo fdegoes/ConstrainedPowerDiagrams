@@ -1,0 +1,39 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Choosing $\alpha$ for $\jointdual_\alpha$}
+\label{sec:appendix-softened-bound}
+
+We derive a sufficient condition on the stiffness $\alpha$ under which the maximizer of $\jointdual_\alpha$ in \eqref{eq:regularized-dual} has pairwise distinct generators $\dual$, and thus realizes a power diagram.
+
+Let $\smash{\cell^0}$ denote the power diagram of the sites $\qq$ that maximizes $\dualenergy$ in \eqref{eq:volume-dual}, \ie the solution of the volume-constrained problem \eqref{eq:volume-constrained}.
+Then let $\smash{\centroid^0}$ denote the centroids of this volume-constrained power diagram and $\smash{\resid^2 = \sum_i \pvol_i \norm{\centroid^0_i - \tcentroid_i}^2}$ be its volume-weighted centroid residual with respect to the targets.
+% 
+The partition $\smash{\cell^0}$ satisfies the volume constraints \eqref{eq:regularized-primal-vol}, and is thus feasible for \eqref{eq:regularized-primal} with slacks $\smash{\centroid^0 \!-\! \tcentroid}$, while it minimizes the first term of \eqref{eq:regularized-primal-obj} among all partitions with volumes $\pvol$.
+Since both $\smash{\cell^0}$ and the softened partition $\cell$ have volumes $\pvol$ and slacks equal to their centroid residuals, their objectives decompose as in \eqref{eq:regularized-decomposition}, whose first two sums recover the first term of \eqref{eq:regularized-primal-obj} and whose last sum is the penalty, equal to $\alpha\,\resid^2$ for $\smash{\cell^0}$.
+The softened partition minimizes the whole objective, so its value of \eqref{eq:regularized-decomposition} is at most that of $\smash{\cell^0}$, while $\smash{\cell^0}$ minimizes the first two sums, so their value is at least as large for $\cell$.
+Subtracting these two inequalities removes the first two sums of \eqref{eq:regularized-decomposition} from both sides, leaving the penalty of $\cell$ at most $\alpha\,\resid^2$, and dividing by $\alpha \!>\! 0$ yields $\smash{\sum\nolimits_i \pvol_i \norm{\centroid_i - \tcentroid_i}^2 \le \resid^2}$ for any $\alpha$.
+
+Setting \eqref{eq:regularized-gradient-shift} to zero, the optimal shifts are $\smash{\shift_i = \alpha\,(\tcentroid_i - \centroid_i)}$.
+For each pair of cells, the Cauchy--Schwarz inequality, followed by the residual bound, then yields
+\begin{equation}
+  \begin{aligned}
+    \norm{\shift_i - \shift_j}
+    &\le \alpha\,\bigl(\norm{\centroid_i - \tcentroid_i} + \norm{\centroid_j - \tcentroid_j}\bigr) \\
+    &\le \alpha\,\Bigl(\frac{1}{\pvol_i} \!+\! \frac{1}{\pvol_j}\Bigr)^{\!1/2} \Bigl( \pvol_i \norm{\centroid_i - \tcentroid_i}^2 \!+\! \pvol_j \norm{\centroid_j - \tcentroid_j}^2 \Bigr)^{\!1/2} \\
+    &\le \alpha\,\Bigl(\frac{1}{\pvol_i} \!+\! \frac{1}{\pvol_j}\Bigr)^{\!1/2} \resid .
+  \end{aligned}
+\end{equation}
+By the triangle inequality, the generators then verify
+\begin{equation}
+  \begin{aligned}
+    \norm{\dual_i - \dual_j}
+    &\ge \norm{\qq_i - \qq_j} - \norm{\shift_i - \shift_j} \\
+    &\ge \norm{\qq_i - \qq_j} - \alpha\,\resid\,\bigl(1/\pvol_i + 1/\pvol_j\bigr)^{1/2} ,
+  \end{aligned}
+\end{equation}
+so $\dual_i \!\neq\! \dual_j$ whenever the right-hand side is positive, \ie whenever $\smash{\alpha < \norm{\qq_i - \qq_j} / \bigl(\resid\,(1/\pvol_i + 1/\pvol_j)^{1/2}\bigr)}$.
+Requiring this for every pair $i \!\neq\! j$ yields the bound \eqref{eq:regularized-distinct}.
+
+\end{document}

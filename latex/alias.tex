@@ -55,7 +55,7 @@
 \newcommand{\achievable}{\mathcal{C}}        % convex set of centroids achievable with volumes \pvol (fractional partitions)
 \newcommand{\homotheties}{\mathcal{N}}     % homothetic lifted weighted sites generating the same power diagram, \homotheties(\qq,\weight)
 \newcommand{\wlap}{\Delta}                  % negated volume Hessian (weight Laplacian), \wlap = -\nabla^2_{\weight\weight} \jointdual
-\newcommand{\hreg}{\eta}                   % Hessian regularization, \Nmat = -\nabla^2\jointdual + \hreg\,\mathrm{diag}(\pvol)
+\newcommand{\hreg}{\eta}                   % Hessian regularization constant: diagonal term and distance clamp
 
 % Lifting of a power diagram (Background, shifted power diagrams)
 \newcommand{\height}{h}                      % lifted height of a weighted site, \height_i = \norm{\qq_i}^2 - \weight_i
@@ -63,12 +63,13 @@
 % Softened centroid constraints and variational time stepping
 \newcommand{\slack}{\mathbf{r}}              % centroid slack of the softened primal, \slack_i
 \newcommand{\vslack}{s}                % volume slack of the softened volumes, \vslack_i
+\newcommand{\resid}{\xi}                  % centroid residual of the volume-constrained diagram of the sites, bounds the softened residual (eq:regularized-distinct)
 \newcommand{\cpot}{\mathcal{U}}               % potential of the Lagrangian flows (sec:flow), \cpot_0, \cpot_\alpha, \cpot_\infty
 \newcommand{\pred}{\tilde{\qq}}             % predicted particle positions of a time step, used as \pred^{k+1}
 % Hand-drawn brace spanning the constraint rows of an alignat: \constraintbrace{half-height}{lowering}
 \newcommand{\constraintbrace}[2]{\smash{\raisebox{-#2}{$\left\{\vrule height #1 depth #1 width 0pt\right.$}}\,}
 \newcommand{\Cmat}{\mathrm{C}}               % constraint rows of the constrained integrator, \Cmat\,\shift = (\sum_i \pvol_i \shift_i\tr \dual^k_i, \sum_i \pvol_i \shift_i)
-\newcommand{\Nmat}{\mathrm{N}}               % negated Hessian of \jointdual augmented by the constraint rows, used in the block elimination of the constrained Newton step
+\newcommand{\Nmat}{\mathrm{N}}               % regularized negated Hessian of \jointdual (Newton matrix, Alg. alg:hessian-reg), with site blocks \Nmat_{ii}
 
 % Cage deformations of power diagrams (appendix sec:appendix-distortion)
 \newcommand{\rest}[1]{\widehat{#1}}           % rest-state decoration, \rest{\centroid}_i, \rest{\domain}

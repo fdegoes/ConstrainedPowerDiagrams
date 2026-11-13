@@ -175,16 +175,18 @@ Since the weight gradient in \eqref{eq:joint-gradient-weight} is the volume resi
 This mixed term can thus be interpreted as a discrete divergence operator as in \citet{deGoes2015PowerParticles}, which quantifies the infinitesimal volume change of the cells as the shifted sites $\dual$ are displaced by infinitesimal changes of the shifts.
 Accordingly, its diagonal \eqref{eq:joint-hessian-diag} states that these volume changes sum to zero, since the cells always tile $\domain$.
 
-Similar to $\centroiddual$, we show in Appendix~\ref{sec:appendix-nullspace} that the Hessian of $\jointdual$ is \emph{negative semi-definite}, so $\jointdual$ is jointly concave in the shifts and weights, and the joint problem is again an \emph{unconstrained concave maximization}.
+Similar to $\centroiddual$, the Hessian of $\jointdual$ is \emph{negative semi-definite}, so $\jointdual$ is jointly concave in the shifts and weights, and the joint problem is again an \emph{unconstrained concave maximization} (Appendix~\ref{sec:appendix-nullspace}).
 Unlike $\centroiddual$, the Hessian of $\jointdual$ always has a nontrivial null-space, since the free weights let each multiplier $\smash{(\shift_i, \weight_i)}$ move its lifted site freely in $\smash{\R^{d+1}}$ rather than pivot about $\smash{(\tcentroid_i, \gamma_i)}$.
-Every infinitesimal homothety of the shifted weighted sites is thus realized by the perturbations
+In particular, this null-space contains every infinitesimal homothety of the shifted weighted sites, \ie the first-order variation of \eqref{eq:lifted-homothety} about the identity.
+In terms of the multipliers, these infinitesimal homotheties are the perturbations
 \begin{equation}
   \delta\shift_i = \mu\,\dual_i + \translation , \qquad \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr \tcentroid_i - c ,
   \label{eq:joint-nullspace}
 \end{equation}
-for any $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$, which form the infinitesimal version of the redundancy of the triplets $\smash{(\qq_i, \shift_i, \weight_i)}$ of \citet[Lemma~1]{Memari2012PrimalDual}.
-Their weight update vanishes exactly under \eqref{eq:centroid-kernel}, recovering the Hessian null-space of $\centroiddual$, and for $\mu \!=\! 0$ and $\translation \!=\! 0$ it reduces to the additive constant spanning the Hessian null-space of \eqref{eq:newton-step}.
-These $d \!+\! 2$ modes always lie in the null-space and span it unless the graph dual to the diagram can be disconnected by removing a single cell, in which case each resulting part contributes additional combinatorial modes (Appendix~\ref{sec:appendix-nullspace}).
+for any $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$.
+These perturbations reproduce  the infinitesimal version of the redundancy of the triplets $\smash{(\qq_i, \shift_i, \weight_i)}$ derived by \citet[Lemma~1]{Memari2012PrimalDual}.
+Note that the weight updates vanish exactly under \eqref{eq:centroid-kernel}, thus recovering the Hessian null-space of $\centroiddual$ and, for $\mu \!=\! 0$ and $\translation \!=\! 0$, they reduce to the constant spanning the Hessian null-space of $\dualenergy$.
+These $d \!+\! 2$ modes span the entire null-space unless the graph dual to the diagram can be disconnected by removing a single cell, in which case each resulting part contributes additional combinatorial modes (Appendix~\ref{sec:appendix-nullspace}).
 Since all null-space modes leave the cells unchanged, the maximizing multipliers, when they exist, generate a \emph{single} power diagram.
 
 \subsection{Softened Centroid Constraints}
@@ -239,19 +241,16 @@ Likewise, the Hessian of \eqref{eq:regularized-dual} keeps the weight--weight an
 This extra term makes the Hessian of $\jointdual_\alpha$ strictly negative along any perturbation with a nonzero shift component, which removes the translation and dilation modes of \eqref{eq:joint-nullspace}.
 The remaining perturbations change only the weights, along which the Hessian reduces to the volume Laplacian \eqref{eq:newton-step} of the shifted sites, so the null-space consists only of the additive constant on the weights.
 Consequently, $\jointdual_{\alpha}$ is concave for any $\alpha \!>\! 0$ and admits a unique maximizer for {any} target centroids.
-% 
-However, its optimal partition is a power diagram only if the generators $\smash{\dual}$ remain pairwise distinct.
-Setting \eqref{eq:regularized-gradient-shift} to zero, the optimal shifts are $\smash{\shift_i = \alpha\,(\tcentroid_i - \centroid_i)}$, so they satisfy $\smash{\norm{\shift_i} \!\le\! \alpha \operatorname{diam}(\domain)}$ when the targets $\tcentroid$ are within the convex hull of $\domain$.
-By the triangle inequality, the generators then verify 
-$\smash{
-\norm{\dual_i \!-\! \dual_j} 
-% \ge \norm{\qq_i - \qq_j} - \norm{\shift_i} - \norm{\shift_j} 
-\ge \norm{\qq_i \!-\! \qq_j} \!-\! 2\alpha \operatorname{diam}(\domain)
-}$, so they remain pairwise distinct, and thus the maximizer realizes a power diagram, whenever the closest pair of sites is separated by more than $\smash{2\alpha \operatorname{diam}(\domain)}$, \ie
+
+While the maximizer of $\jointdual_\alpha$ always exists, the resulting partition is a power diagram only if its generators $\smash{\dual}$ remain pairwise distinct.
+% We derive next a bound on $\alpha$ that ensures distinct generators.
+To this end, we derive in Appendix~\ref{sec:appendix-softened-bound} an upper bound on $\alpha$ that guarantees distinct generators, namely
 \begin{equation}
-  \alpha < \frac{\min_{i \neq j} \norm{\qq_i - \qq_j}}{2 \operatorname{diam}(\domain)} .
+  \alpha < \min_{i \neq j} \frac{\norm{\qq_i - \qq_j}}{\resid\,\bigl(1/\pvol_i + 1/\pvol_j\bigr)^{1/2}} ,
   \label{eq:regularized-distinct}
 \end{equation}
+where $\smash{\resid^2 = \sum_i \pvol_i \norm{\centroid^0_i - \tcentroid_i}^2}$ is the residual between the prescribed centroids $\tcentroid$ and the centroids $\smash{\centroid^0}$ obtained by the power diagram that maximizes $\dualenergy$ in \eqref{eq:volume-dual} with sites $\qq$ and prescribed volumes $\pvol$.
+% This bound is a conservative estimate sufficient to keep generators apart without depending on the size of the domain.
 
 Moreover, observe that, at the maximizer, \eqref{eq:regularized-primal-cons} forces $\smash{\slack_i = \centroid_i \!-\! \tcentroid_i}$, and the optimal shifts follow from \eqref{eq:regularized-gradient-shift} as $\smash{\shift_i = \alpha\,(\tcentroid_i \!-\! \centroid_i)}$.
 The penalty in \eqref{eq:regularized-primal-obj} is thus the volume-weighted least-squares centroid residual $\smash{\alpha \sum_i \pvol_i \norm{\centroid_i - \tcentroid_i}^2}$, which resembles the residual of \citet{Bourne2025Inverting}, except that they weighted each cell by $\smash{\pvol_i^2}$ instead of $\pvol_i$.
