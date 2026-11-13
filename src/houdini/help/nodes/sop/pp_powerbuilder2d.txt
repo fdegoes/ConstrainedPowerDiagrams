@@ -1,0 +1,50 @@
+#type: node
+#context: sop
+#internal: pp_powerbuilder2d
+#tags: power diagram laguerre voronoi weighted shifted cells 2d
+
+"""Builds the power diagram of shifted weighted points, clipped to a 2D triangle domain, with one polygon per cell."""
+
+Each point `i` of the first input is a site `q_i` (its position `P`) with an optional weight `w_i` and shift `u_i`. The cells are those of the power diagram of the generators `p_i = q_i + u_i` with weights `w_i`: a point `x` of the domain belongs to the cell `i` that minimizes `|x - p_i|^2 - w_i`. Only the in-plane part of the shift is used.
+
+Each non-empty cell becomes one closed polygon on its own points, so points shared by neighbouring cells are duplicated. Cells are assumed to be a single piece without holes. A cell that the domain splits into several pieces, or that wraps around a hole, makes the cook fail; use [PP Power Diagram|Node:sop/pp_powerdiagram] for such domains.
+
+@inputs
+    Points:
+        Points with positions `P` (the sites `q`), and optional point attributes for the weights `w` (float) and shifts `u` (vector).
+
+    Domain:
+        Triangles in the chosen plane. Same requirements as [PP Power Diagram|Node:sop/pp_powerdiagram]: conforming, welded, and no zero-area triangles. Build it from polygons with [PP Triangulate 2D|Node:sop/pp_triangulate2d].
+
+@outputs
+    Cells:
+        One polygon per non-empty cell, counter-clockwise, in the plane at the average height of the domain, with:
+        - `cell` (primitive, int): the index of the input point;
+        - the volume attribute (primitive, float): the area of the cell;
+        - the centroid attribute (primitive, vector): the centroid of the cell;
+        - `nb_empty_cells` (detail, int): the number of points without a cell.
+
+@parameters
+    Plane:
+        #id: plane
+        Plane holding the domain and the points.
+
+    Weight Attribute:
+        #id: weightattrib
+        Float point attribute with the weights `w`. If it is empty or missing, the weights are 0.
+
+    Shift Attribute:
+        #id: shiftattrib
+        Vector point attribute with the shifts `u`. If it is empty or missing, the shifts are 0.
+
+    Volume Attribute:
+        #id: volumeattrib
+        Name of the primitive attribute receiving the area of each cell. Empty to skip it.
+
+    Centroid Attribute:
+        #id: centroidattrib
+        Name of the primitive attribute receiving the centroid of each cell. Empty to skip it.
+
+@related
+    - [Node:sop/pp_powerdiagram]
+    - [Node:sop/pp_triangulate2d]

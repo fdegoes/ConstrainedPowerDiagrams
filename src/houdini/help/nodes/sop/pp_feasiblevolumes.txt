@@ -1,0 +1,54 @@
+#type: node
+#context: sop
+#internal: pp_feasiblevolumes
+#tags: power diagram feasibility volume centroid maximum entropy
+
+"""Computes volume fractions for the points that are consistent with the points being the cell centroids of a partition of the domain."""
+
+Cells that tile the domain must satisfy two conservation identities. The sum of their volumes is the domain volume, and the volume-weighted sum of their centroids is the domain volume times the domain centroid. This node takes the input points as the target centroids and finds fractions `f_i > 0` with `sum f_i = 1` and `sum f_i P_i = c_D`. Here `c_D` is the domain centroid.
+
+Of all such fractions, it returns the maximum-entropy one. Like maximum-entropy coordinates, it minimizes `sum f_i log f_i` under these constraints. The solve is a small convex problem in `d + 1` unknowns, done with Newton's method on the dual: `min_y sum_i exp(-y . l_i) + y . l_D`, with `l_i = [P_i, 1]`.
+
+Fractions exist exactly when the domain centroid lies inside the convex hull of the points. Otherwise the node reports an error.
+
+The output attribute can be used directly as the targets of [PP Power Diagram Solver|Node:sop/pp_powerdiagramsolver].
+
+@inputs
+    Sites:
+        Points used as the target cell centroids. In 2D they are projected onto the chosen plane.
+
+    Clipping Domain:
+        2D: triangles in the chosen plane. 3D: tetrahedra. Only the domain's centroid and volume are used.
+
+@outputs
+    Sites:
+        The input points, with these attributes added:
+        - the output attribute (point, float): the volume fractions;
+        - `domain_volume` (detail, float).
+
+@parameters
+    == Main ==
+
+    Mode:
+        #id: mode
+        2D: the domain is a triangle mesh in one of the axis planes. 3D: the domain is a tet mesh.
+
+    Plane:
+        #id: plane
+        (2D only) Plane holding the domain and the points.
+
+    Output Attribute:
+        #id: outattrib
+        Float point attribute where the fractions are written.
+
+    == Newton Solver ==
+
+    Tolerance:
+        #id: tolerance
+        Converged when the conservation identities hold to this tolerance, measured relative to the size of the points' bounding box.
+
+    Max Iterations, Regularization, Max Step Halvings, Print Iterations:
+        Damped Newton with a backtracking line search, as in [PP Power Diagram Solver|Node:sop/pp_powerdiagramsolver].
+
+@related
+    - [Node:sop/pp_powerdiagramsolver]

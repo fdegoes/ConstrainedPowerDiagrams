@@ -1,0 +1,29 @@
+#type: node
+#context: sop
+#internal: pp_triangulate2d
+#tags: triangulate delaunay constrained 2d domain
+
+"""Triangulates the planar region bounded by closed polygons. The result is the 2D domain for PP Power Diagram."""
+
+Builds a constrained Delaunay triangulation (geogram's CDT2d) of the region bounded by the input polygons, in an axis-aligned plane. The triangles use only the polygon points; no points are added.
+
+Each polygon is one boundary loop. A point is inside the region when a ray from it crosses the loops an odd number of times (even-odd rule). So a loop inside another loop is a hole, a loop inside that hole is an island, and separate loops give separate pieces. Polygon winding doesn't matter.
+
+@inputs
+    Boundary Polygons:
+        Closed polygons lying in the chosen plane. Points are projected onto the plane. Requirements (not checked):
+        - Loops must not cross each other or themselves.
+        - No zero-length edges, and don't repeat the first point at the end.
+        - Points shared by several loops are merged.
+
+@outputs
+    Triangles:
+        Welded triangles, wound counter-clockwise when seen from the plane's positive normal axis, at the input's average height along that normal. Input attributes aren't carried over.
+
+@parameters
+    Plane:
+        #id: plane
+        Plane holding the polygons: XY, YZ or ZX. Use the same plane in PP Power Diagram.
+
+@related
+    - [Node:sop/pp_powerdiagram]

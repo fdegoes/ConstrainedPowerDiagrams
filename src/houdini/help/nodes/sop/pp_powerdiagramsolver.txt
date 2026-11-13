@@ -1,0 +1,87 @@
+#type: node
+#context: sop
+#internal: pp_powerdiagramsolver
+#tags: power diagram solver weights volume optimal transport newton
+
+"""Solves for the power-diagram weights that give every cell its prescribed volume inside the clipping domain."""
+
+Finds the weights of the power diagram of the input points whose cells, clipped to the domain, meet the chosen constraint.
+
+*Volume*: each point has a target volume fraction, and the fractions sum to 1. The target cell volume is that fraction times the total area (2D) or volume (3D) of the domain. The weights maximize the concave dual energy of the volume-constrained problem, using Newton's method. The gradient is the volume mismatch, `target - V_i`. The Hessian is the power diagram's Laplacian, `A_ij / (2 |q_i - q_j|)`.
+
+Sites are `P + u`, using the optional shift attribute. The solver works with the effective weight `w + |u|^2` and writes back `w`. Feeding the output to [PP Power Diagram|Node:sop/pp_powerdiagram] with the same shift attribute reproduces the solved cells.
+
+A typical network:
+
+    sites --> PP Feasible Volumes --> PP Power Diagram Solver --> PP Power Diagram
+    domain (PP Triangulate 2D / PP Tetrahedralize) --> second input of each node
+
+@inputs
+    Sites:
+        Points with a float target fraction attribute, plus optional initial weights `w` and shifts `u`.
+
+    Clipping Domain:
+        2D: triangles in the chosen plane. 3D: tetrahedra. Same requirements as [PP Power Diagram|Node:sop/pp_powerdiagram]: conforming, welded, and no zero-size elements.
+
+@outputs
+    Sites:
+        The input points, with these attributes added:
+        - the output weight attribute: the solved weights `w`;
+        - `cell_volume` (point, float): the achieved volume fraction;
+        - `solver_status` (detail, string), `solver_iterations` (detail, int), `solver_converged` (detail, int) and `solver_max_volume_error` (detail, float): the largest `|V_i - target| / target`.
+
+@parameters
+    == Main ==
+
+    Mode:
+        #id: mode
+        2D: the domain is a triangle mesh in one of the axis planes. 3D: the domain is a tet mesh.
+
+    Plane:
+        #id: plane
+        (2D only) Plane holding the domain and the sites.
+
+    Constraint:
+        #id: constraint
+        Which property of the cells to prescribe. Only __Volume__ is available for now.
+
+    Target Volume Attribute:
+        #id: targetattrib
+        Float point attribute with the target volume fractions. They must be positive, and should sum to 1; if they don't, they are normalized with a warning.
+
+    Initial Weight Attribute:
+        #id: weightattrib
+        Float point attribute with the starting weights. If it is empty or missing, the solve starts from 0.
+
+    Shift Attribute:
+        #id: shiftattrib
+        Vector point attribute with the shifts `u`. If it is empty or missing, the shifts are 0.
+
+    Output Weight Attribute:
+        #id: outweightattrib
+        Float point attribute where the solved weights are written.
+
+    == Newton Solver ==
+
+    Volume Tolerance:
+        #id: volumetolerance
+        Converged when every `|V_i - target|` is at most this times the target volume `target` of the cell.
+
+    Max Iterations:
+        #id: maxiterations
+
+    Regularization:
+        #id: regularization
+        Each Newton step solves `(-H + eps M) p = g`, where `eps` is this value and `M` the target volumes. The Hessian is only semi-definite (adding the same constant to every weight changes nothing), so this small shift makes it factorizable. If the factorization still fails, the solve stops with "factorization failed".
+
+    Max Step Halvings:
+        #id: maxhalvings
+        Most halvings of the backtracking line search per iteration. A step is accepted when no cell is empty and the energy increases. When the limit is hit, the solve stops.
+
+    Print Iterations:
+        #id: verbose
+        Prints one line per Newton iteration to the console.
+
+@related
+    - [Node:sop/pp_feasiblevolumes]
+    - [Node:sop/pp_powerdiagram]

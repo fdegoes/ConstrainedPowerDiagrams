@@ -1,0 +1,39 @@
+#type: node
+#context: sop
+#internal: pp_tetrahedralize
+#tags: tetrahedralize tetgen tet mesh volume domain
+
+"""Fills the volume inside a closed triangulated surface with tetrahedra. The result is the 3D domain for PP Power Diagram."""
+
+Fills the volume bounded by the surface with tetrahedra, using TetGen through geogram's `mesh_tetrahedralize`. The tets follow the input surface exactly: every surface triangle is a face of a tet.
+
+The volume is everything the surface encloses, so a closed shell inside another one becomes a cavity. Triangle winding is ignored. Output tets always have positive volume.
+
+@inputs
+    Closed Triangulated Surface:
+        Triangles only (use a Divide SOP). When __Preprocess Surface__ is off, the surface must also be (not checked):
+        - welded, so neighboring triangles share points (use a Fuse SOP);
+        - closed and manifold: every edge is shared by exactly two triangles;
+        - free of self-intersections and zero-area triangles.
+
+        It may be non-convex, have several pieces, or enclose cavities.
+
+@outputs
+    Tetrahedra:
+        Tetrahedron primitives on welded points. Unless the surface was preprocessed, the input points come first, in their original order. With __Refine__ on, the points TetGen adds come after them. Input attributes aren't carried over.
+
+@parameters
+    Preprocess Surface:
+        #id: preprocess
+        Tries to repair the surface first: merges duplicate points, fills small holes, resolves self-intersections and keeps only the outer boundary. Point positions and numbers can change.
+
+    Refine:
+        #id: refine
+        Adds points inside the volume to improve tet quality. When off, the tets only use the surface points.
+
+    Quality:
+        #id: quality
+        (Refine only) Target radius-edge ratio, usually between 1 and 2. Lower values give better-shaped tets, and more of them.
+
+@related
+    - [Node:sop/pp_powerdiagram]

@@ -1,0 +1,67 @@
+#type: node
+#context: sop
+#internal: pp_powerdiagram
+#tags: power diagram voronoi laguerre clip
+
+"""Computes the power diagram of weighted points, clipped to a triangle mesh (2D) or a tet mesh (3D)."""
+
+Each input point `i` defines a site `P + u` with weight `w + |u|^2`. `w` (float) and `u` (vector) are optional point attributes that default to 0. The cell of site `i` is the set of domain points `x` where the power distance `|x - (P + u)|^2 - (w + |u|^2)` is smallest.
+
+The diagram is computed with geogram's restricted Voronoi diagram. Each triangle (2D) or tet (3D) of the domain is cut by the power cells, and the pieces of each cell are glued together across shared edges or faces. The clipping is exact. The domain can be non-convex, so a cell can break into several pieces. A cell can also be empty, when its site is outside the domain or hidden by heavier neighbors.
+
+@inputs
+    Sites:
+        Points `P`, with optional float weight and vector shift attributes. Only point positions and attributes are used.
+
+    Clipping Domain:
+        A simplicial mesh of the domain. It must meet the requirements below. They are *not* checked: input that doesn't meet them gives a wrong output.
+
+        2D mode: triangle polygons in the chosen plane, for example from [PP Triangulate 2D|Node:sop/pp_triangulate2d].
+        - Conforming: two triangles either don't touch, or share a whole edge or point. No T-junctions and no overlaps.
+        - Welded: neighboring triangles share points.
+        - No zero-area triangles.
+        - Winding doesn't matter. The domain may be non-convex, have holes, or have several pieces.
+
+        3D mode: tetrahedron primitives, for example from [PP Tetrahedralize|Node:sop/pp_tetrahedralize] or Tet Conform. Other primitives are ignored.
+        - Conforming: two tets either don't touch, or share a whole face, edge or point. No T-junctions and no overlaps.
+        - Welded: neighboring tets share points.
+        - No zero-volume tets.
+        - Tet orientation doesn't matter (inverted tets are flipped internally). The domain may be non-convex, have cavities, or have several pieces.
+
+@outputs
+    Cells:
+        Closed polygons. Each cell has its own points, so neighboring cells don't share points.
+        - 2D: one polygon per boundary loop of each cell. Outer boundaries are wound counter-clockwise when seen from the plane's positive normal axis. Boundaries around a hole inside a cell are wound clockwise. The output sits at the domain's average height along the normal.
+        - 3D: the boundary faces of each cell, with outward normals.
+
+@attributes
+    cell (primitive, int):
+        Number of the input point whose cell this polygon belongs to.
+
+    nb_empty_cells (detail, int):
+        Number of input points with an empty cell.
+
+@parameters
+    Mode:
+        #id: mode
+        2D: the second input is a triangle mesh in one of the axis planes. 3D: the second input is a tet mesh.
+
+    Plane:
+        #id: plane
+        (2D only) Plane holding the domain and the sites: XY, YZ or ZX. Points are projected onto it.
+
+    Weight Attribute:
+        #id: weightattrib
+        Name of the float point attribute holding the weights. If it is empty or missing, all weights are 0.
+
+    Shift Attribute:
+        #id: shiftattrib
+        Name of the vector point attribute holding the shifts. If it is empty or missing, all shifts are 0. In 2D only the in-plane part of the shift is used.
+
+    Boundary Merge Angle:
+        #id: boundaryangle
+        (3D only) At 0 (the default), the domain boundary stays exact: a cell's boundary faces are the clipped boundary faces of the tets. Above 0, neighboring boundary faces of a cell are merged into one flat polygon wherever their normals differ by less than this angle (degrees). That gives fewer polygons but flattens curved domains. On domains with cavities it was measured to give wrong volumes.
+
+@related
+    - [Node:sop/pp_triangulate2d]
+    - [Node:sop/pp_tetrahedralize]

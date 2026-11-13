@@ -1,0 +1,10 @@
+[submodule "external/geogram"]
+	path = external/geogram
+	url = https://github.com/BrunoLevy/geogram.git
+[submodule "external/bourne/Laguerre-Polycrystalline-Microstructures"]
+	path = external/bourne/Laguerre-Polycrystalline-Microstructures
+	url = https://github.com/DPBourne/Laguerre-Polycrystalline-Microstructures.git
+[submodule "external/bourne/Laguerre-fitting"]
+	path = external/bourne/Laguerre-fitting
+	url = https://github.com/andnatale/Laguerre-fitting.git
+	ignore = dirty
