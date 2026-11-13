@@ -1,0 +1,6 @@
+# Python packages of the benchmarks (external/bourne/.venv, made by
+# benchmarks/setup_bourne.sh), at the versions of the macOS environment.
+# pysdot 0.2.39 is built from source by the setup script.
+numpy==2.5.4
+scipy==1.18.1
+matplotlib==3.11.2

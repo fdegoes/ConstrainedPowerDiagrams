@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -14,6 +14,8 @@
+     extra_compile_args.append("-Wno-missing-braces")
+     # extra_compile_args.append("-march=nocona")
+     extra_compile_args.append("-ffast-math")
++    # Boost < 1.81 with recent libc++ (no std::unary_function).
++    extra_compile_args.append("-DBOOST_NO_CXX98_FUNCTION_BASE")
+ if 'linux' in sys.platform:
+     # extra_compile_args.append("-march=nocona")
+     extra_compile_args.append("-ffast-math")
