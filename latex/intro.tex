@@ -3,5 +3,48 @@
 \begin{document}
 
 \section{Introduction}
+\label{sec:intro}
+
+Power diagrams partition space into convex cells, one per weighted site, and have found many applications across computer graphics and computational science \cite{Aurenhammer1987PowerDiagrams}.
+In geometry processing, they underlie sampling and meshing techniques, such as blue noise distributions \cite{deGoes2012BlueNoise}, centroidal tessellations with capacity constraints \cite{Xin2016CentroidalPower}, and anisotropic polyhedral meshes \cite{Budninskiy2016OVT}.
+They also provide the discrete solutions of semi-discrete optimal transport \cite{Aurenhammer1998Minkowski}, now computed for hundreds of millions of points in applications ranging from fluid simulation to cosmology \cite{Levy2015Numerical, Nikakhtar2023Biased, Levy2025LargeScale}, and they are a standard model of the grains of polycrystalline materials \cite{Lyckegaard2011Laguerre, Quey2018Optimal}.
+Among these applications, fluid simulation has seen a particularly active line of work.
+The Power Particles method \cite{deGoes2015PowerParticles} discretizes an incompressible fluid as a moving power diagram whose cells are fluid parcels, an idea later extended to Lagrangian schemes for the Euler equations \cite{Gallouet2018Lagrangian}, free surfaces \cite{Levy2022PartialOT, PlateauHolleville2026MorePower}, hybrid particle-grid transfers \cite{Qu2022PowerPIC}, and inelastic flows \cite{Qu2023PowerPlastics}, and recently surveyed in a dedicated tutorial \cite{PlateauHolleville2026Tutorial}.
+
+A key feature of power diagrams is that their weights offer a precise control over the volumes of the cells.
+For fixed sites, the weights that realize prescribed volumes are the maximizer of a concave function, whose gradient is the volume residual and whose Hessian is a sparse Laplacian assembled from the facets of the diagram \cite{Aurenhammer1998Minkowski}.
+Volume-constrained power diagrams can thus be computed efficiently by quasi-Newton and Newton methods \cite{Levy2015Numerical, Levy2025LargeScale}, which makes them the workhorse of the applications above: in Power Particles, for instance, fixing the volume of every parcel enforces incompressibility exactly.
+
+More recently, there has been a growing interest in also prescribing the \emph{centroids} of the cells.
+In materials science, the volumes and centroids of the grains are measured by X-ray diffraction or extracted from grain maps, and reconstructing the microstructure amounts to finding a power diagram whose cells have these volumes and centroids \cite{Petrich2019Reconstruction, Spettl2016Fitting, Alpers2023GrainMaps, Bourne2025Inverting}.
+In fluid simulation, the centroids of the cells drive the motion of the particles and keep them evenly spaced \cite{deGoes2015PowerParticles, Gallouet2018Lagrangian}.
+However, existing tools for controlling centroids remain limited.
+Lloyd-type iterations \cite{Lloyd1982Quantization, Liu2009CVT}, also combined with volume constraints \cite{deGoes2012BlueNoise, Xin2016CentroidalPower}, only drive the centroids towards the sites, rather than to arbitrary targets, and converge slowly.
+For the inverse problem with arbitrary targets, \citet{Bourne2025Inverting} minimize a centroid residual over the sites, which is non-convex and must be preceded by a full volume solve at every evaluation, so that only local solutions are found.
+\citet{Bourne2026ConvexOrder} recast this problem as a convex projection of dilated targets, which also fits measured data, but solve it by first-order iterations, again with a full volume solve per iteration, which converge slowly and only reach the targets up to an error that decreases with the dilation factor.
+Moreover, none of these approaches handles centroid constraints without volume constraints, nor does it provide second-order convergence.
+Similarly, the use of centroids in Power Particles is a prescribed advection step rather than the outcome of a variational principle.
+
+In this paper, we show that prescribing centroids is as tractable as prescribing volumes.
+Starting from the transport cost of a partition, we enforce the centroid constraints with Lagrange multipliers that shift the sites, so that every partition minimizing the resulting Lagrangian is again a power diagram, now of shifted sites.
+The constrained problem then becomes the unconstrained maximization of a concave dual function of these shifts, whose gradient is the centroid residual, and whose maximizer yields a unique power diagram whenever one exists.
+This formulation applies to centroid constraints alone, with the weights fixed, and extends to volume and centroid constraints jointly by treating the weights as additional multipliers.
+For targets that no power diagram realizes, we soften the centroid constraints with a quadratic penalty, which preserves the concavity of the problem and always admits a unique maximizer, whose cells best fit the targets.
+We derive the first and second derivatives of these objectives in closed form, which leads to a Newton solver that recovers power diagrams from their volumes and centroids to machine precision in a few tens of iterations, including on reducible diagrams, for which the generators are not determined by the cells.
+
+As our main application, we revisit Power Particles.
+Instead of attaching each fluid parcel to the site of its cell and advecting the sites from the centroids, we place each particle exactly at the centroid of its cell, and derive its motion from a Lagrangian whose potential is the quantization error of the partition with prescribed volumes and with centroids at the particles.
+This potential is the maximum of our joint objective with both the sites and the targets set to the particles, so that its gradient, which acts as the pressure force, is given in closed form by the maximizing shifts.
+Since the particles must remain the centroids of a power diagram with the prescribed volumes, the resulting system is subject to a holonomic constraint, which we integrate with a variational scheme of the SHAKE family, whose constraint force reduces to a single concave maximization.
+We also propose a penalty-based integrator that relaxes this constraint through our softened objective, so that each time step only requires an unconstrained concave maximization, and which generalizes the Lagrangian scheme of \citet{Gallouet2018Lagrangian}.
+Both integrators keep the volumes exact at every step, and their equilibria are centroidal power diagrams.
+
+In summary, the technical contributions of our work are:
+\begin{itemize}
+  \item A formulation of power diagrams with prescribed centroids, alone or jointly with prescribed volumes, as the unconstrained maximization of a concave function, together with a softened variant that handles unrealizable targets (\S\ref{sec:contributions}).
+  \item Closed-form gradients and Hessians of these objectives, from which we devise a robust Newton solver, with regularizations and step rules tailored to close generator pairs (\S\ref{sec:implementation}).
+  \item A complete characterization of the null-spaces of their Hessians, which reduce to the homotheties of the generators unless the diagram is reducible, in which case we identify the additional modes (Appendix~\ref{sec:appendix-nullspace}).
+  \item A variational reformulation of Power Particles, which places each particle at the centroid of its cell and derives the pressure forces from our joint objective, with a constrained integrator of the SHAKE family and a penalty-based integrator that generalizes \citet{Gallouet2018Lagrangian} (\S\ref{sec:flow}).
+\end{itemize}
 
 \end{document}

@@ -11,7 +11,12 @@
 We summarize the time steps of the constrained (\S\ref{sec:flow-constrained}) and penalty-based (\S\ref{sec:flow-penalty}) integrators, together with the Newton solves they rely on.
 The Newton solves of $\jointdual$ and $\jointdual_\alpha$ (Algorithms~\ref{alg:flow-constrained-newton} and~\ref{alg:newton}) take Levenberg--Marquardt steps (Algorithm~\ref{alg:lm-step}), while the solve of $\dualenergy$ (Algorithm~\ref{alg:volume}) backtracks the Newton step via the line search of Algorithm~\ref{alg:line-search}.
 Both rebuild the power diagram at every trial step.
-In all of them, the negated Hessian is assembled and regularized by Algorithm~\ref{alg:hessian-reg}, as described in \S\ref{sec:results-implementation}, and the solves stop under the test \eqref{eq:results-termination}.
+In all of them, the negated Hessian is assembled and regularized by Algorithm~\ref{alg:hessian-reg}, as described in \S\ref{sec:implementation}, and the solves stop under the test \eqref{eq:results-termination}.
+The constrained integrator also needs the cut cells and branches of the dual graph at every time step, which Algorithm~\ref{alg:cut-cells} finds by a single depth-first search \cite{Hopcroft1973Algorithm} in $O(n + m)$ time, with $m$ the number of dual edges.
+Each visited cell records its discovery time and its low point, \ie the earliest discovery time reachable from its subtree through one edge that does not belong to the search tree.
+A cell $u$ then cuts off the subtree of its child $v$ exactly when no such edge leaves this subtree above $u$, \ie when $l_v \geq t_u$, and every such pair $(u, v)$ closes one block, whose branch is the subtree of $v$.
+At the root of each component, the branches of all its children are recorded too, but the dilations of all of them about the root amount to a homothety of the component, so we drop one of them, which leaves the $b \!-\! 1$ branches of \S\ref{sec:flow-dynamics} for a connected dual graph.
+We discard the facets of round-off measure, \eg the zero-length facets that split a vertex shared by four cells, with the threshold $\epsilon$ set to $10^{-9}$ times the mean measure of the facets, and implement the search iteratively to avoid deep recursions on large diagrams.
 
 \begin{algorithm}[H]
   \caption{Time step of the constrained integrator (\S\ref{sec:flow-constrained}).}
@@ -21,8 +26,9 @@ In all of them, the negated Hessian is assembled and regularized by Algorithm~\r
     \State $\pred^{k+1} \gets (1 + \tstep^2)\,\qq^k + \tstep\,\vel^k$ \Comment{\eqref{eq:flow-shake-step-pred}}
     \State $\weight^0 \gets \operatorname{arg\,max}_{\weight} \dualenergy(\weight)$ for the sites $\qq^k$ \Comment{\eqref{eq:volume-dual}}
     \Statex \hspace{\algorithmicindent} by Alg.~\ref{alg:volume}, warm-started from $\combweight^k$
-    \State $(\shift, \weight, s, \translation) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $\weight^0$
-    \State $\qq^{k+1} \gets \pred^{k+1} - s\,\dual^k - \translation$ \Comment{\eqref{eq:flow-shake-step-corr}}
+    \State $(c_B, \branch_B)_B \gets$ Alg.~\ref{alg:cut-cells} on the power diagram of $\dual^k$ \Comment{cut cells and branches}
+    \State $(\shift, \weight, s, \translation, \{s_B\}_B) \gets$ Alg.~\ref{alg:flow-constrained-newton} with $\qq^k$, $\pred^{k+1}$, $\dual^k$, $(c_B, \branch_B)_B$, $\weight^0$
+    \State $\qq^{k+1}_i \gets \pred^{k+1}_i - s\,\dual^k_i - \translation - \sum_{\branch_B \ni \cell_i} s_B\,(\dual^k_i - \dual^k_{c_B})$ \Comment{\eqref{eq:flow-shake-step-corr}}
     \State $\vel^{k+1} \gets (\qq^{k+1} - \qq^k) / \tstep$
     \State $\dual^{k+1} \gets \qq^k + \shift$ \Comment{\eqref{eq:shifted-site-pos}}
     \State $\combweight^{k+1} \gets \weight + \norm{\shift}^2 + 2\,\shift\tr (\qq^k - \pred^{k+1})$ \Comment{\eqref{eq:shifted-site-weight}}
@@ -34,22 +40,51 @@ In all of them, the negated Hessian is assembled and regularized by Algorithm~\r
   \caption{Bordered Newton solve of \eqref{eq:flow-line-constraint} (Appendix~\ref{sec:appendix-bordered}).}
   \label{alg:flow-constrained-newton}
   \begin{algorithmic}[1]
-    \Require \algwrap{sites $\qq$, targets $\tcentroid$, direction $\dual^k$, initial weights $\weight^0$, volumes $\pvol$, tolerances $\tau_\weight, \tau_\shift$}
-    \State build the constraint matrix $\Cmat = [\mathbf{a}, \mathbf{b}_1, \dots, \mathbf{b}_d]\tr$ \Comment{\eqref{eq:appendix-constraint-matrix}}
+    \Require \algwrap{sites $\qq$, targets $\tcentroid$, direction $\dual^k$, cut cells and branches $(c_B, \branch_B)_B$, initial weights $\weight^0$, volumes $\pvol$, tolerances $\tau_\weight, \tau_\shift$}
+    \State build the constraint matrix $\Cmat$ \Comment{\eqref{eq:appendix-constraint-matrix}}
     \State $\mathbf{z} = (\shift, \weight) \gets (0, \weight^0)$, $\mu \gets 10^{-3}$
     \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}$ \Comment{\eqref{eq:shifted-site}}
     \Loop
       \State $\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i \gets \nabla\jointdual(\mathbf{z})$ \Comment{\eqref{eq:joint-gradient}}
       \State $r_\shift \gets \max_i \norm{\mathbf{g}^\shift_i} / (2\pvol_i^{(d+1)/d})$ \Comment{shift residual}
-      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\sigma = \min(1, r_\shift / r^0_\shift)$ and $\beta$
-      \State solve for $\mathbf{z}_0$, $\mathbf{z}_a$, $\mathbf{z}_{b_j}$ \Comment{\eqref{eq:flow-constrained-elimination-solve}}
-      \State solve for the gauge $(s, \translation)$ \Comment{\eqref{eq:flow-constrained-elimination-gauge}}
-      \State $\mathbf{r} = (\mathbf{r}^\shift_i, r^\weight_i)_i \gets \mathbf{g} - 2 \Cmat\tr (s, \translation)$ \Comment{\eqref{eq:flow-constrained-newton}}
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\theta = \min(1, r_\shift / r^0_\shift)$ and $\beta$
+      \State solve for $\mathbf{z}_0$ and $\mathbf{Z}$ \Comment{\eqref{eq:flow-constrained-elimination-solve}}
+      \State solve for the gauge $(s, \translation, \{s_B\}_B)$ \Comment{\eqref{eq:flow-constrained-elimination-gauge}}
+      \State $\mathbf{r} = (\mathbf{r}^\shift_i, r^\weight_i)_i \gets \mathbf{g} - 2 \Cmat\tr (s, \translation, \{s_B\}_B)$ \Comment{\eqref{eq:flow-constrained-newton}}
       \If{$\mathbf{r}$ passes the test \eqref{eq:results-termination}} \Comment{in place of $\nabla\jointdual$}
-        \State \Return $(\shift, \weight)$ and the gauge $(s, \translation)$
+        \State \Return $(\shift, \weight)$ and the gauge $(s, \translation, \{s_B\}_B)$
       \EndIf
       \State $(\mathbf{z}, \mu) \gets$ Alg.~\ref{alg:lm-step} with $\mathbf{z}$, $\mathbf{g}$, $\Nmat$, $\mu$, $\Cmat$, and $\alpha = \infty$
     \EndLoop
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Cut cells and branches of the dual graph (\S\ref{sec:flow-dynamics}).}
+  \label{alg:cut-cells}
+  \begin{algorithmic}[1]
+    \Require \algwrap{power diagram with facets $\face_{ij}$ of measure $A_{ij}$ and generators $\dual_i$}
+    \State $E \gets \{(i,j) : A_{ij} > \epsilon \text{ and } \dual_i \neq \dual_j\}$ \Comment{dual edges}
+    \State $t \gets 0$, $\mathcal{S} \gets \emptyset$, all cells unvisited
+    \For{every unvisited cell $r$} \Comment{root of a component}
+      \State \Call{Visit}{$r$}
+      \State remove from $\mathcal{S}$ one branch whose cut cell is $r$ \Comment{redundant}
+    \EndFor
+    \State \Return the cut cells and branches $(c_B, \branch_B)_B = \mathcal{S}$
+    \Statex
+    \Function{Visit}{$u$} \Comment{depth-first search}
+      \State $t_u \gets t$, $l_u \gets t$, $t \gets t + 1$ \Comment{discovery time, low point}
+      \For{every neighbor $v$ of $u$ in $E$}
+        \If{$v$ is unvisited}
+          \State $\mathrm{parent}(v) \gets u$, \Call{Visit}{$v$}, $l_u \gets \min(l_u, l_v)$
+          \If{$l_v \geq t_u$} \Comment{$u$ cuts off the subtree of $v$}
+            \State add $(u, \text{cells of the subtree of } v)$ to $\mathcal{S}$
+          \EndIf
+        \ElsIf{$v \neq \mathrm{parent}(u)$}
+          \State $l_u \gets \min(l_u, t_v)$ \Comment{back edge}
+        \EndIf
+      \EndFor
+    \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
@@ -82,7 +117,7 @@ In all of them, the negated Hessian is assembled and regularized by Algorithm~\r
       \If{$\mathbf{g}$ passes the test \eqref{eq:results-termination}}
         \State \Return $(\shift, \weight)$
       \EndIf
-      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\sigma = \min(1, r_\shift / r^0_\shift)$ and $\beta$
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\mathbf{z}$ with $\theta = \min(1, r_\shift / r^0_\shift)$ and $\beta$
       \State $(\mathbf{z}, \mu) \gets$ Alg.~\ref{alg:lm-step} with $\mathbf{z}$, $\mathbf{g}$, $\Nmat$, $\mu$, and $\alpha$
     \EndLoop
   \end{algorithmic}
@@ -95,7 +130,7 @@ In all of them, the negated Hessian is assembled and regularized by Algorithm~\r
     \Require \algwrap{multipliers $\mathbf{z}$, gradient $\mathbf{g}$, matrix $\Nmat$, damping $\mu$, constraints $\Cmat$ (optional), stiffness $\alpha$}
     \State $\mathrm{D} \gets \mathrm{diag}(\Nmat)$
     \For{$k = 1, 2, \dots$} \Comment{trials}
-      \State solve $(\Nmat + \mu\,\mathrm{D})\,\delta\mathbf{z} = \mathbf{g}$, subject to $\Cmat\,\delta\mathbf{z} = 0$ \Comment{\eqref{eq:results-lm-step}, \eqref{eq:flow-constrained-elimination-update}}
+      \State solve $(\Nmat + \mu\,\mathrm{D})\,\delta\mathbf{z} = \mathbf{g}$, subject to $\Cmat\,\delta\mathbf{z} = 0$ \Comment{\S\ref{sec:implementation}, \eqref{eq:flow-constrained-elimination-update}}
       \State $\mathbf{z}' \gets \mathbf{z} + \delta\mathbf{z}$
       \State build the power diagram of the sites $\qq$ shifted by $\mathbf{z}'$ \Comment{\eqref{eq:shifted-site}}
       \State $\varrho \gets \bigl(\jointdual_\alpha(\mathbf{z}') - \jointdual_\alpha(\mathbf{z})\bigr) / \bigl(\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}\bigr)$ \Comment{gain ratio}
@@ -108,14 +143,14 @@ In all of them, the negated Hessian is assembled and regularized by Algorithm~\r
 \end{algorithm}
 
 \begin{algorithm}[H]
-  \caption{Regularized negated Hessian of $\jointdual_\alpha$, $\jointdual$, or $\dualenergy$ (\S\ref{sec:results-implementation}).}
+  \caption{Regularized negated Hessian of $\jointdual_\alpha$, $\jointdual$, or $\dualenergy$ (\S\ref{sec:implementation}).}
   \label{alg:hessian-reg}
   \begin{algorithmic}[1]
-    \Require \algwrap{power diagram at $\mathbf{z}$, volumes $\pvol$, activity $\sigma \in [0, 1]$, radius ratio $\beta$}
+    \Require \algwrap{power diagram at $\mathbf{z}$, volumes $\pvol$, activity $\theta \in [0, 1]$, radius ratio $\beta$}
     \State $\bar{r} \gets (\lvert\domain\rvert / n)^{1/d}$, $\hreg \gets 10^{-3}$ \Comment{average cell size}
     \State $\Nmat \gets -\nabla^2\jointdual_\alpha(\mathbf{z})$, with $\norm{\dual_i - \dual_j} \ge \hreg\,\bar{r}$ \Comment{\eqref{eq:appendix-blocks-off}, \eqref{eq:appendix-blocks-diag}}
     \State $\mathrm{B}_i \gets \Nmat_{\shift_i\shift_i}$ for all $i$ \Comment{before the pair terms}
-    \State $R \gets \beta\,\sigma\,\bar{r}$ \Comment{pair radius}
+    \State $R \gets \beta\,\theta\,\bar{r}$ \Comment{pair radius}
     \ForAll{facets $\face_{ij}$ with $d_{ij} = \norm{\dual_j - \dual_i} < R$}
       \State $\mathbf{e} \gets (\dual_j - \dual_i) / d_{ij}$
       \State $\rho^{\max}_{ij} \gets 2 \max(\mathbf{e}\tr\mathrm{B}_i\,\mathbf{e},\, \mathbf{e}\tr\mathrm{B}_j\,\mathbf{e})$
@@ -129,7 +164,7 @@ In all of them, the negated Hessian is assembled and regularized by Algorithm~\r
 \end{algorithm}
 
 Without shifts, as for $\dualenergy$, there is no pair term and only the weight regularization applies.
-The callers set the activity $\sigma$ to the ratio of the current shift residual $r_\shift$ to its value $r^0_\shift$ at the first iteration, capped at one, so that the pair term fades out as the solve converges, and the radius ratio to $\beta \!=\! 0.3$.
+The callers set the activity $\theta$ to the ratio of the current shift residual $r_\shift$ to its value $r^0_\shift$ at the first iteration, capped at one, so that the pair term fades out as the solve converges, and the radius ratio to $\beta \!=\! 0.3$.
 If Algorithm~\ref{alg:newton} or~\ref{alg:flow-constrained-newton} stops without converging, after $100$ iterations or when Algorithm~\ref{alg:lm-step} rejects $60$ trials in a row, it restarts from its initial multipliers with $\beta$ doubled, up to three times.
 When the predicted increase in Algorithm~\ref{alg:lm-step} is below the round-off of $\jointdual_\alpha$, a trial is accepted instead if it decreases the residual without decreasing $\jointdual_\alpha$ beyond round-off.
 
@@ -145,7 +180,7 @@ When the predicted increase in Algorithm~\ref{alg:lm-step} is below the round-of
       \If{$\max_i \lvert g_i \rvert / \pvol_i \le \tau_\weight$} \Comment{\eqref{eq:results-termination}}
         \State \Return $\weight$
       \EndIf
-      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\weight$ with $\sigma = 0$
+      \State $\Nmat \gets$ Alg.~\ref{alg:hessian-reg} at $\weight$ with $\theta = 0$
       \State solve $\Nmat\,\delta\weight = \mathbf{g}$
       \State $\weight \gets$ Alg.~\ref{alg:line-search} with $\weight$ and $\delta\weight$
     \EndLoop

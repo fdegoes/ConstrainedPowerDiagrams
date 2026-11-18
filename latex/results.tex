@@ -5,58 +5,6 @@
 \section{Results}
 \label{sec:results}
 
-\subsection{Implementation Details}
-\label{sec:results-implementation}
-
-We implemented our method in C++, using Eigen \cite{Eigen} for linear algebra and the supernodal sparse Cholesky factorization of Apple's Accelerate framework \cite{Accelerate} for the Newton's step solves.
-To compute the power diagrams, we made use of the \emph{Geogram} library\cite{Geogram}, which builds the regular triangulation of the weighted sites and clips their cells against a simplicial mesh of $\domain$ (triangles in 2D, tetrahedra in 3D) based on the restricted Voronoi diagram algorithm \cite{Yan2009RVD}.
-The same traversal integrates the volumes, centroids, and facet moments needed by the gradient \eqref{eq:joint-gradient} and the Hessian \eqref{eq:joint-hessian}.
-These integrals are computed in parallel with standard C++ threads over a partition of the mesh of $\domain$, while the factorization runs on a single thread.
-
-We maximize a chosen objective, either $\jointdual$ in \eqref{eq:joint-gradient} or $\jointdual_\alpha$ in \eqref{eq:regularized-gradient-shift}, with Newton's method (Algorithm~\ref{alg:newton}), whose steps are damped as in the Levenberg--Marquardt method \cite[\S10.3]{Nocedal2006} (Algorithm~\ref{alg:lm-step}).
-To do so, we denote the gradient vector by $\smash{\mathbf{g} = (\mathbf{g}^\shift_i, g^\weight_i)_i}$ and its negated Hessian matrix by $\Nmat$.
-Stacking the shifts and weights into $\smash{\mathbf{z} = (\shift, \weight)}$, each damped Newton step solves
-\begin{equation}
-  (\Nmat + \mu \operatorname{diag}\Nmat)\,\delta\mathbf{z} = \mathbf{g} ,
-  \label{eq:results-lm-step}
-\end{equation}
-where the damping $\mu$ follows the standard update of \citet{Nielsen1999Damping} with its defaults.
-More concretely, we start with $\smash{\mu \!=\! 10^{-3}}$ and measure each step by the gain ratio $\varrho$ between the actual increase of the objective versus the increase $\smash{\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}}$ predicted by its quadratic model.
-A step is accepted if $\varrho > 10^{-4}$ and no cell is empty, in which case $\mu$ is multiplied by $\smash{\max\bigl({1}/{3}, 1 - (2\varrho - 1)^3\bigr)}$, so that it decreases by up to a factor $3$ when the model is accurate.
-Otherwise, the step is rejected and recomputed with a larger damping, where the $k$-th consecutive rejection multiplies $\mu$ by $2^k$, so that $\mu$ grows quickly when the model is poor.
-
-A key component of our implementation is the assembly of $\Nmat$ (Algorithm~\ref{alg:hessian-reg}).
-To ensure that $\Nmat$ is positive definite, we incorporated two regularization strategies that modify $\Nmat$ but not $\mathbf{g}$, so they change the path of the iterates but not the maximizer.
-In the following, we set the parameter $\hreg \!=\! 10^{-3}$ and refer to the size of each cell as $\smash{r_i = \pvol_i^{1/d}}$ and, similarly, $\smash{\bar{r} = (\lvert\domain\rvert / n)^{1/d}}$ for the average volume.
-The first regularization term adds $\smash{\hreg\,\pvol_i\,r_i^2}$ to the diagonal shift entries and $\smash{\hreg\,\pvol_i}$ to the diagonal weight entries of each site $i$.
-% 
-To prevent two neighboring generators to collapse onto each other, we include another regularization to $\Nmat$ that stiffens it along the separation of every close pair.
-For each facet $\face_{ij}$, let $\smash{d_{ij} = \norm{\dual_j - \dual_i}}$ and $\smash{\mathbf{e}_{ij} = (\dual_j - \dual_i) / d_{ij}}$.
-We then add the rank-one term $\smash{\rho_{ij}\,\mathbf{e}_{ij}\mathbf{e}_{ij}\tr}$ to the shift--shift diagonal blocks of both $i$ and $j$, which shortens the component of the shift update (and thus of each generator) along $\mathbf{e}_{ij}$, while leaving its tangential motion and all other sites unchanged.
-% The term is added to the diagonal blocks only, not as a spring coupling $i$ and $j$, so it damps the motion of each generator along $\mathbf{e}_{ij}$, and hence also their common translation in that direction.
-We set its stiffness to
-\begin{equation}
-  \rho_{ij} = \rho^{\max}_{ij} \Bigl(1 - \frac{d_{ij}}{R}\Bigr)^{4}
-  \quad \text{for } d_{ij} < R , \qquad
-  \rho_{ij} = 0 \quad \text{otherwise} ,
-  \label{eq:results-pair-reg}
-\end{equation}
-which only affects pairs closer than the radius $R$, rising steeply towards $\smash{\rho^{\max}_{ij}}$ as the pair merges.
-We set the maximum stiffness of each pair from the curvature of its own two sites along the pair, \ie $\smash{\rho^{\max}_{ij} = 2 \max(\mathbf{e}_{ij}\tr \Nmat_{ii}\, \mathbf{e}_{ij},\, \mathbf{e}_{ij}\tr \Nmat_{jj}\, \mathbf{e}_{ij})}$, where $\Nmat_{ii}$ is the shift--shift diagonal block of the negated Hessian for site $i$.
-% The pair term is thus measured against the very stiffness it competes with, which does not depend on the choice of axes and adapts to anisotropic blocks, since a long shared facet makes a site stiff across the facet but soft along it, and it scales automatically with the domain, the number of cells, and their volumes.
-The radius starts at $R \!=\! 0.3\,\bar{r}$ and shrinks in proportion to the shift residual as the solve converges.
-This pairing term thus acts at a fraction of the cell size during the first iterations, and fades out near convergence, so that it does not slow down the final Newton iterations.
-
-To terminate our Newton solves, we adopted a max-norm criterion that verifies if every cell meets both its volume and its centroid constraint to a relative tolerance, \ie when the gradient verifies
-\begin{equation}
-  \max_i \frac{\lvert g^\weight_i \rvert}{\pvol_i} \le \tau
-  \quad\text{and}\quad
-  \max_i \frac{\norm{\mathbf{g}^\shift_i}}{2\,\pvol_i^{(d+1)/d}} \le \tau .
-  \label{eq:results-termination}
-\end{equation}
-By \eqref{eq:joint-gradient}, the first residual is the relative volume error $\smash{\lvert \cellvol_i - \pvol_i \rvert / \pvol_i}$ and the second equals $\smash{(\cellvol_i / \pvol_i)\,\norm{\tcentroid_i - \centroid_i} / r_i}$, so $\tau$ bounds the centroid error of each cell invariant to the scale of $\domain$.
-% We set $\tau_\weight \!=\! \tau_\shift \!=\! 10^{-8}$ in all examples, except within the time steps of the integrators of \S\ref{sec:flow}, where we use $\tau_\weight \!=\! \tau_\shift \!=\! 10^{-4}$.
-
 \subsection{Reconstructing Power Diagrams}
 \label{sec:results-inverse}
 
@@ -82,6 +30,12 @@ The generators are placed by dart throwing with a minimum distance of $\rho\,h$ 
 The volumes are either equal, which requires nonzero weights that grow with the noise, or the volumes of the Voronoi cells of the generators, which vary across cells while the weights vanish (Fig.~\ref{fig:synthetic-gallery}).
 We generate $20$ sizes from $n \!=\! 10$ to $n \!=\! 10^4$, spaced logarithmically, with five random seeds per configuration, for $600$ cases in total, and start every solve from the sites $\qq \!=\! \tcentroid$.
 For data that are not realizable, we use the examples of \citet{Bourne2025Inverting} with perturbed centroids, and the EBSD map of a single-phase steel with $n \!=\! 243$ grains in a $252.25\,\mu\mathrm{m}$ square used in both of their works, which was provided to them by Tata Steel and is distributed with their code \cite{Bourne2025Inverting, Bourne2026ConvexOrder}.
+
+\paragraph{Choice of $\alpha$}
+On data that are not realizable, we maximize $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the bound \eqref{eq:regularized-distinct} and at $0.99$ times the estimate \eqref{eq:regularized-practical}, and at the value $\alpha \!=\! 9$ chosen by \citet{Bourne2026ConvexOrder} for the EBSD map, and we run their Frank--Wolfe iterations at the same values through $t \!=\! 1 + \alpha$.
+To test the estimate \eqref{eq:regularized-practical}, we perturbed the targets of synthetic cases with $n \!=\! 127$ and $n \!=\! 1129$ cells in 2D and 3D, either over all cells or on a single cell, and increased $\alpha$ until the solve failed or two generators met.
+Over these $38$ cases and the $3$ approximate cases of \citet{Bourne2025Inverting}, the generators remained distinct up to at least $1.5$ times the estimate, which exceeded the bound by a factor of about $2$ when the perturbation was on a single cell, of about $5$ to $7$ for all cells with $n \!=\! 127$, and of $13$ to $20$ with $n \!=\! 1129$.
+On the EBSD map, the estimate is $0.94$, $62$ times the bound, while $\alpha \!=\! 9$ exceeds it tenfold.
 
 \paragraph{Fixed weights}
 The synthetic benchmark also tests whether the volumes need to be unknowns at all.

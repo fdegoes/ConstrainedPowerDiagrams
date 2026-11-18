@@ -5,7 +5,7 @@
 \section{Feasible Volumes for Prescribed Centroids}
 \label{sec:appendix-maxent}
 
-In the centroid-only problem of \S\ref{sec:centroid-constraints}, the volumes are unknown, and the conservation identities \eqref{eq:partition-feasibility} are satisfiable only if there exist non-negative volumes $\cellvol_i$ with $\smash{\sum_i \cellvol_i \tcentroid_i = \domainVol\,\centroid_\domain}$ and $\smash{\sum_i \cellvol_i = \domainVol}$.
+In the centroid-only problem of \S\ref{sec:centroid-constraints}, the volumes are unknown, so the prescribed centroids $\tcentroid$ are only feasible if some positive volumes satisfy the conservation identities \eqref{eq:partition-feasibility} with them.
 Drawing inspiration from \citet{Hormann2008MaxEnt}, one way to recover such volumes is to solve
 \begin{subequations}
   \label{eq:maxent-feasibility}

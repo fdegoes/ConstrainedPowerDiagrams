@@ -1,0 +1,62 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Implementation}
+\label{sec:implementation}
+
+We implemented our method in C++, using \lib{Eigen} \cite{Eigen} for linear algebra and the sparse Cholesky factorization of \lib{CHOLMOD} \cite{Chen2008CHOLMOD} for the Newton step solves.
+% 
+To compute the power diagrams, we build the regular triangulation of the shifted weighted sites $(\dual,\lambda)$ with the \lib{Geogram} library \cite{Geogram}, from which we construct each power cell in two subsequent steps.
+First, we compute a conservative estimate of each cell $\cell_i$ as the convex polytope produced by clipping a bounding box of $\domain$ with the power half-spaces of the neighboring generators.
+Second, we clip each cell independently against the simplices of a mesh of $\domain$ (triangles in 2D, tetrahedra in 3D) whose bounding boxes overlap its own.
+Unlike \citet{Yan2009RVD}, which intersect the cells with the mesh by propagating across adjacent simplices and neighboring cells, our clipping needs no propagation over the domain mesh, so that it clips every piece of a cell exactly once, while still supporting non-convex domains.
+The clipped cells give the volumes, centroids, and facet moments needed by the gradient \eqref{eq:joint-gradient} and the Hessian \eqref{eq:joint-hessian}, computed in parallel over the cells with standard C++ threads, while the factorization runs on a single thread.
+
+We maximize a chosen objective, either $\jointdual$ in \eqref{eq:joint-gradient} or $\jointdual_\alpha$ in \eqref{eq:regularized-gradient-shift}, with Newton's method (Algorithm~\ref{alg:newton}), whose steps are damped as in the Levenberg--Marquardt method \cite[\S10.3]{Nocedal2006} (Algorithm~\ref{alg:lm-step}).
+To do so, we denote the gradient vector by $\smash{\mathbf{g} \!=\! (\mathbf{g}^\shift_i, g^\weight_i)_i}$ and its negated Hessian matrix by $\Nmat$.
+Stacking the shifts and weights into $\smash{\mathbf{z} \!=\! (\shift, \weight)}$, each damped Newton step solves $(\Nmat + \mu \operatorname{diag}\Nmat)\,\delta\mathbf{z} \!=\! \mathbf{g}$, where the damping $\mu$ follows the standard update of \citet{Nielsen1999Damping} with its defaults.
+More concretely, we start with $\smash{\mu \!=\! 10^{-3}}$ and measure each step by the gain ratio $\varrho$ between the actual increase of the objective versus the increase $\smash{\mathbf{g}\tr\delta\mathbf{z} - \tfrac{1}{2}\,\delta\mathbf{z}\tr\Nmat\,\delta\mathbf{z}}$ predicted by its quadratic model.
+A step is accepted if $\varrho > 10^{-4}$ and no cell is empty, in which case $\mu$ is multiplied by $\smash{\max\bigl({1}/{3}, 1 - (2\varrho - 1)^3\bigr)}$, so that it decreases by up to a factor $3$ when the model is accurate.
+Otherwise, the step is rejected and recomputed with a larger damping, where the $k$-th consecutive rejection multiplies $\mu$ by $2^k$, so that $\mu$ grows quickly when the model is poor.
+
+To terminate our Newton solves, we adopted a max-norm criterion that verifies if every cell meets both its volume and its centroid constraint to a relative tolerance, \ie when the residuals of the gradient verify
+\begin{equation}
+  \varepsilon_\weight = \max_i \frac{\lvert g^\weight_i \rvert}{\pvol_i} \le \tau
+  \quad\text{and}\quad
+  \varepsilon_\shift = \max_i \frac{\norm{\mathbf{g}^\shift_i}}{2\,\pvol_i^{(d+1)/d}} \le \tau .
+  \label{eq:results-termination}
+\end{equation}
+By \eqref{eq:joint-gradient}, the volume residual $\varepsilon_\weight$ is the largest relative volume error $\smash{\lvert \cellvol_i - \pvol_i \rvert / \pvol_i}$, and the shift residual $\varepsilon_\shift$ is the largest centroid error $\norm{\tcentroid_i - \centroid_i}$ relative to the cell size $\smash{r_i = \pvol_i^{1/d}}$ and scaled by $\cellvol_i / \pvol_i$, so $\tau$ bounds the centroid error of each cell invariant to the scale of $\domain$.
+% We set $\tau_\weight \!=\! \tau_\shift \!=\! 10^{-8}$ in all examples, except within the time steps of the integrators of \S\ref{sec:flow}, where we use $\tau_\weight \!=\! \tau_\shift \!=\! 10^{-4}$.
+
+The robustness of these Newton iterations hinges on the assembly of the sparse matrix $\Nmat$, since the Hessian of $\jointdual$ is only negative semi-definite and degrades as neighboring generators approach each other.
+ % the facet coefficients of $\Nmat$ then grow, its quadratic model becomes unreliable, and the generators may merge, so that the cells no longer form a power diagram.
+We address these issues with three safeguards, namely a diagonal regularization of $\Nmat$, a pairing term in $\Nmat$ that shapes the direction of each step, and a truncation that bounds its length.
+The first two modify $\Nmat$ but not $\mathbf{g}$, while the third only shortens a step, so none of them changes the maximizer, only the path of the iterates.
+Algorithm~\ref{alg:hessian-reg} summarizes the assembly of $\Nmat$ with these extra terms.
+
+Using the cell sizes $r_i$ and their average $\smash{\bar{r} = (\lvert\domain\rvert / n)^{1/d}}$, the \emph{diagonal regularization} adds $\smash{\hreg\,\pvol_i\,r_i^2}$ to the diagonal shift entries and $\smash{\hreg\,\pvol_i}$ to the diagonal weight entries of each site $i$, with $\hreg \!=\! 10^{-3}$.
+% , and bounds the generator distances in the facet coefficients of $\Nmat$ below by $\hreg\,\bar{r}$.
+Unlike the damping $\mu \operatorname{diag}\Nmat$, which fades as $\mu$ decreases, this term keeps $\Nmat$ positive definite along the null-space modes of $\jointdual$.
+% 
+The \emph{pairing term} acts on the dual edges, with $\smash{d_{ij} = \norm{\dual_j - \dual_i}}$ and $\smash{\mathbf{e}_{ij} = (\dual_j - \dual_i) / d_{ij}}$ for each facet $\face_{ij}$.
+It adds $\smash{\rho_{ij}\,\mathbf{e}_{ij}\mathbf{e}_{ij}\tr}$ to the shift--shift diagonal blocks of both $i$ and $j$, which shortens the component of their updates along $\mathbf{e}_{ij}$, while leaving their tangential motion and all other sites unchanged, with the stiffness
+\begin{equation}
+  \rho_{ij} = \rho^{\max}_{ij} \Bigl(1 - \frac{d_{ij}}{R}\Bigr)^{4}
+  \quad \text{for } d_{ij} < R , \qquad
+  \rho_{ij} = 0 \quad \text{otherwise} ,
+  \label{eq:results-pair-reg}
+\end{equation}
+whose $\smash{\rho^{\max}_{ij} = 2 \max(\mathbf{e}_{ij}\tr \Nmat_{ii}\, \mathbf{e}_{ij},\, \mathbf{e}_{ij}\tr \Nmat_{jj}\, \mathbf{e}_{ij})}$ matches the curvature of the two sites along the pair, with $\Nmat_{ii}$ the shift--shift diagonal block of site $i$.
+At every iteration, we set the radius to $\smash{R = 1.2\,\bar{r}\,\min(1, \varepsilon_\shift / \varepsilon^0_\shift)}$, where $\varepsilon^0_\shift$ is the shift residual at the first iteration, so that this term acts at about the cell size during the first iterations and fades out as the solve converges.
+% 
+The \emph{truncation} bounds how much a step shrinks a dual edge by measuring the stretch
+$\smash{s_{ij}(t) = (\dual_j - \dual_i)\tr\mathbf{e}_{ij} / d_{ij}}$
+for each dual edge $ij$
+evaluated at the generators of $\smash{\mathbf{z} + t\,\delta\mathbf{z}}$ as a function of the step $t$.
+We then shorten each step to the largest $t \!\le\! 1$ for which every $s_{ij}(t) \!\ge\! 1/2$, akin to the fraction-to-the-boundary rule of interior-point methods \cite{Nocedal2006}.
+
+% Finally, if a solve does not converge within its iteration limit ($100$ iterations), or no step is accepted, we restart it from its initial multipliers with $R$ doubled, up to three times, and keep the converged attempt or, if none converges, the one with the smallest residual. The restart goes back to the initial multipliers rather than continuing from the last iterate with a larger $R$, since the pairing term mostly acts on the early iterations, which decide whether close generators approach each other, while the last iterate of a failed attempt is typically one where no step can be accepted.
+
+\end{document}

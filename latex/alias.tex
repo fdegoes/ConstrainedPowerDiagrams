@@ -13,6 +13,8 @@
 \newcommand{\weight}{w}                      % weight
 \newcommand{\cell}{\mathcal{V}}              % cell
 \newcommand{\face}{\mathcal{A}}              % facet shared by two cells, \face_{ij}
+\newcommand{\branch}{\mathcal{B}}            % branch of a cut cell: the set of cells of one part of the dual graph without it, excluding the cut cell
+\newcommand{\blockset}{\mathcal{S}}          % blocks whose branch contains a cell, \blockset_i (found by Alg. alg:cut-cells)
 \newcommand{\volume}{\mathrm{vol}}           % volume operator, e.g. \volume(\cell_i)
 \newcommand{\cellvol}{V}  % volume of a cell, V (index added in text)
 \newcommand{\domainVol}{V_{\domain}}         % total domain volume
@@ -21,6 +23,7 @@
 \newcommand{\domainCentroid}{\centroid_{\domain}} % centroid of the domain
 \newcommand{\tcentroid}{\overline{\centroid}} % prescribed / target centroid, \tcentroid_i
 \newcommand{\lift}{\boldsymbol{\ell}}        % homogeneous lift (\tcentroid_i, 1), max-entropy feasibility
+\newcommand{\form}{\boldsymbol{\omega}}     % vector-valued 1-form on the dual graph, \form_{ij} = \kappa_{ij}(\dual_j - \dual_i); scalar part \omega_{ij}
 \newcommand{\shift}{\mathbf{u}}              % centroid multiplier ("shift"), \shift_i
 \newcommand{\bweight}{\overline{\weight}}  % reference weights of the softened volume constraints (sec 4.4), \bweight_i
 \newcommand{\combweight}{\lambda}            % combined dual weight of a shifted site, \combweight_i
@@ -83,3 +86,10 @@
 \newcommand{\flux}{\mathbf{f}}               % boundary vector area of a cell, \flux_i = \sum_f \area_{if} \nrm_f
 \newcommand{\nrm}{\mathbf{n}}                % outward unit normal of a boundary face, \nrm_f
 \newcommand{\foot}{\mathbf{m}}               % orthogonal foot of a reference centroid on a boundary face, \foot_{if}
+
+% Range of sub-equations with the parent number once, e.g. \subeqrange{eq:flow-line-constraint-trans}{d} -> (38b--d);
+% the last letter is typed by hand
+\newcommand{\subeqrange}[2]{\hyperref[#1]{(\ref*{#1}--#2)}}
+
+% Software libraries, e.g. \lib{Eigen}
+\newcommand{\lib}[1]{\textsf{#1}}

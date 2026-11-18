@@ -2,57 +2,17 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
-\section{Concavity and Null-Spaces of $\jointdual$ and $\centroiddual$}
+\section{Null-Spaces of $\jointdual$ and $\centroiddual$}
 \label{sec:appendix-nullspace}
 
-The Hessians of $\centroiddual$ and $\jointdual$ derived in Appendices~\ref{sec:appendix-centroid} and~\ref{sec:appendix-joint}, respectively, share the same facet-based structure, from which we derive their concavity and their null-spaces.
-We treat $\jointdual$ first and then $\centroiddual$, which corresponds to the special case of fixed weights.
-% 
-For conciseness, we stack the two multipliers of a site into $\mult_i = [\shift_i, \weight_i] \in \R^{d+1}$.
-We then define the affine field
-\begin{equation}
-  \psi_i(\xx) = 2\,\shift_i\tr (\xx - \tcentroid_i) + \weight_i = \mult_i\tr \phi_i(\xx) ,
-  \qquad
-  \phi_i(\xx) = \begin{bmatrix} 2(\xx - \tcentroid_i) \\ 1 \end{bmatrix} ,
-  \label{eq:appendix-potential}
-\end{equation}
-through which $\mult_i$ enters the shifted power distance, since, by \eqref{eq:complete-square}, we have $\smash{\norm{\xx \!-\! \qq_i}^2 \!-\! \psi_i(\xx) \!=\! \norm{\xx \!-\! \dual_i}^2 \!-\! \combweight_i}$.
-Given that $\psi_i$ is linear in $\mult_i$, a perturbation $\delta\mult_i \!=\! [\delta\shift_i, \delta\weight_i]$ changes it by
-\begin{equation}
-  \delta\psi_i(\xx) = \delta\mult_i\tr \phi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i) + \delta\weight_i.
-  \label{eq:appendix-dpsi}
-\end{equation}
-For $\centroiddual$, the weights are fixed, so $\delta\weight_i = 0$ and $\delta\psi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i)$.
+We now derive the null-space modes of the Hessian of $\jointdual$, followed by those of $\centroiddual$ as the modes that keep the weights fixed, since the Hessian of $\centroiddual$ is the restriction of the Hessian of $\jointdual$ to the shifts.
+ % from the quadratic form \eqref{eq:appendix-nsd} of Appendix~\ref{sec:appendix-concavity}, with the notation introduced there.
+These null-spaces always contain the \emph{global} homotheties defined by \eqref{eq:lifted-homothety}, which move all the generators of the diagram at once, and may also contain \emph{localized} homotheties, which move the generators of only a part of the power diagram without changing its cells.
+% For generators in general position, the localized homotheties arise only from the cut cells of the dual graph, while without general position, they may also arise from cycles of more than three dual edges.
 
-\paragraph{Hessian}
-With this notation, the Hessian blocks \eqref{eq:appendix-blocks-off}--\eqref{eq:appendix-blocks-diag} of $\jointdual$ are the entries of the facet-based Laplacian assembled from $\phi_i$:
-\begin{subequations}
-  \label{eq:appendix-block}
-  \begin{empheq}[left={\empheqlbrace\,}]{align}
-    \partial^2_{\mult_i \mult_j} \jointdual
-      &= \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_j(\xx)\tr \, dA,
-    \label{eq:appendix-block-off}
-    \\[2mm]
-    \partial^2_{\mult_i \mult_i} \jointdual
-      &= -\!\sum_{j \sim i} \frac{1}{2}\frac{1}{\norm{\dual_i - \dual_j}} \int_{\face_{ij}} \phi_i(\xx)\, \phi_i(\xx)\tr \, dA,
-    \label{eq:appendix-block-diag}
-  \end{empheq}
-\end{subequations}
-whose shift--shift part is also the Hessian \eqref{eq:centroid-hessian} of $\centroiddual$.
+\subsection{Global Homotheties}
+\label{sec:appendix-nullspace-homothetic}
 
-\paragraph{Concavity}
-Contracting the Hessian with a perturbation $\delta\mult = \{\delta\mult_i\}$ and pairing the terms of each facet gives
-\begin{equation}
-  \delta\mult\tr \nabla^2 \jointdual \, \delta\mult
-    =
-    -\sum_{\{i,j\}}\!\! \frac{1}{2\,\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\!\! \bigl( \delta\psi_i(\xx) \!-\! \delta\psi_j(\xx) \bigr)^2 dA
-    \le 0 ,
-  \label{eq:appendix-nsd}
-\end{equation}
-where the sum runs over pairs of neighbors.
-Hence, $\nabla^2 \jointdual \preceq 0$, and restricting \eqref{eq:appendix-nsd} to $\delta\weight = 0$ gives $\nabla^2 \centroiddual \preceq 0$, so both duals are concave.
-
-\paragraph{Homothetic modes of $\jointdual$}
 Based on \eqref{eq:appendix-nsd}, the perturbations in \eqref{eq:appendix-dpsi} lie in the null-space of the Hessian of $\jointdual$ if and only if
 \begin{equation}
   \delta\psi_i(\xx) = \delta\psi_j(\xx) \quad \forall \xx \in \face_{ij}, \ \forall i \sim j .
@@ -66,24 +26,24 @@ The cell $\cell_i$ in \eqref{eq:power-cell} can then be rewritten as every point
   a_i(\xx) = 2\,\dual_i\tr\xx - \height_i = 2\,\qq_i\tr\xx - \norm{\qq_i}^2 + \psi_i(\xx).
   \label{eq:appendix-affine}
 \end{equation}
-Since the sites $\qq_i$ are fixed, the function $a_i(\xx)$ in \eqref{eq:appendix-affine} depends linearly on $\mult_i$ through $\psi_i$, so any perturbation $\delta\mult$ changes $a_i(\xx)$ exactly by $\smash{\delta a_i(\xx) \!=\! \delta\psi_i(\xx)}$.
-Geometrically, condition \eqref{eq:appendix-null-condition} requires the perturbations $\delta\psi_i$ and $\delta\psi_j$ of every pair of neighboring cells to agree on their shared facet $\face_{ij}$, and hence on the $(d\!-\!1)$-dimensional hyperplane spanned by it.
+Since the sites $\qq_i$ are fixed, the function $a_i(\xx)$ in \eqref{eq:appendix-affine} depends linearly on $\mult_i$ through $\psi_i(\xx)$, so any perturbation $\delta\mult$ changes $a_i(\xx)$ exactly by $\smash{\delta a_i(\xx) \!=\! \delta\psi_i(\xx)}$.
+Geometrically, condition \eqref{eq:appendix-null-condition} requires the perturbations $\delta\psi_i(\xx)$ and $\delta\psi_j(\xx)$ of every neighboring cells to agree on their shared facet $\face_{ij}$, and hence on the $(d\!-\!1)$-dimensional hyperplane spanned by it.
 % 
-Matching the linear and constant parts of $\delta a_i(\xx) = 2\,\delta\dual_i\tr\xx \!-\! \delta\height_i$ with \eqref{eq:appendix-dpsi}, the lifted generators move by
+Matching the linear and constant parts of $\delta a_i(\xx) \!=\! 2\,\delta\dual_i\tr\xx \!-\! \delta\height_i$ with \eqref{eq:appendix-dpsi}, the lifted generators move by
 \begin{equation}
   \delta\dual_i = \delta\shift_i ,
   \qquad
   \delta\height_i = 2\,\tcentroid_i\tr\delta\shift_i - \delta\weight_i .
   \label{eq:appendix-lifted-perturbation}
 \end{equation}
-% 
+ 
 Now recall from \eqref{eq:lifted-homothety} that a homothety maps every lifted generator to $\smash{s\,(\dual_i, \height_i) + (\translation, c)}$, with the same dilation $s \!>\! 0$ and offset $(\translation, c)$, and thus maps every affine function $a_i(\xx)$ to $\smash{s\,a_i(\xx) + 2\,\translation\tr\xx - c}$ without changing the cells.
 An \emph{infinitesimal homothety} is the first-order variation of these maps about the identity $(s, \translation, c) = (1, 0, 0)$.
 Writing $s \!=\! 1 + \mu$, each infinitesimal homothety takes the form
 \begin{equation*}
   \delta a_i(\xx) = \mu\,a_i(\xx) + 2\,\translation\tr\xx - c ,
 \end{equation*}
-which satisfies \eqref{eq:appendix-null-condition} since $\delta a_i(\xx) - \delta a_j(\xx) \!=\! \mu\,(a_i(\xx) \!-\! a_j(\xx))$, which vanishes on $\face_{ij}$.
+thus satisfying \eqref{eq:appendix-null-condition} since $\delta a_i(\xx) - \delta a_j(\xx) \!=\! \mu\,(a_i(\xx) \!-\! a_j(\xx))$, which vanishes on $\face_{ij}$.
 Matching the linear and constant parts, the lifted generators move by
 \begin{equation}
   \delta\dual_i = \mu\,\dual_i + \translation ,
@@ -91,121 +51,138 @@ Matching the linear and constant parts, the lifted generators move by
   \delta\height_i = \mu\,\height_i + c.
   \label{eq:infinitesimal-homothety}
 \end{equation}
-The corresponding multipliers follow from \eqref{eq:appendix-lifted-perturbation}, which gives $\delta\shift_i = \delta\dual_i$, and from \eqref{eq:appendix-dpsi}, whose shift term vanishes at $\tcentroid_i$, so that $\delta\weight_i = \delta\psi_i(\tcentroid_i) = \delta a_i(\tcentroid_i)$.
-Evaluating the infinitesimal homothety at $\tcentroid_i$ with $\smash{a_i(\tcentroid_i) = \gamma_i}$ then yields
+The corresponding shift perturbation follows from \eqref{eq:appendix-lifted-perturbation}, which gives $\delta\shift_i \!=\! \delta\dual_i$.
+From \eqref{eq:appendix-dpsi}, whose shift term vanishes at $\tcentroid_i$, we obtain the weight perturbation $\delta\weight_i \!=\! \delta\psi_i(\tcentroid_i) \!=\! \delta a_i(\tcentroid_i)$.
+Evaluating the infinitesimal homothety at $\tcentroid_i$ with $\smash{a_i(\tcentroid_i) = \gamma_i}$ from \eqref{eq:pivot} then yields
 \begin{equation}
   \delta\shift_i = \mu\,\dual_i + \translation ,
   \qquad
   \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i - c ,
   \label{eq:appendix-homothety-modes}
 \end{equation}
-which is the $(d\!+\!2)$-dimensional null-space in \eqref{eq:joint-nullspace}.
-% These modes are always present, because the free weights absorb the weight changes required by any homothety.
+which is the $(d+2)$-dimensional null-space in \eqref{eq:joint-nullspace}.
 
-\paragraph{Homothetic modes of $\centroiddual$}
-For $\centroiddual$, the weights are fixed, so a homothety is realizable only if $\delta\weight_i = 0$ for all $i$, \ie only if
+For $\centroiddual$, the weights are fixed, so each shift only tilts the lifted hyperplane of its site about the fixed \emph{pivot} $\smash{(\tcentroid_i, \gamma_i)}$, and a homothety is realizable only if $\delta\weight_i = 0$ for all $i$, \ie
 \begin{equation}
-  \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i - c = 0 \quad \forall i ,
-  \label{eq:appendix-centroid-kernel}
+  \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i - c = 0 \ \ \forall i
+  \label{eq:centroid-kernel}
 \end{equation}
-which recovers \eqref{eq:centroid-kernel}.
-Since the generators are distinct, every nontrivial solution of \eqref{eq:appendix-centroid-kernel} has $(\mu, \translation) \!\neq\! 0$ and hence a nonzero shift $\delta\shift_i \!=\! \mu\,\dual_i \!+\! \translation$.
-As a result, $\centroiddual$ has a nontrivial homothetic mode if and only if the vectors $\smash{(\gamma_i, \tcentroid_i, 1)}$ do not span $\R^{d+2}$.
+for some $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$.
+Since the generators are distinct, every nontrivial solution of \eqref{eq:centroid-kernel} has $(\mu, \translation) \!\neq\! 0$ and hence a nonzero shift $\delta\shift_i \!=\! \mu\,\dual_i \!+\! \translation$.
+As a result, $\centroiddual$ has a nontrivial homothetic mode if and only if the vectors $\smash{(\gamma_i, \tcentroid_i, 1)}$ do not span $\R^{d+2}$, \ie if and only if its pivots lie on a common hyperplane.
 % 
-Equivalently, the pivots $\smash{(\tcentroid_i, \gamma_i) \in \R^{d+1}}$ lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
+% Equivalently, the pivots $\smash{(\tcentroid_i, \gamma_i) \in \R^{d+1}}$ lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
 Since $n$ points in $\R^{d+1}$ always lie on a common hyperplane when $n \!\le\! d\!+\!1$, non-coplanar pivots require $n \!\ge\! d\!+\!2$.
 
-\paragraph{Combinatorial modes}
-It remains to discuss whether the homotheties are the only solutions of \eqref{eq:appendix-null-condition}.
+\subsection{Stretch Factors}
+\label{sec:appendix-nullspace-stretch}
+
+It remains to discuss whether the global homotheties are the only solutions of \eqref{eq:appendix-null-condition}.
 Since the supporting hyperplane of facet $\face_{ij}$ is the set of points $\xx$ with $a_i(\xx) \!=\! a_j(\xx)$, an affine function vanishes on $\face_{ij}$ if and only if it is a multiple of $a_i(\xx) \!-\! a_j(\xx)$.
 The condition in \eqref{eq:appendix-null-condition} is thus equivalent to
 \begin{equation}
   \delta a_j(\xx) - \delta a_i(\xx) = \kappa_{ij}\,(a_j(\xx) - a_i(\xx)) \quad \forall i \sim j ,
   \label{eq:appendix-kappa}
 \end{equation}
-for some scalars $\kappa_{ij} \!=\! \kappa_{ji}$, one per pair of neighbors.
+for a set of scalars $\kappa_{ij} \!=\! \kappa_{ji}$, one per pair of neighbors.
 In terms of the lifted generators $(\dual_i, \height_i)$, \eqref{eq:appendix-kappa} reads
 \begin{equation}
   (\delta\dual_j - \delta\dual_i,\, \delta\height_j - \delta\height_i) = \kappa_{ij}\,(\dual_j - \dual_i,\, \height_j - \height_i) ,
   \label{eq:appendix-lifted-edge}
 \end{equation}
 \ie a null-space perturbation may stretch each lifted edge but not rotate it.
-These edges connect neighboring generators and form the graph dual to the power diagram, and their projections $\dual_j - \dual_i$ are orthogonal to the facets $\face_{ij}$.
-In the following, we characterize the admissible stretch factors $\kappa_{ij}$, which identify the additional null-space modes arising from the combinatorics of the dual graph.
+Note that the vector part $\dual_j - \dual_i$ in \eqref{eq:appendix-lifted-edge} are the edges of the dual graph (\S\ref{sec:background}) with its nodes at the generators instead of the sites, which are orthogonal to the facets because each $\face_{ij}$ lies on the hyperplane of equal power distance to $(\dual_i, \combweight_i)$ and $(\dual_j, \combweight_j)$.
 
 \paragraph{Closed 1-forms}
-To this end, we build on \citet{deGoes2013Masonry}, who parametrized all orthogonal duals of a fixed 2D triangulation, \ie all power diagrams of fixed generators, by closed discrete 1-forms on its edges.
-Our setting is the reciprocal one, since the power diagram is fixed and we seek the perturbations of its generators, but both live on the same complex, the graph dual to the power diagram, whose elementary cycles link the cells that meet at a face of codimension two of the power diagram.
-We thus split \eqref{eq:appendix-lifted-edge} into its planar part, which defines the $d$-vector-valued discrete 1-form $\smash{\omega_{ij} = \kappa_{ij}\,(\dual_j - \dual_i)}$ on the dual graph, and its height part, which defines the scalar 1-form $\smash{\kappa_{ij}\,(\height_j - \height_i)}$.
-A choice of $\kappa$ is admissible if $\omega$ is \emph{closed}, \ie it sums to zero around every elementary cycle.
-Since we assumed a simply-connected domain $\domain$ in \S\ref{sec:background}, these elementary cycles generate all cycles of the dual graph, so no harmonic 1-forms exist and every closed $\omega$ is also \emph{exact}, \ie $\smash{\omega_{ij} = \delta\dual_j - \delta\dual_i}$, which determines $\delta\dual$ up to a common translation $\translation$.
-The height part then requires no additional condition.
-Since $\smash{a_i(\xx) = a_j(\xx)}$ on $\face_{ij}$, we have $\smash{\height_j - \height_i = 2\,(\dual_j - \dual_i)\tr\xx}$ for any point $\xx$ of the supporting hyperplane of $\face_{ij}$, and choosing $\xx$ on the face of codimension two shared by all the facets of an elementary cycle yields $\smash{\sum \kappa_{ij}\,(\height_j - \height_i) = 2\,\xx\tr \sum \omega_{ij} = 0}$ around it.
-Closedness of $\omega$ thus implies closedness of the height part, which integrates to $\delta\height$ up to a common offset $c$.
-This scalar 1-form is the counterpart of the 1-form of \citet{deGoes2013Masonry}, given by the weight differences $\smash{\combweight_j - \combweight_i}$ in our notation: by $\smash{\height_i = \norm{\dual_i}^2 - \combweight_i}$, the height part $\smash{\delta\height_j - \delta\height_i}$ differs from the variation $\smash{\delta\combweight_i - \delta\combweight_j}$ of their 1-form by the exact term $\smash{\delta\norm{\dual_j}^2 - \delta\norm{\dual_i}^2}$, and its closedness around an elementary cycle linearizes their condition that the facets of the cycle meet at a common point, which here holds by construction since the cells are fixed.
-The null-space of $\nabla^2\jointdual$ is thus parametrized by the scalars $\kappa_{ij}$ for which $\omega$ is closed, together with the $d+1$ offsets $(\translation, c)$, while the null-space of $\nabla^2\centroiddual$ is its subspace with $\delta\weight_i = \delta a_i(\tcentroid_i) = 0$.
+Every homothety \eqref{eq:infinitesimal-homothety} verifies \eqref{eq:appendix-lifted-edge} with the constant stretch factor $\kappa \!\equiv\! \mu$, since it scales all lifted edges alike.
+The dual graph may, however, admit non-constant stretch factors $\kappa_{ij}$ that verify \eqref{eq:appendix-lifted-edge}, which give additional null-space modes.
+Since the facets are fixed, the vector part of \eqref{eq:appendix-lifted-edge} states that these modes perturb the generators while keeping every dual edge orthogonal to its facet.
+% 
+This is the reciprocal of the setting of \citet{deGoes2013Masonry}, who parametrized all orthogonal duals of a fixed 2D triangulation (\ie all power diagrams of fixed generators) by closed discrete 1-forms on its edges.
+We thus characterize the solutions of \eqref{eq:appendix-lifted-edge} with the same tools, namely closed discrete 1-forms on the dual graph. % since both settings live on the graph dual to the power diagram.
+To this end, we split \eqref{eq:appendix-lifted-edge} into its vector part, which defines the $d$-vector-valued discrete 1-form $\smash{\form_{ij} = \kappa_{ij}\,(\dual_j - \dual_i)}$ on the dual graph, and its height part, which defines the scalar 1-form $\smash{\omega_{ij} = \kappa_{ij}\,(\height_j - \height_i)}$.
+The closedness of these 1-forms is measured on the \emph{elementary cycles} of the dual graph, which link the cells that meet at a face of codimension two of the power diagram (\eg the cells around a vertex in 2D, or around an edge in 3D).
+% 
+A choice of $\kappa$ is admissible if $\form$ is \emph{closed}, \ie it sums to zero around every elementary cycle.
+Since we assumed a simply-connected domain $\domain$ in \S\ref{sec:background}, these elementary cycles generate all cycles of the dual graph, so no harmonic 1-forms exist and every closed $\form$ is also \emph{exact}, \ie $\smash{\form_{ij} = \delta\dual_j - \delta\dual_i}$, which determines $\delta\dual$ up to a common translation $\translation$.
+Since $\smash{a_i(\xx) = a_j(\xx)}$ on $\face_{ij}$, we have $\smash{\height_j - \height_i = 2\,(\dual_j - \dual_i)\tr\xx}$ for any point $\xx$ of the supporting hyperplane of $\face_{ij}$, and choosing $\xx$ on the face of codimension two shared by all the facets of an elementary cycle yields $\smash{\sum \omega_{ij} = 2\,\xx\tr \sum \form_{ij} = 0}$ around it.
+% 
+Closedness of $\form$ thus implies closedness of $\omega$, which integrates to $\delta\height$ up to a common offset $c$.
+This scalar 1-form $\omega$ is the counterpart of the 1-form of \citet{deGoes2013Masonry}, given by the weight differences $\smash{\combweight_j - \combweight_i}$.
+Every perturbation in the null-space of $\jointdual$ is thus obtained by choosing $\kappa$ such that $\form$ is closed and integrating $\form$ and $\omega$ into $\delta\dual$ and $\delta\height$, while the null-space of $\centroiddual$ is its subspace with $\delta\weight \!=\! 0$.
 
-\paragraph{Blocks}
-For a power diagram with generators in general position, every face of codimension two of the power diagram (\eg a vertex in 2D, an edge in 3D) is shared by exactly three cells $(i,j,k)$, whose generators span a triangle of the dual triangulation.
-Their generators are not collinear, since the facets $\face_{ij}$, $\face_{jk}$ and $\face_{ki}$ would otherwise be parallel and could not meet along a common face, so the edges $\dual_j - \dual_i$ and $\dual_k - \dual_j$ are linearly independent.
-The closedness condition $\smash{\omega_{ij} + \omega_{jk} + \omega_{ki} = 0}$ then reduces to
+\paragraph{Elementary cycles}
+As noted in \S\ref{sec:background}, the graph dual to a power diagram constructed from generators in \emph{general position} covering an \emph{unbounded} domain (\ie $\smash{\Omega \equiv \R^d})$ is a regular triangulation, so every elementary cycle has three dual edges, forming what we call a \emph{dual triangle}, and all dual triangles are connected through their edges.
+Our setting departs from this triangulation in two independent ways.
+First, clipping the cells to the bounded domain $\domain$ prunes the dual triangles whose face of codimension two lies outside $\domain$, which may leave cells whose removal disconnects the dual graph.
+Second, without general position, a face of codimension two may be shared by $k \!>\! 3$ cells, whose generators then form an elementary cycle of $k$ dual edges, which we call a \emph{dual polygon}.
+
+\begin{wrapfigure}[4]{r}{0.45\columnwidth}
+  \centering
+  % \vspace{-1mm}
+  \resizebox{\linewidth}{!}{\input{figures/nullspace-blocks}}
+\end{wrapfigure}%
+\paragraph{Classes}
+Each dual triangle links three cells $(i,j,k)$ whose generators are not collinear, since the facets $\face_{ij}$, $\face_{jk}$ and $\face_{ki}$ would otherwise be parallel and could not meet along a common face, so the edges $\dual_j - \dual_i$ and $\dual_k - \dual_j$ are linearly independent.
+The closedness condition $\smash{\form_{ij} + \form_{jk} + \form_{ki} = 0}$ then reduces to
 \begin{equation}
   (\kappa_{ij} - \kappa_{ki})\,(\dual_j - \dual_i) + (\kappa_{jk} - \kappa_{ki})\,(\dual_k - \dual_j) = 0 ,
 \end{equation}
 which forces $\kappa_{ij} \!=\! \kappa_{jk} \!=\! \kappa_{ki}$.
-Therefore, $\kappa$ is constant over every set of dual edges connected through dual triangles.
-Since the dual 
-\begin{wrapfigure}[4]{r}{0.45\columnwidth}
-  \centering
-  \resizebox{\linewidth}{!}{\input{figures/nullspace-blocks}}
-\end{wrapfigure}
-triangles generate all dual cycles, these sets are exactly the \emph{blocks} of the dual graph \citep{Diestel2017Graph}, \ie its maximal subgraphs that remain connected after removing any single node, and a constant $\kappa$ per block always defines a closed 1-form (see inset).
-The null-space of $\nabla^2\jointdual$ thus has dimension $(b - 1) + (d + 2)$, where $b$ is the number of blocks.
-When the dual graph is a single block, we have $b\!=\!1$, $\kappa \equiv \mu$ and $\smash{\omega_{ij} = \mu\,(\dual_j - \dual_i)}$, so the only solutions are the $d\!+\!2$ homotheties as in \eqref{eq:infinitesimal-homothety}.
-Since every step from \eqref{eq:appendix-null-condition} to this count is an equivalence, this argument characterizes the null-space of $\nabla^2\jointdual$ completely, and the homothetic modes derived above are exactly its single-block instance.
-On domains that are not simply connected, the blocks must be replaced by the classes of facets linked through dual triangles, and the count is further reduced by the conditions that $\omega$ and its height part integrate to zero around each hole, where the latter no longer follows from the former since the facets around a hole share no common point.
-% The simplest instance is the volume Hessian \eqref{eq:newton-step}, for which $\delta\shift = 0$ makes each $\delta a_i = \delta\weight_i$ constant, so \eqref{eq:appendix-kappa} forces $\kappa \equiv 0$ and $\omega = 0$, leaving only the common offset $\delta\weight_i = c$.
+We then define a \emph{class} as a maximal set of dual edges connected through dual triangles \cite{Servatius1999Constraining}, over which $\kappa$ is constant (see inset where two classes, in blue and green, meet at a cut cell).
+A null-space mode of $\jointdual$ thus assigns one stretch factor to every class, subject only to the closedness of $\form$ around the dual polygons, so the classes are the units of the additional modes, which we enumerate next.
 
-\paragraph{Cut cells}
-When the dual graph has $b \!\ge\! 2$ blocks, the additional $b \!-\! 1$ modes beyond the homotheties come from the arrangement of the cells, since each block carries its own constant $\kappa$.
-Distinct blocks only meet at \emph{cut cells}, \ie cells $\cell_i$ whose removal splits $\domain$ into two or more parts, or equivalently dual nodes shared by several blocks, known as cut vertices in graph theory \citep{Diestel2017Graph}, such as the orange cell $i$ in the inset above.
+\subsection{Localized Homotheties}
+\label{sec:appendix-nullspace-localized}
+
+We now detail the localized homotheties derived from the generators within each graph class dual to the power diagram, first in general position and then around the dual polygons.
+
+\paragraph{Blocks}
+In general position, there are no dual polygons, so any choice of one stretch factor per class defines a closed 1-form.
+Moreover, on a simply-connected domain, the dual triangles generate all dual cycles, so the classes are exactly the \emph{blocks} of the dual graph \citep{Diestel2017Graph}, namely its maximal subgraphs that remain connected after removing any single cell.
+The Hessian null-space of $\jointdual$ thus has dimension $(b - 1) + (d + 2)$, where $b$ is the number of blocks, and reduces to the $d\!+\!2$ homotheties \eqref{eq:infinitesimal-homothety} when the dual graph is a single block.
+Since every step from \eqref{eq:appendix-null-condition} to this count is an equivalence, this argument characterizes the null-space of $\jointdual$ completely for generators in general position.
+% For domains that are not simply-connected, the classes no longer reduce to the blocks, and $\form$ and $\omega$ must also integrate to zero around each hole.
+
+\paragraph{Cut cells \& branches}
+Distinct blocks only meet at \emph{cut cells}, \ie cells whose removal splits the dual graph, and thus $\domain$, into several parts \citep{Diestel2017Graph} (see \eg the orange cell $i$ in the inset above).
+Choosing one block as the \emph{root block} $B_0$, every other block $B$ is attached to the rest of the dual graph through a cut cell ${c_B}$.
+We name the \emph{branch} $\branch_B$ of $B$ as the cells that ${c_B}$ cuts off from the root, \ie the part of the dual graph without $c_B$ that contains the other cells of $B$.
+The additional null-space modes of $\jointdual$ are then \emph{localized homotheties}, which scale each lifted generator $(\dual_k, \height_k)$ of a branch $\branch_B$ about the lifted generator $(\dual_{c_B}, \height_{c_B})$ of its cut cell through
+\begin{equation}
+  (\dual_k, \height_k) + s_B\,\bigl((\dual_k, \height_k) - (\dual_{c_B}, \height_{c_B})\bigr),
+  \label{eq:appendix-localized-homothety}
+\end{equation}
+with a {branch dilation} $s_B \!>\! -1$, while leaving all the other generators fixed.
+In terms of affine functions, this mode maps $a_k(\xx)$ to $a_k(\xx) + s_B\,(a_k(\xx) \!-\! a_{c_B}(\xx))$ for $\cell_k \!\in\! \branch_B$, so the differences $a_j(\xx) - a_i(\xx)$ across the facets within $\branch_B \cup \{\cell_{c_B}\}$ are scaled by $1 + s_B$ and those elsewhere are unchanged.
+For an infinitesimal $s_B$, its variation $\smash{\delta a_k(\xx) = s_B\,(a_k(\xx) \!-\! a_{c_B}(\xx))}$ for $\cell_k \!\in\! \branch_B$ verifies \eqref{eq:appendix-null-condition}, since $\branch_B$ is only linked to the other cells through facets $\face_{k c_B}$ on which $a_k(\xx) - a_{c_B}(\xx)$ vanishes.
+Dilating instead the part of the dual graph that contains the root differs from this mode by a global homothety about $\dual_{c_B}$, so each of the $b \!-\! 1$ non-root blocks adds exactly one mode to the count above.
+% 
+For the Hessian of $\centroiddual$, these modes must also verify $\delta \weight_i \!=\! \delta a_i(\tcentroid_i) \!=\! 0$, which still requires the pivots on each block to lie on a common hyperplane.
 
 \paragraph{Bridges}
-A block may also reduce to a single dual edge between two cut cells, or between a cut cell and a cell with no other neighbor, in which case the facet itself separates the domain.
-We thus define a 
-\begin{wrapfigure}[5]{r}{0.45\columnwidth}
+A block may reduce to a single dual edge lying on no dual cycle, which we call a \emph{bridge}, \ie an edge whose removal disconnects the dual graph \citep{Diestel2017Graph}, whose facet $\face_{ij}$ alone cuts $\domain$
+\begin{wrapfigure}[4]{r}{0.45\columnwidth}
   \centering
-  \vspace{-2mm}
+  \vspace{-1mm}
   \resizebox{\linewidth}{!}{\input{figures/nullspace-bridge}}
-\end{wrapfigure}
-\emph{bridge} as a facet $\face_{ij}$ that alone cuts $\domain$ into two parts, \ie a dual edge that lies on no dual cycle \citep{Diestel2017Graph} and, therefore, forms a block on its own (see inset).
-Its scalar $\kappa_{ij}$ is then free, which is one of the $b \!-\! 1$ modes counted above, and setting $\delta a_k(\xx) = 0$ on the side of cell $j$ and $\smash{\delta a_k(\xx) = \kappa_{ij}\,(a_i(\xx) - a_j(\xx))}$ for every cell $k$ on the side of cell $i$ rotates all the lifted hyperplanes on that side about the facet.
-For instance, a cell $i$ with a single neighbor $j$ is separated by the bridge $\face_{ij}$, and $j$ is a cut cell unless it also has no other neighbor.
+\end{wrapfigure}%
+into two parts (see inset).
+With the root on the side of $\cell_j$, the bridge is a block $B$ with cut cell $c_B \!=\! j$, whose branch $\branch_B$ is the side of $\cell_i$.
+Its stretch factor $\kappa_{ij}$ is then free, and setting $\smash{\delta a_k(\xx) \!=\! \kappa_{ij}\,(a_i(\xx) \!-\! a_j(\xx))}$ for $\cell_k \!\in\! \branch_B$ and $\delta a_k(\xx) \!=\! 0$ elsewhere rotates all the lifted hyperplanes of $\branch_B$ about the facet, which is the localized homothety of $\branch_B$ minus those of the blocks attached through the cut cell $\cell_i$, all with the branch dilation $\kappa_{ij}$.
 
-\paragraph{Structure of the combinatorial modes}
-The blocks, cut cells and bridges of a power diagram are found in $O(n \!+\! m)$ time, with $m$ the number of facets, by a single depth-first search of its dual graph \citep{Hopcroft1973Algorithm}, whose edges are the facets of positive measure, \ie the off-diagonal blocks of $\nabla^2\jointdual$.
-They are organized by the \emph{block--cut tree} of the dual graph \citep{Diestel2017Graph}, which links each cut cell to the blocks that contain it.
-We root this tree at an arbitrary block, and assign to every other block $B$ its parent cut cell $c_B$ and its \emph{arm} $S_B$, \ie the cells of $B$ and of all the blocks below it, except $c_B$.
-Since $\kappa$ is constant on $B$, integrating $\omega$ from $c_B$ shows that the lifted generators of $B$ undergo an infinitesimal homothety centered at the lifted generator of $c_B$, so the null-space modes compose homotheties along the tree.
-A basis of the $b \!-\! 1$ combinatorial modes is thus given by one \emph{arm mode} per non-root block $B$,
-\begin{equation}
-  \delta a_k(\xx) = a_k(\xx) - a_{c_B}(\xx) \ \ \text{for } k \in S_B ,
-  \qquad
-  \delta a_k(\xx) = 0 \ \ \text{otherwise} ,
-  \label{eq:appendix-arm-mode}
-\end{equation}
-which dilates the arm about its cut cell and leaves the rest of the diagram fixed.
-Each arm mode satisfies \eqref{eq:appendix-null-condition}, since it is a homothety within $S_B$, it vanishes outside $S_B \cup \{c_B\}$, and $\delta a_k - \delta a_{c_B} = a_k - a_{c_B}$ vanishes on the facets $\face_{k c_B}$, the only ones linking $S_B$ to the other cells.
-The arm modes are independent, since the mode of $B$ sets $\kappa \!=\! 1$ on $B$ and its descendants and $\kappa \!=\! 0$ elsewhere, and together with the $d \!+\! 2$ homotheties they span the null-space of $\nabla^2\jointdual$.
-Unlike the homotheties, which move every generator, each arm mode is supported on its arm, and for a bridge it reduces to the rotation about the facet described above.
-For $\nabla^2\centroiddual$, a combination of arm modes and homotheties must also verify $\delta a_k(\tcentroid_k) = 0$ for all $k$, which, as for the homotheties, requires the pivots of each arm to lie on a common hyperplane, and thus does not hold for generic targets.
-
-\paragraph{Strips}
-\begin{wrapfigure}[4]{r}{0.42\columnwidth}
-\vspace{1mm}
+\begin{wrapfigure}[6]{r}{0.28\columnwidth}
   \centering
-  \resizebox{\linewidth}{!}{\input{figures/nullspace-strip}}
-\end{wrapfigure}
-Finally, a \emph{strip} of $n$ parallel cells has a path as its dual graph, whose $n \!-\! 1$ edges are all bridges and whose $n \!-\! 2$ interior cells are all cut cells, so it has $b = n \!-\! 1$ blocks and $n \!-\! 2$ additional modes (see inset).
+  \vspace{-1mm}
+  \resizebox{\linewidth}{!}{\input{figures/nullspace-classes}}
+\end{wrapfigure}%
+\paragraph{Dual polygons}
+\label{sec:appendix-nullspace-degenerate}
+Without general position, a block may split into several classes, which are only linked through dual polygons.
+For instance, the inset shows four cells sharing a vertex (red dot) between a cell above and a cell below them, whose dual triangles form two classes (blue and green) linked only through the dual polygon of the four cells, whose two other dual edges (gray) are classes of their own.
+The facets crossed by a dual polygon all contain its face of codimension two, so its dual edges are orthogonal to this face and span a 2D plane, and its closedness condition amounts to two scalar conditions on the stretch factors of the classes that it links.
+Stacking these conditions over all dual polygons gives a matrix with one column per class, whose rank we denote by $r$, and whose null-space always contains the constant stretch factors, \ie the global homotheties.
+With $m$ classes, the Hessian null-space of $\jointdual$ thus has dimension $(m - 1 - r) + (d + 2)$, which reduces to the count of the blocks in general position, where $m \!=\! b$ and $r \!=\! 0$.
+Unlike cut cells, which persist under small motions of the generators, these degenerate modes disappear when the generators are perturbed into general position.
 
 \end{document}

@@ -5,32 +5,32 @@
 \section{Related Work}
 \label{sec:related}
 
-% \paragraph{Laguerre tessellation inversion.}
-% \citet{Bourne2025Inverting} studied the inverse problem of recovering a power diagram, also known as a Laguerre tessellation, from the volumes and centroids of its cells, motivated by the reconstruction of polycrystalline microstructures from diffraction data.
-% They parametrized diagrams by their generators only, always solving for the weights that enforce the prescribed volumes by semi-discrete optimal transport, and maximized a concave helper function of the generators whose gradient is the centroid residual.
-% They prove that a power diagram is uniquely determined by the volumes and centroids of its cells, that realizable data can be inverted by concave maximization, and that, for unrealizable data, local least-squares fits of the centroids can still be found by convex optimization, although only under implicit assumptions on the targets.
-% In practice, they fitted unrealizable data by directly minimizing the least-squares centroid residual over the generators, a non-convex problem that is far from trivial to optimize.
-% Their helper function coincides with our joint dual after eliminating the weights, so our joint formulation can be seen as a reparametrization of theirs by shifts and weights.
-% Our formulation differs in three ways.
-% First, it treats the volume and centroid constraints symmetrically as Lagrange multipliers, so it yields closed-form facet-based Hessians that expose the volume Laplacian and the pressure gradient of Power Particles \cite{deGoes2015PowerParticles} as its blocks, and a short duality proof of their uniqueness result.
-% Second, it characterizes the full null-space of the joint problem geometrically, as the homotheties of the lifted shifted sites.
-% Third, and most importantly, it includes the centroid-only problem, which fixes the weights instead of the volumes and has no counterpart in their work: its solutions persist under perturbations of the targets, and its degeneracy reduces to a coplanarity test on the pivots.
+Power diagrams and their applications have been studied extensively in computational geometry, geometry processing, and computational physics (see, \eg, \cite{Aurenhammer1987PowerDiagrams, PlateauHolleville2026Tutorial}).
+Here, we restrict our discussion to the works most closely related to ours, namely centroidal tessellations, power diagrams with prescribed volumes, their use in fluid simulation, and the prescription of cell centroids.
 
-% \paragraph{Convex order.}
-% \citet{Bourne2026ConvexOrder} revisited the same inverse problem from the viewpoint of convex order between probability measures.
-% For fixed volumes, they considered the convex set of centroid configurations whose discrete measure is dominated in convex order by the uniform measure on the domain, which we call the achievable centroids (\S\ref{sec:background}), and they show that the centroids of power diagrams with these volumes are exactly its exposed points.
-% This set extends to the semi-discrete setting the gravity bodies of \citet{Brieden2012GravityBodies}, whose vertices are the centroids of power diagrams of discrete point sets, and builds on the convex-order viewpoint of optimal transport of \citet{Ekeland2014Geometry}.
-% This characterization explains the additional condition satisfied by realizable data, which lie on the relative boundary of a convex set, and it settles a question left open by \citet{Bourne2025Inverting}.
-% They then recovered diagrams whose centroids approximate given targets by projecting the targets, slightly dilated, onto this convex set, which reduces to a strongly convex problem solved by semi-discrete optimal transport.
-% Their approach targets the joint problem with fixed volumes, while our centroid-only formulation lets the volumes adapt to the targets, a setting their characterization does not address.
-% The convex-order condition nevertheless provides a sharper necessary test for our centroid-only problem than the conservation identities, since it requires volumes for which the targets are dominated in convex order by the domain.
+\paragraph{Centroidal tessellations.}
+Centroidal Voronoi tessellations, whose sites coincide with the centroids of their cells, are the stationary points of the quantization error between the cells and their sites \cite{Lloyd1982Quantization}.
+They are classically computed by Lloyd's algorithm, which alternates between building the Voronoi diagram and moving each site to the centroid of its cell, and converges linearly.
+\citet{Liu2009CVT} showed that the quantization error is smooth enough to be minimized by quasi-Newton methods instead, while \citet{Budninskiy2016OVT} extended these tessellations to anisotropic cell complexes.
+In all of these works, the centroids are tied to the sites rather than prescribed independently.
 
-% \paragraph{Shifted power diagrams.}
-% \citet{Memari2012PrimalDual} introduced the displacement parametrization of power diagrams that we build on, in which each site carries a weight and a shift, to describe primal--dual triangulations whose dual edges need not be orthogonal to their facets.
-% Special cases of this construction appeared earlier as the \emph{first-type Bregman diagrams} of \citet{Boissonnat2010Bregman}, which assign each point $\xx$ to the site $\qq_i$ minimizing the Bregman divergence $\smash{f(\xx) - f(\qq_i) - \nabla f(\qq_i)\tr(\xx - \qq_i)}$ of a convex function $f$.
-% Since this divergence differs from $f(\xx)$ by an affine function of $\xx$, these cells are power cells of the shifted sites $\smash{\tfrac12 \nabla f(\qq_i)}$ with suitable weights, so a first-type Bregman diagram is a shifted power diagram whose shifts and weights all derive from a single convex function.
-% \citet{Budninskiy2016OVT} exploited this connection for anisotropic meshing, coining the term \emph{shifted power diagram} and generating cell complexes whose anisotropy follows the Hessian of $f$.
-% In both cases, the shifts are prescribed by $f$ to encode a metric.
-% In contrast, our shifts are free variables, the Lagrange multipliers of centroid constraints, and are solved for so that the cells reach prescribed centroids.
+\paragraph{Power diagrams with prescribed volumes.}
+\citet{Aurenhammer1998Minkowski} proved that, for fixed sites, the weights of the power diagram with prescribed cell volumes maximize a concave function, which links power diagrams to semi-discrete optimal transport.
+\citet{deGoes2012BlueNoise} derived the Hessian of this function and combined its Newton steps with Lloyd iterations to generate capacity-constrained centroidal tessellations for blue noise sampling, an approach later accelerated and extended by \citet{Xin2016CentroidalPower}.
+\citet{Levy2015Numerical} solved this problem in 3D with a multilevel quasi-Newton method, and Newton's method has since scaled it to hundreds of millions of points \cite{Levy2025LargeScale}.
+Our formulation follows this line of work, with the centroids added as constraints and the weights as one of two kinds of multipliers.
+
+\paragraph{Power Particles.}
+\citet{deGoes2015PowerParticles} introduced Power Particles, which discretize an incompressible fluid as a moving power diagram whose cell volumes are fixed by the weights, while the sites are advected from the centroids of their cells.
+\citet{Gallouet2018Lagrangian} proposed a related Lagrangian scheme for the Euler equations, in which a penalty pulls each particle towards the centroid of its cell.
+Subsequent works handled free surfaces through partial optimal transport \cite{Levy2022PartialOT, PlateauHolleville2026MorePower}, replaced the power diagram by regularized transport kernels for particle-grid transfers \cite{Qu2022PowerPIC}, and extended these transfers to inelastic flows \cite{Qu2023PowerPlastics}.
+We revisit Power Particles as a constrained Lagrangian system, whose integrators are variational in the sense of \citet{marsden2001discrete} and relate to SHAKE \cite{Ryckaert1977Shake} and to the scheme of \citet{Gallouet2018Lagrangian}.
+
+\paragraph{Centroid constraints.}
+In materials science, polycrystalline microstructures are commonly fitted by power diagrams whose cells match measured grain volumes and centroids \cite{Lyckegaard2011Laguerre, Quey2018Optimal, Spettl2016Fitting, Petrich2019Reconstruction, Alpers2023GrainMaps}.
+\citet{Bourne2025Inverting} recovered a power diagram from its volumes and centroids by minimizing a non-convex centroid residual over the sites, with a volume solve at every evaluation.
+\citet{Bourne2026ConvexOrder} then showed that the centroids achievable with prescribed volumes form a convex set, a continuous counterpart of the gravity bodies of \citet{Brieden2012GravityBodies}, whose exposed points are the centroids of power diagrams.
+They cast the inverse problem as a convex projection of dilated targets onto this set, solved by first-order iterations, and characterized the irreducible diagrams, which admit no coarser power diagram whose cells are unions of theirs.
+In contrast, we prescribe the centroids through multipliers of their own, which turns these problems into unconstrained concave maximizations solved by Newton's method.
 
 \end{document}

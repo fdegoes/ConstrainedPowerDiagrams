@@ -103,7 +103,7 @@ By \eqref{eq:weight-gradient}, the gradient of $\dualenergy$ recovers the volume
   \label{eq:volume-dual-gradient}
 \end{equation}
 so stationary weights are those whose cells realize the prescribed volumes.
-As derived by \citet{deGoes2012BlueNoise}, the Hessian of $\dualenergy$ is a (negated) Laplacian matrix on the power diagram connectivity with entries
+As derived by \citet{deGoes2012BlueNoise}, the Hessian of $\dualenergy$ is a (negated) Laplacian matrix on the diagram connectivity with entries
 \begin{subequations}
   \label{eq:newton-step}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
@@ -112,7 +112,7 @@ As derived by \citet{deGoes2012BlueNoise}, the Hessian of $\dualenergy$ is a (ne
     \label{eq:newton-step-off}
     \\[2mm]
     \partial^2_{\weight_i \weight_i} \dualenergy
-      &= -\!\sum\nolimits_{j} \partial^2_{\weight_i \weight_j} \dualenergy .
+      &= -\!\sum\nolimits_{j \sim i} \partial^2_{\weight_i \weight_j} \dualenergy .
     \label{eq:newton-step-diag}
   \end{empheq}
 \end{subequations}
@@ -130,7 +130,7 @@ This redundancy is best seen by reparametrizing each weighted site $(\qq_i, \wei
   \centering
   \vspace{-1.5mm}
   \resizebox{\linewidth}{!}{\input{figures/lifting}}
-\end{wrapfigure}
+\end{wrapfigure}%
 In terms of lifted points, the power distance is rewritten as $\smash{\norm{\xx}^2 \!-\! ( 2\,\qq_i\tr\xx \!-\! \height_i )}$, so each cell $\cell_i$ in \eqref{eq:power-cell} collects the points from $\domain$ where $\smash{2\,\qq_i\tr\xx \!-\! \height_i}$ is maximal (see inset).
 % 
 Importantly, these cells remain unchanged when all affine functions are scaled by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx - c}$.
@@ -151,19 +151,35 @@ $\smash{s\,\qq_i + \translation}$
 and weights 
 $\smash{s\,\weight_i + (s^2 \!-\! s)\norm{\qq_i}^2 + 2s\,\translation\tr\qq_i + \norm{\translation}^2 - c}$, 
 whose quadra\-tic dependence on the sites makes the lifted form \eqref{eq:lifted-homothety} more convenient.
-This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ span the null-space of the Hessian of our joint formulation.
+This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ span the Hessian null-space of our formulations.
+
+\begin{wrapfigure}[5]{r}{0.36\columnwidth}
+  \centering
+  \vspace{-1mm}
+  \resizebox{\linewidth}{!}{\input{figures/dualgraph}}
+\end{wrapfigure}%
+\paragraph{Dual graph.}
+The connectivity of the power diagram defines a \emph{dual graph} with edges connecting the sites of every pair of neighboring cells (see inset).
+Since the facet $\face_{ij}$ lies on the hyperplane of equal power distance to the sites $i$ and $j$, the dual edge between $\qq_j$ and $\qq_i$ is orthogonal to $\face_{ij}$, thus forming an orthogonal primal-dual complex \cite{Memari2012PrimalDual}.
+If the domain were all of $\smash{\R^d}$, the cells of the outermost sites would be unbounded and the dual graph would be the regular triangulation of the sites \cite{Aurenhammer1987PowerDiagrams}.
+Since we consider the domain $\domain$ to be bounded, the cells along its boundary are clipped, so some dual edges are pruned and the dual graph may no longer be a triangulation (see dashed edges in the inset).
+We use this dual graph to complete the characterization of the Hessian null-spaces of our formulations. % beyond the homotheties.
 
 \paragraph{Achievable centroids.}
 Finally, we summarize results by \citet{Bourne2025Inverting, Bourne2026ConvexOrder} that describe the set of centroids achievable by all partitions of $\domain$ with prescribed volumes.
 This set, which we denote as $\achievable$, is convex and compact, contained within the affine subspace defined by identity \eqref{eq:partition-feasibility-centroid} \cite[\S3.1]{Bourne2026ConvexOrder}.
 % 
-Volume-constrained power diagrams play a special role in $\achievable$: the centroids of power diagrams with the prescribed volumes are the exposed points of $\achievable$, \ie the points where a supporting hyperplane touches $\achievable$ and nowhere else \cite[Thm.~3.6]{Bourne2026ConvexOrder}.
+Volume-constrained power diagrams play a special role in $\achievable$.
+The centroids of power diagrams with the prescribed volumes are the exposed points of $\achievable$, \ie the points where a supporting hyperplane touches $\achievable$ and nowhere else \cite[Thm.~3.6]{Bourne2026ConvexOrder}.
 Moreover, the sites of a power diagram are an outward normal of $\achievable$ at its centroids \cite[Prop.~3.5]{Bourne2026ConvexOrder}, and so are the sites of every element of $\homotheties$ in \eqref{eq:lifted-homothety}.
 % , since scaling preserves the direction of the normal, while translation only adds a component orthogonal to the subspace of \eqref{eq:partition-feasibility-centroid} (in the volume-weighted $\smash{L^2}$ sense).
-These homotheties form the {normal cone} of $\achievable$ at these centroids, \ie the set of all outward normals of supporting hyperplanes, since each of them generates the unique power diagram with the same volumes and centroids \cite[Thm.~4.5]{Bourne2025Inverting}.
+These homotheties form the {normal cone} of $\achievable$ at these centroids, 
+% \ie the set of all outward normals of supporting hyperplanes, 
+since each of them generates the unique power diagram with the same volumes and centroids \cite[Thm.~4.5]{Bourne2025Inverting}.
 Therefore, power diagrams lie on the boundary of $\achievable$ relative to \eqref{eq:partition-feasibility-centroid}.
 The rest of this boundary consists of flat faces exposed by coinciding sites, while its interior includes only centroids of partitions that are not power diagrams.
-Based on these results, we call centroids \emph{achievable} when they belong to $\achievable$, and \emph{realizable} when they are the centroids of a power diagram, while we call centroids \emph{unachievable} when they verify identity \eqref{eq:partition-feasibility-centroid} but do not belong to $\achievable$, \ie when no partition of $\domain$ with volumes $\pvol$ has them as centroids. % \ie the exposed points of $\achievable$.
+We thus call centroids \emph{achievable} when they belong to $\achievable$, and \emph{realizable} when they are the centroids of a power diagram, while we call centroids \emph{unachievable} when they do not belong to $\achievable$.
+% , \ie when no partition of $\domain$ with volumes $\pvol$ has them as centroids. % \ie the exposed points of $\achievable$.
 %
 We rely on this characterization to determine which power diagrams our formulations return, as detailed next.
 % 

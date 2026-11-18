@@ -1,6 +1,7 @@
 """Generate the TikZ insets of the null-space appendix (appendix-nullspace.tex).
 Pure Python: computes 2D power diagrams clipped to a rectangle and writes
-figures/nullspace-{lifting,blocks,bridge,cutcell}.tex."""
+figures/nullspace-{lifting,blocks,bridge,cutcell,strip,reducible,degenerate,redrawing,classes}.tex."""
+import math
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -132,11 +133,51 @@ for p in BSITES:
 body += "  \\node[nsLabel, below=2pt] at %s {$i$};\n" % fmt(BSITES[BCUT])
 write("blocks", body)
 
+# arm (flow.tex): the same two blocks, with the left one as the root; the cut cell
+# c_l cuts off the arm S_l (the right block without c_l), whose generators an arm
+# dilation moves about the generator of c_l (arrows).
+ARM_SCALE = 1.35
+body = ""
+for i, poly in enumerate(BCELLS):
+    fill = "nsCut" if i == BCUT else ("nsBlue!18" if i < BCUT else "nsGreen!18")
+    body += "  \\fill[%s] %s;\n" % (fill, poly_path(poly))
+for (i, j), (P, Q) in BFACETS.items():
+    body += "  \\draw[nsFacet] %s -- %s;\n" % (fmt(P), fmt(Q))
+body += "  \\draw[nsDomain] (%.3f,%.3f) rectangle (%.3f,%.3f);\n" % BBOX
+c = BSITES[BCUT]
+# outline of the arm: the edges of its cells that no other cell of the arm shares
+key = lambda P, Q: tuple(sorted(((round(P[0], 6), round(P[1], 6)), (round(Q[0], 6), round(Q[1], 6)))))
+count = {}
+for k in range(BCUT + 1, len(BCELLS)):
+    poly = BCELLS[k]
+    for m in range(len(poly)):
+        e = key(poly[m], poly[(m + 1) % len(poly)])
+        count[e] = count.get(e, 0) + 1
+for (P, Q), n_e in count.items():
+    if n_e == 1 and math.dist(P, Q) > 1e-9:
+        body += "  \\draw[nsGreen!70!black, line width=1.3pt, line cap=round] %s -- %s;\n" % (fmt(P), fmt(Q))
+# the arm dilation about the generator of c_l: rays from it (dotted) and the motion of each generator (arrows)
+for k in range(BCUT + 1, len(BSITES)):
+    p = BSITES[k]
+    q = (c[0] + ARM_SCALE * (p[0] - c[0]), c[1] + ARM_SCALE * (p[1] - c[1]))
+    body += "  \\draw[nsGuide, black!55] %s -- %s;\n" % (fmt(c), fmt(p))
+    body += "  \\draw[->, nsGreen!70!black, line width=0.9pt, shorten <=2.2pt] %s -- %s;\n" % (fmt(p), fmt(q))
+for p in BSITES:
+    body += "  \\fill[nsSite] %s circle (0.07);\n" % fmt(p)
+body += "  \\node[nsLabel, below=2pt] at %s {$c_B$};\n" % fmt(c)
+arm = [x for k in range(BCUT + 1, len(BCELLS)) for x in BCELLS[k]]
+ax = [p[0] for k in range(BCUT + 1, len(BSITES)) for p in [BSITES[k]]]
+body += "  \\node[nsLabel, text=nsGreen!50!black] at (%.3f,%.3f) {$\\branch_B$};\n" % (BBOX[2] - 0.3, BBOX[1] + 0.28)
+body += "  \\node[nsLabel] at (%.3f,%.3f) {root};\n" % (BBOX[0] + 0.45, BBOX[3] - 0.22)
+write("arm", body)
+import shutil
+shutil.move(os.path.join(HERE, "nullspace-arm.tex"), os.path.join(HERE, "flow-arm.tex"))
+
 # bridge: facet CD highlighted, side {D, E, F} rotates about it
 P, Q = FACETS[(2, 3)]
 body = base({0: "nsShade", 1: "nsShade", 2: "nsShade"})
 body += "  \\draw[nsHighlight] %s -- %s;\n" % (fmt(P), fmt(Q))
-body += "  \\node[nsLabel, above] at %s {$\\face_{ij}$};\n" % fmt(Q)
+body += "  \\node[nsLabel, right=1pt] at %s {$\\face_{ij}$};\n" % fmt((Q[0], 0.25 * P[1] + 0.75 * Q[1]))
 body += dual_edges(lambda e: "nsDual, nsRed" if e == (2, 3) else "nsDual, nsGray")
 body += sites()
 body += "  \\node[nsLabel, below left=1pt] at %s {$i$};\n" % fmt(SITES[2])
@@ -186,8 +227,263 @@ for p in SSITES:
     body += "  \\fill[nsSite] %s circle (0.07);\n" % fmt(p)
 write("strip", body)
 
+# reducible: a fan of cells sharing the vertex FC (a face shared by k > 3 cells),
+# whose dual graph is a single cycle, and the coarser diagram obtained by
+# contracting the dual edge FMERGE of a parallel redrawing (its two generators
+# coincide, so their cells merge; the other rays keep their directions).
+FC = (1.55, 1.0)
+FANG = [10, 70, 135, 190, 240, 300]
+FRAD = [0.85, 0.65, 0.8, 0.7, 0.75, 0.7]
+FSITES = [(FC[0] + r * math.cos(math.radians(a)), FC[1] + r * math.sin(math.radians(a))) for a, r in zip(FANG, FRAD)]
+FBOX = (0.0, 0.0, 3.1, 2.0)
+FMERGE = 0                    # dual edge (FMERGE, FMERGE + 1) contracts
+
+
+def fan(sites):
+    # equal power at FC, so that every cell has a corner at FC
+    w = [(p[0] - FC[0]) ** 2 + (p[1] - FC[1]) ** 2 for p in sites]
+    _, cells, facets = diagram(sites, w, FBOX)
+    assert all(any(abs(x[0] - FC[0]) + abs(x[1] - FC[1]) < 1e-6 for x in c) for c in cells)
+    return cells, facets
+
+
+FCELLS, FFACETS = fan(FSITES)
+k = len(FSITES)
+assert sorted(FFACETS) == sorted(tuple(sorted((i, (i + 1) % k))) for i in range(k)), sorted(FFACETS)
+# redrawing: edge stretches 1 + mu_i with mu_merge = -1 and the other mu of least norm
+# closing the cycle, sum_i (1 + mu_i) e_i = 0, i.e. sum_{i != merge} mu_i e_i = e_merge
+E = [(FSITES[(i + 1) % k][0] - FSITES[i][0], FSITES[(i + 1) % k][1] - FSITES[i][1]) for i in range(k)]
+rest = [i for i in range(k) if i != FMERGE]
+G = [[sum(E[i][a] * E[i][b] for i in rest) for b in range(2)] for a in range(2)]
+det = G[0][0] * G[1][1] - G[0][1] * G[1][0]
+em = E[FMERGE]
+y = ((G[1][1] * em[0] - G[0][1] * em[1]) / det, (-G[1][0] * em[0] + G[0][0] * em[1]) / det)
+lam = [0.0 if i == FMERGE else 1 + E[i][0] * y[0] + E[i][1] * y[1] for i in range(k)]
+assert all(l > 0.2 for i, l in enumerate(lam) if i != FMERGE), lam
+R = [FSITES[FMERGE]]
+for i in range(FMERGE, FMERGE + k - 1):
+    j = i % k
+    R.append((R[-1][0] + lam[j] * E[j][0], R[-1][1] + lam[j] * E[j][1]))
+R = R[-FMERGE:] + R[:-FMERGE] if FMERGE else R          # back to site order
+# keep the redrawn generators centered on the original ones
+mx = sum(p[0] - q[0] for p, q in zip(FSITES, R)) / k
+my = sum(p[1] - q[1] for p, q in zip(FSITES, R)) / k
+R = [(q[0] + mx, q[1] + my) for q in R]
+m1 = (FMERGE + 1) % k
+assert abs(R[FMERGE][0] - R[m1][0]) + abs(R[FMERGE][1] - R[m1][1]) < 1e-9
+RSITES = [p for i, p in enumerate(R) if i != m1]
+RCELLS, RFACETS = fan(RSITES)
+assert len(RFACETS) == k - 1, sorted(RFACETS)
+# the merged cell is the union of the two original cells
+area = lambda c: 0.5 * abs(sum(c[i][0] * c[(i + 1) % len(c)][1] - c[(i + 1) % len(c)][0] * c[i][1] for i in range(len(c))))
+assert abs(area(RCELLS[FMERGE]) - area(FCELLS[FMERGE]) - area(FCELLS[m1])) < 1e-9
+assert all(abs(area(RCELLS[r]) - area(FCELLS[i])) < 1e-9 for r, i in enumerate(i for i in range(k) if i != m1) if r != FMERGE)
+
+FDX = FBOX[2] + 1.3           # offset of the reduced panel
+body = ""
+for dx, cells, facets, pts, shade, edges in (
+        (0.0, FCELLS, FFACETS, FSITES, [FMERGE, m1], [(i, (i + 1) % k) for i in range(k)]),
+        (FDX, RCELLS, RFACETS, RSITES, [FMERGE], [(i, (i + 1) % (k - 1)) for i in range(k - 1)])):
+    sh = lambda x: (x[0] + dx, x[1])
+    for i in shade:
+        body += "  \\fill[nsShade] %s;\n" % poly_path([sh(x) for x in cells[i]])
+    for (i, j), (P, Q) in facets.items():
+        body += "  \\draw[nsFacet] %s -- %s;\n" % (fmt(sh(P)), fmt(sh(Q)))
+    body += "  \\draw[nsDomain] %s rectangle %s;\n" % (fmt(sh(FBOX[:2])), fmt(sh(FBOX[2:])))
+    for (i, j) in edges:
+        red = dx == 0.0 and {i, j} == {FMERGE, m1}
+        body += "  \\draw[nsDual, %s] %s -- %s;\n" % ("nsRed" if red else "nsBlue", fmt(sh(pts[i])), fmt(sh(pts[j])))
+    for p in pts:
+        body += "  \\fill[nsSite] %s circle (0.07);\n" % fmt(sh(p))
+# the merged pair of the original panel is removed: its ray disappears in the reduced one
+P, Q = FFACETS[tuple(sorted((FMERGE, m1)))]
+body += "  \\draw[nsHighlight] %s -- %s;\n" % (fmt(P), fmt(Q))
+body += "  \\draw[->, line width=0.6pt] (%.3f,%.3f) -- (%.3f,%.3f);\n" % (FBOX[2] + 0.25, 1.0, FDX - 0.25, 1.0)
+write("reducible", body)
+
+# degenerate: the same fan, whose 6-cycle of dual edges is redrawn with
+# non-uniform stretches 1 + mu_m (edges stay parallel), which keeps the cells:
+# sum_m mu_m e_m = 0 and sum_m mu_m = 0 (no constant part), mu the projection
+# of a fixed pattern onto these three conditions.
+A = [[E[m][0] for m in range(k)], [E[m][1] for m in range(k)], [1.0] * k]
+t = [1.0, 0.0, -1.0, 1.0, 0.0, -1.0]
+M = [[sum(A[a][m] * A[b][m] for m in range(k)) for b in range(3)] for a in range(3)]
+r = [sum(A[a][m] * t[m] for m in range(k)) for a in range(3)]
+
+
+def solve3(M, r):
+    d = lambda X: (X[0][0] * (X[1][1] * X[2][2] - X[1][2] * X[2][1]) - X[0][1] * (X[1][0] * X[2][2] - X[1][2] * X[2][0])
+                   + X[0][2] * (X[1][0] * X[2][1] - X[1][1] * X[2][0]))
+    D = d(M)
+    return [d([[r[a] if b == c else M[a][b] for b in range(3)] for a in range(3)]) / D for c in range(3)]
+
+
+z = solve3(M, r)
+mu = [t[m] - sum(A[a][m] * z[a] for a in range(3)) for m in range(k)]
+scale = 0.45 / max(abs(x) for x in mu)
+mu = [scale * x for x in mu]
+D = [FSITES[0]]
+for m in range(k - 1):
+    D.append((D[-1][0] + (1 + mu[m]) * E[m][0], D[-1][1] + (1 + mu[m]) * E[m][1]))
+last = (D[-1][0] + (1 + mu[k - 1]) * E[k - 1][0], D[-1][1] + (1 + mu[k - 1]) * E[k - 1][1])
+assert abs(last[0] - D[0][0]) + abs(last[1] - D[0][1]) < 1e-9          # the cycle closes
+mx = sum(p[0] - q[0] for p, q in zip(FSITES, D)) / k
+my = sum(p[1] - q[1] for p, q in zip(FSITES, D)) / k
+D = [(q[0] + mx, q[1] + my) for q in D]
+DCELLS, DFACETS = fan(D)
+assert all(abs(area(DCELLS[i]) - area(FCELLS[i])) < 1e-9 for i in range(k))   # same cells
+
+def fan_panel(pts, style, ghost=False):
+    s = ""
+    for (i, j), (P, Q) in FFACETS.items():
+        s += "  \\draw[nsFacet] %s -- %s;\n" % (fmt(P), fmt(Q))
+    s += "  \\draw[nsDomain] %s rectangle %s;\n" % (fmt(FBOX[:2]), fmt(FBOX[2:]))
+    if ghost:
+        for m in range(k):
+            s += "  \\draw[nsDual, nsGray!60, line width=0.6pt] %s -- %s;\n" % (fmt(FSITES[m]), fmt(FSITES[(m + 1) % k]))
+    for m in range(k):
+        s += "  \\draw[%s] %s -- %s;\n" % (style, fmt(pts[m]), fmt(pts[(m + 1) % k]))
+    for q in pts:
+        s += "  \\fill[nsSite] %s circle (0.07);\n" % fmt(q)
+    s += "  \\fill[nsRed] %s circle (0.08);\n" % fmt(FC)
+    return s
+
+
+# degenerate: a 3D power diagram of six ring generators around the z-axis, with
+# weights r_m^2 (equal power 0 on the axis), and two poles (0, 0, +-ZP) of zero
+# weight. The segment |z| < ZP/2 of the axis is an edge shared by the six ring
+# cells, whose dual 2-face is the planar 6-cycle of the ring (its dual cells are
+# two hexagonal pyramids, as checked with Qhull). Rendered as its dual complex.
+ZP = 1.3
+RING = [(r * math.cos(math.radians(a)), r * math.sin(math.radians(a)), 0.0) for a, r in zip(FANG, FRAD)]
+POLES = [(0.0, 0.0, ZP), (0.0, 0.0, -ZP)]
+Z0 = ZP / 2                                     # power ties with the poles at |z| = Z0
+for z in (-0.9 * Z0, 0.0, 0.9 * Z0):            # six-way tie on the axis, poles above it
+    ring_pow = [q[0] ** 2 + q[1] ** 2 + z ** 2 - (q[0] ** 2 + q[1] ** 2) for q in RING]
+    assert max(ring_pow) - min(ring_pow) < 1e-12
+    assert all((z - q[2]) ** 2 > ring_pow[0] + 1e-9 for q in POLES)
+AZ, EL = math.radians(-70), math.radians(32)
+
+
+def proj(q):
+    x = q[0] * math.cos(AZ) - q[1] * math.sin(AZ)
+    y = q[0] * math.sin(AZ) + q[1] * math.cos(AZ)
+    return (x, q[2] * math.cos(EL) + y * math.sin(EL)), y * math.cos(EL) - q[2] * math.sin(EL)
+
+
+items = []                                      # (depth, tikz), drawn back to front
+for c in POLES:
+    for q in RING:
+        (u, d1), (v, d2) = proj(c), proj(q)
+        items.append(((d1 + d2) / 2, "  \\draw[nsDual, nsGray!55, line width=0.6pt] %s -- %s;\n" % (fmt(u), fmt(v))))
+hexagon = " -- ".join(fmt(proj(q)[0]) for q in RING)
+items.append((0.0, "  \\filldraw[nsDual, nsBlue, fill=nsBlue!20, fill opacity=0.7] %s -- cycle;\n" % hexagon))
+lo, mid, hi = proj((0, 0, -Z0))[0], proj((0, 0, 0))[0], proj((0, 0, Z0))[0]
+items.append((0.01, "  \\draw[nsHighlight] %s -- %s;\n" % (fmt(lo), fmt(mid))))
+items.append((-0.01, "  \\draw[nsHighlight] %s -- %s;\n" % (fmt(mid), fmt(hi))))
+body = "".join(t for _, t in sorted(items, key=lambda it: -it[0]))
+for q in RING + POLES:
+    body += "  \\fill[nsSite] %s circle (0.06);\n" % fmt(proj(q)[0])
+write("degenerate", body)
+
+# redrawing: the redrawn cycle (dashed) over the original one (gray), same cells
+write("redrawing", fan_panel(D, "nsDual, nsBlue, densely dashed", ghost=True))
+
+# classes (appendix-nullspace.tex): four cells sharing a vertex (a degenerate
+# cycle), with one cell above and one below. The dual triangles group the dual
+# edges into classes: the top and bottom triangles (blue, green) and the two
+# vertical edges of the cycle (gray), so the two triangle classes are linked only
+# through the degenerate cycle (red vertex).
+KSITES = [(0.7, 1.3), (1.3, 1.3), (0.7, 0.7), (1.3, 0.7), (1.0, 1.8), (1.0, 0.2)]
+KBOX = (0.0, 0.0, 2.0, 2.0)
+_, KCELLS, KFACETS = diagram(KSITES, [0.0] * len(KSITES), KBOX)
+KFACETS = {e: pq for e, pq in KFACETS.items() if math.dist(*pq) > 1e-6}
+kverts = []
+for i, poly in enumerate(KCELLS):
+    for v in poly:
+        for V in kverts:
+            if math.dist(V[0], v) < 1e-7:
+                V[1].add(i)
+                break
+        else:
+            kverts.append([v, {i}])
+kinner = [(v, o) for v, o in kverts if min(v[0], v[1], 2.0 - v[0], 2.0 - v[1]) > 1e-7]
+kparent = {e: e for e in KFACETS}
+def kfind(e):
+    while kparent[e] != e:
+        e = kparent[e]
+    return e
+for v, o in kinner:
+    if len(o) == 3:
+        es = [e for e in __import__("itertools").combinations(sorted(o), 2) if e in KFACETS]
+        for e in es[1:]:
+            kparent[kfind(e)] = kfind(es[0])
+kclasses = {}
+for e in KFACETS:
+    kclasses.setdefault(kfind(e), []).append(e)
+kdegen = [v for v, o in kinner if len(o) == 4]
+assert len(kclasses) == 4 and len(kdegen) == 1, (kclasses, kdegen)
+kcolor = {}
+for es in kclasses.values():
+    col = "nsBlue" if (0, 1) in es else ("nsGreen" if (2, 3) in es else "nsGray")
+    for e in es:
+        kcolor[e] = col
+body = ""
+for (i, j), (P, Q) in KFACETS.items():
+    body += "  \\draw[nsFacet] %s -- %s;\n" % (fmt(P), fmt(Q))
+body += "  \\draw[nsDomain] (%.3f,%.3f) rectangle (%.3f,%.3f);\n" % KBOX
+for e, col in kcolor.items():
+    body += "  \\draw[nsDual, %s] %s -- %s;\n" % (col, fmt(KSITES[e[0]]), fmt(KSITES[e[1]]))
+for p in KSITES:
+    body += "  \\fill[nsSite] %s circle (0.07);\n" % fmt(p)
+body += "  \\fill[nsRed] %s circle (0.07);\n" % fmt(kdegen[0])
+write("classes", body)
+
+# ---------------------------------------------------------------- dual graph (background.tex)
+# A Voronoi diagram of eight sites clipped to a rectangle: its dual graph (blue)
+# misses the dashed edges of the regular triangulation of the unbounded diagram,
+# whose facets lie outside the rectangle, so it is not a triangulation.
+DRND = __import__("random").Random(19683)
+DSITES = [(0.15 + 1.7 * DRND.random(), 0.15 + 1.1 * DRND.random()) for _ in range(7)]
+DBOX = (0.0, 0.0, 2.0, 1.4)
+real = lambda f: {e: pq for e, pq in f.items() if math.dist(*pq) > 1e-6}
+dual_of = lambda box: set(real(diagram(DSITES, [0.0] * len(DSITES), box)[2]))
+DDUAL = dual_of(DBOX)
+# crop the top and the right side as far as the dual graph is unchanged, keeping
+# every site at least DMARGIN inside the box
+DMARGIN = 0.1
+x1, y1 = DBOX[2], DBOX[3]
+for k in range(200):
+    y = y1 - 0.005
+    if y < max(p[1] for p in DSITES) + DMARGIN or dual_of((0.0, 0.0, x1, y)) != DDUAL:
+        break
+    y1 = y
+for k in range(200):
+    x = x1 - 0.005
+    if x < max(p[0] for p in DSITES) + DMARGIN or dual_of((0.0, 0.0, x, y1)) != DDUAL:
+        break
+    x1 = x
+DBOX = (0.0, 0.0, round(x1, 3), round(y1, 3))
+_, DCELLS, DFACETS = diagram(DSITES, [0.0] * len(DSITES), DBOX)
+DFACETS = real(DFACETS)
+assert set(DFACETS) == DDUAL
+DPRUNED = sorted(set(real(diagram(DSITES, [0.0] * len(DSITES), (-200.0, -200.0, 200.0, 200.0))[2])) - set(DFACETS))
+assert len(DPRUNED) >= 2, DPRUNED
+body = ""
+for (i, j), (P, Q) in DFACETS.items():
+    body += "  \\draw[nsFacet] %s -- %s;\n" % (fmt(P), fmt(Q))
+body += "  \\draw[nsDomain] (%.3f,%.3f) rectangle (%.3f,%.3f);\n" % DBOX
+for (i, j) in DPRUNED:
+    body += "  \\draw[nsDual, nsGray, densely dashed, line width=0.8pt] %s -- %s;\n" % (fmt(DSITES[i]), fmt(DSITES[j]))
+for (i, j) in DFACETS:
+    body += "  \\draw[nsDual, nsBlue] %s -- %s;\n" % (fmt(DSITES[i]), fmt(DSITES[j]))
+for p in DSITES:
+    body += "  \\fill[nsSite] %s circle (0.045);\n" % fmt(p)
+with open(os.path.join(HERE, "dualgraph.tex"), "w") as f:
+    f.write(HEADER + "\\begin{tikzpicture}[x=1cm,y=1cm]\n" + body + "\\end{tikzpicture}\n")
+print("dual graph box:", DBOX)
+
 # ---------------------------------------------------------------- lifting (background.tex)
-import math
 LSITES = [(1.39, 1.16), (0.44, 1.38), (1.63, 0.27), (1.35, 0.68), (0.79, 0.36)]
 LWEIGHTS = [0.05, 0.14, 0.01, 0.003, 0.05]
 LBOX = (0.0, 0.0, 2.0, 2.0)

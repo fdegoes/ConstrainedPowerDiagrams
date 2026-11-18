@@ -1,0 +1,27 @@
+% !TEX root = main.tex
+\documentclass[main.tex]{subfiles}
+\begin{document}
+
+\section{Branch Gauges}
+\label{sec:appendix-arms}
+
+We detail next the gauge of the constrained integrator of \S\ref{sec:flow-dynamics}, for generators in general position, with the root, cut cells $c_B$, branches $\branch_B$ and branch dilations $s_B$ of Appendix~\ref{sec:appendix-nullspace-localized}.
+Since the branches of the blocks attached below $B$ are contained in $\branch_B$, a cell $\cell_i$ is moved by the localized homotheties of all the blocks in $\blockset_i$.
+
+The form \eqref{eq:flow-gauge} composes the global homothety with the localized homotheties of the branches, and is exact rather than infinitesimal.
+For a convex domain, it generates the same cells as long as the factor $s + \sum s_B$, summed over the branches $\branch_B$ such that $\branch_B \cup \{\cell_{c_B}\}$ contains both cells of a facet, stays positive for every facet (Appendix~\ref{sec:appendix-nullspace-reducible}).
+Relative to the global homothety, a branch $\branch_B$ attached to the root thus undergoes the localized homothety \eqref{eq:appendix-localized-homothety} with branch dilation $s_B/s$.
+Each gauge unknown multiplies one direction of the generators, namely $\dual_i$ for the dilation $s$, the coordinate axes for the translation $\translation$, and $\dual_i - \dual_{c_B}$ for $\cell_i \!\in\! \branch_B$, zero elsewhere, for the branch dilation $s_B$.
+Fixing the gauge thus amounts to one linear constraint per direction, which requires the shifts $\shift$ to have no volume-weighted component along it, \ie
+\begin{equation}
+  \begin{gathered}
+    \sum\nolimits_i \pvol_i\,\shift_i\tr \dual_i = 0 , \qquad
+    \sum\nolimits_i \pvol_i\,\shift_i = 0 , \\
+    \sum\nolimits_{\cell_i \in \branch_B} \pvol_i\,\shift_i\tr (\dual_i - \dual_{c_B}) = 0 \ \ \forall B ,
+  \end{gathered}
+  \label{eq:flow-gauge-constraints}
+\end{equation}
+for the dilation, the translations and the branch dilations, respectively.
+These are the constraints of the correction step \eqref{eq:flow-line-constraint}, evaluated at the current generators $\smash{\dual^k}$.
+
+\end{document}

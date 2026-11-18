@@ -3,9 +3,16 @@
 %% Build with the ACM SIGGRAPH template (acmart). Compile with pdflatex +
 %% bibtex. Set to review/anonymous mode for submission.
 
-\documentclass[sigconf, review, nonacm]{acmart}
+\documentclass[acmtog, review, anonymous, screen]{acmart}
 \citestyle{acmauthoryear}   % SIGGRAPH-style author--year citations, e.g. [de Goes et al. 2012]
-\setcitestyle{nosort}        % keep the source order (chronological) inside a \cite; acmart enables sorting by default
+\setcitestyle{nosort,square} % keep the source order (chronological) inside a \cite; acmart enables sorting by default
+
+%% --- ACM metadata ---------------------------------------------------------
+\acmSubmissionID{XXXX}      % TODO: SIGGRAPH 2027 submission ID
+\setcopyright{none}
+\copyrightyear{2027}
+\acmYear{2027}
+\acmDOI{}
 
 %% --- Packages -------------------------------------------------------------
 \usepackage{amsmath}
@@ -83,6 +90,7 @@
 \subfile{background}
 \subfile{contributions}
 \subfile{flow}
+\subfile{implementation}
 \subfile{results}
 \subfile{conclusion}
 
@@ -95,13 +103,15 @@
 \subfile{appendix-prelim}
 \subfile{appendix-centroid}
 \subfile{appendix-joint}
+\subfile{appendix-concavity}
 \subfile{appendix-nullspace}
+\subfile{appendix-reducible}
 \subfile{appendix-softened-bound}
 % \subfile{appendix-softened-volume}  % softened volumes, currently unused
 \subfile{appendix-maxent}
+\subfile{appendix-arms}
 \subfile{appendix-bordered}
 % \subfile{appendix-distortion}
 \subfile{appendix-algorithms}
-\subfile{appendix-prior}
 
 \end{document}
