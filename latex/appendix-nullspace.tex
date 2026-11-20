@@ -39,36 +39,36 @@ Matching the linear and constant parts of $\delta a_i(\xx) \!=\! 2\,\delta\dual_
  
 Now recall from \eqref{eq:lifted-homothety} that a homothety maps every lifted generator to $\smash{s\,(\dual_i, \height_i) + (\translation, c)}$, with the same dilation $s \!>\! 0$ and offset $(\translation, c)$, and thus maps every affine function $a_i(\xx)$ to $\smash{s\,a_i(\xx) + 2\,\translation\tr\xx - c}$ without changing the cells.
 An \emph{infinitesimal homothety} is the first-order variation of these maps about the identity $(s, \translation, c) = (1, 0, 0)$.
-Writing $s \!=\! 1 + \mu$, each infinitesimal homothety takes the form
+Writing $s \!=\! 1 + \kappa$, each infinitesimal homothety takes the form
 \begin{equation*}
-  \delta a_i(\xx) = \mu\,a_i(\xx) + 2\,\translation\tr\xx - c ,
+  \delta a_i(\xx) = \kappa\,a_i(\xx) + 2\,\translation\tr\xx - c ,
 \end{equation*}
-thus satisfying \eqref{eq:appendix-null-condition} since $\delta a_i(\xx) - \delta a_j(\xx) \!=\! \mu\,(a_i(\xx) \!-\! a_j(\xx))$, which vanishes on $\face_{ij}$.
+thus satisfying \eqref{eq:appendix-null-condition} since $\delta a_i(\xx) - \delta a_j(\xx) \!=\! \kappa\,(a_i(\xx) \!-\! a_j(\xx))$, which vanishes on $\face_{ij}$.
 Matching the linear and constant parts, the lifted generators move by
 \begin{equation}
-  \delta\dual_i = \mu\,\dual_i + \translation ,
+  \delta\dual_i = \kappa\,\dual_i + \translation ,
   \qquad
-  \delta\height_i = \mu\,\height_i + c.
+  \delta\height_i = \kappa\,\height_i + c.
   \label{eq:infinitesimal-homothety}
 \end{equation}
 The corresponding shift perturbation follows from \eqref{eq:appendix-lifted-perturbation}, which gives $\delta\shift_i \!=\! \delta\dual_i$.
 From \eqref{eq:appendix-dpsi}, whose shift term vanishes at $\tcentroid_i$, we obtain the weight perturbation $\delta\weight_i \!=\! \delta\psi_i(\tcentroid_i) \!=\! \delta a_i(\tcentroid_i)$.
 Evaluating the infinitesimal homothety at $\tcentroid_i$ with $\smash{a_i(\tcentroid_i) = \gamma_i}$ from \eqref{eq:pivot} then yields
 \begin{equation}
-  \delta\shift_i = \mu\,\dual_i + \translation ,
+  \delta\shift_i = \kappa\,\dual_i + \translation ,
   \qquad
-  \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i - c ,
+  \delta\weight_i = \kappa\,\gamma_i + 2\,\translation\tr\tcentroid_i - c ,
   \label{eq:appendix-homothety-modes}
 \end{equation}
 which is the $(d+2)$-dimensional null-space in \eqref{eq:joint-nullspace}.
 
 For $\centroiddual$, the weights are fixed, so each shift only tilts the lifted hyperplane of its site about the fixed \emph{pivot} $\smash{(\tcentroid_i, \gamma_i)}$, and a homothety is realizable only if $\delta\weight_i = 0$ for all $i$, \ie
 \begin{equation}
-  \mu\,\gamma_i + 2\,\translation\tr\tcentroid_i - c = 0 \ \ \forall i
+  \kappa\,\gamma_i + 2\,\translation\tr\tcentroid_i - c = 0 \ \ \forall i
   \label{eq:centroid-kernel}
 \end{equation}
-for some $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$.
-Since the generators are distinct, every nontrivial solution of \eqref{eq:centroid-kernel} has $(\mu, \translation) \!\neq\! 0$ and hence a nonzero shift $\delta\shift_i \!=\! \mu\,\dual_i \!+\! \translation$.
+for some $\smash{(\kappa, \translation, c) \in \R \times \R^d \times \R}$.
+Since the generators are distinct, every nontrivial solution of \eqref{eq:centroid-kernel} has $(\kappa, \translation) \!\neq\! 0$ and hence a nonzero shift $\delta\shift_i \!=\! \kappa\,\dual_i \!+\! \translation$.
 As a result, $\centroiddual$ has a nontrivial homothetic mode if and only if the vectors $\smash{(\gamma_i, \tcentroid_i, 1)}$ do not span $\R^{d+2}$, \ie if and only if its pivots lie on a common hyperplane.
 % 
 % Equivalently, the pivots $\smash{(\tcentroid_i, \gamma_i) \in \R^{d+1}}$ lie on a common hyperplane, as stated in \S\ref{sec:centroid-constraints}.
@@ -94,7 +94,7 @@ In terms of the lifted generators $(\dual_i, \height_i)$, \eqref{eq:appendix-kap
 Note that the vector part $\dual_j - \dual_i$ in \eqref{eq:appendix-lifted-edge} are the edges of the dual graph (\S\ref{sec:background}) with its nodes at the generators instead of the sites, which are orthogonal to the facets because each $\face_{ij}$ lies on the hyperplane of equal power distance to $(\dual_i, \combweight_i)$ and $(\dual_j, \combweight_j)$.
 
 \paragraph{Closed 1-forms}
-Every homothety \eqref{eq:infinitesimal-homothety} verifies \eqref{eq:appendix-lifted-edge} with the constant stretch factor $\kappa \!\equiv\! \mu$, since it scales all lifted edges alike.
+Every homothety \eqref{eq:infinitesimal-homothety} verifies \eqref{eq:appendix-lifted-edge} with the constant stretch factor $\kappa_{ij} \!\equiv\! \kappa$, since it scales all lifted edges alike.
 The dual graph may, however, admit non-constant stretch factors $\kappa_{ij}$ that verify \eqref{eq:appendix-lifted-edge}, which give additional null-space modes.
 Since the facets are fixed, the vector part of \eqref{eq:appendix-lifted-edge} states that these modes perturb the generators while keeping every dual edge orthogonal to its facet.
 % 
@@ -150,12 +150,12 @@ Choosing one block as the \emph{root block} $B_0$, every other block $B$ is atta
 We name the \emph{branch} $\branch_B$ of $B$ as the cells that ${c_B}$ cuts off from the root, \ie the part of the dual graph without $c_B$ that contains the other cells of $B$.
 The additional null-space modes of $\jointdual$ are then \emph{localized homotheties}, which scale each lifted generator $(\dual_k, \height_k)$ of a branch $\branch_B$ about the lifted generator $(\dual_{c_B}, \height_{c_B})$ of its cut cell through
 \begin{equation}
-  (\dual_k, \height_k) + s_B\,\bigl((\dual_k, \height_k) - (\dual_{c_B}, \height_{c_B})\bigr),
+  (\dual_{c_B}, \height_{c_B}) + (1 + s_B)\,\bigl((\dual_k, \height_k) - (\dual_{c_B}, \height_{c_B})\bigr),
   \label{eq:appendix-localized-homothety}
 \end{equation}
-with a {branch dilation} $s_B \!>\! -1$, while leaving all the other generators fixed.
-In terms of affine functions, this mode maps $a_k(\xx)$ to $a_k(\xx) + s_B\,(a_k(\xx) \!-\! a_{c_B}(\xx))$ for $\cell_k \!\in\! \branch_B$, so the differences $a_j(\xx) - a_i(\xx)$ across the facets within $\branch_B \cup \{\cell_{c_B}\}$ are scaled by $1 + s_B$ and those elsewhere are unchanged.
-For an infinitesimal $s_B$, its variation $\smash{\delta a_k(\xx) = s_B\,(a_k(\xx) \!-\! a_{c_B}(\xx))}$ for $\cell_k \!\in\! \branch_B$ verifies \eqref{eq:appendix-null-condition}, since $\branch_B$ is only linked to the other cells through facets $\face_{k c_B}$ on which $a_k(\xx) - a_{c_B}(\xx)$ vanishes.
+with a {branch dilation} $s_B$ such that $1 + s_B \!>\! 0$, while leaving all the other generators fixed.
+In terms of affine functions, this mode maps $a_k(\xx)$ to $a_{c_B}(\xx) + (1 + s_B)\,(a_k(\xx) \!-\! a_{c_B}(\xx))$ for $\cell_k \!\in\! \branch_B$, so the differences $a_j(\xx) - a_i(\xx)$ across the facets within $\branch_B \cup \{\cell_{c_B}\}$ are scaled by $1 + s_B$ and those elsewhere are unchanged.
+For an infinitesimal $s_B$, its variation, \ie $\smash{\delta a_k(\xx) = s_B\,(a_k(\xx) \!-\! a_{c_B}(\xx))}$ for $\cell_k \!\in\! \branch_B$, verifies \eqref{eq:appendix-null-condition}, since $\branch_B$ is only linked to the other cells through facets $\face_{k c_B}$ on which $a_k(\xx) - a_{c_B}(\xx)$ vanishes.
 Dilating instead the part of the dual graph that contains the root differs from this mode by a global homothety about $\dual_{c_B}$, so each of the $b \!-\! 1$ non-root blocks adds exactly one mode to the count above.
 % 
 For the Hessian of $\centroiddual$, these modes must also verify $\delta \weight_i \!=\! \delta a_i(\tcentroid_i) \!=\! 0$, which still requires the pivots on each block to lie on a common hyperplane.

@@ -167,10 +167,10 @@ Unlike $\centroiddual$, the Hessian of $\jointdual$ always has a nontrivial null
 In particular, this null-space contains every infinitesimal homothety of the shifted weighted sites, \ie the first-order variation of \eqref{eq:lifted-homothety} about the identity.
 In terms of the multipliers, these infinitesimal homotheties are the perturbations
 \begin{equation}
-  \delta\shift_i = \mu\,\dual_i + \translation , \qquad \delta\weight_i = \mu\,\gamma_i + 2\,\translation\tr \tcentroid_i - c ,
+  \delta\shift_i = \kappa\,\dual_i + \translation , \qquad \delta\weight_i = \kappa\,\gamma_i + 2\,\translation\tr \tcentroid_i - c ,
   \label{eq:joint-nullspace}
 \end{equation}
-for any $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$, where
+for any $\smash{(\kappa, \translation, c) \in \R \times \R^d \times \R}$, where
 \begin{equation}
   \gamma_i = \norm{\tcentroid_i}^2 - \bigl( \norm{\tcentroid_i - \qq_i}^2 - \weight_i \bigr)
   \label{eq:pivot}
@@ -178,9 +178,11 @@ for any $\smash{(\mu, \translation, c) \in \R \times \R^d \times \R}$, where
 is the height at the target $\tcentroid_i$ of the hyperplane lifted from the weighted site $(\qq_i, \weight_i)$, which does not depend on the shift $\shift_i$.
 These perturbations reproduce  the infinitesimal version of the redundancy of the triplets $\smash{(\qq_i, \shift_i, \weight_i)}$ derived by \citet[Lemma~1]{Memari2012PrimalDual}.
 % 
-Note that the perturbations whose weight updates vanish are the homothetic null-space modes of $\centroiddual$ and, for $\mu \!=\! 0$ and $\translation \!=\! 0$, they reduce to the constant spanning the Hessian null-space of $\dualenergy$.
+As detailed in Appendix~\ref{sec:appendix-nullspace}, these $d \!+\! 2$ modes cover the entire Hessian null-space of $\jointdual$, except when the dual graph has cut cells or the generators are not in general position, which can then add localized homotheties.
+% at the cut cells and at cycles of more than three dual edges, respectively.
 % 
-As detailed in Appendix~\ref{sec:appendix-nullspace}, these $d \!+\! 2$ modes cover the entire Hessian null-space of $\jointdual$, except when the dual graph has cut cells or the generators are not in general position, which can then add localized homotheties at the cut cells and at cycles of more than three dual edges, respectively.
+Note also that the perturbations whose weight updates vanish are the null-space modes of $\centroiddual$ and, for $\kappa \!=\! 0$ and $\translation \!=\! 0$, they reduce to the constant spanning the Hessian null-space of $\dualenergy$.
+% 
 Since all null-space modes leave the cells unchanged, the maximizing multipliers, when they exist, generate a \emph{single} power diagram.
 
 \subsection{Softened Centroid Constraints}

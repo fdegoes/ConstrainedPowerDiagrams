@@ -87,7 +87,7 @@ As a result, we can write any maximizing generator of the same power diagram as
   \label{eq:flow-gauge}
 \end{equation}
 If the generators are not in general position, we must also include the modes deduced from dual polygons (Appendix~\ref{sec:appendix-nullspace-degenerate}).
-Unlike cut cells, which persist under small motions of the particles, these extra modes disappear under any perturbation, so we avoid them in practice by slightly jittering the generators to force general position.
+Unlike cut cells, which persist under small motions of the particles, these extra modes disappear under any perturbation, so in practice we discard the facets of negligible measure and let the regularization of our Newton solver absorb the remaining degenerate modes.
 
 The Euler--Lagrange equations of \eqref{eq:flow-lagrangian} thus read
 \begin{equation}
@@ -151,7 +151,7 @@ We initialize the simulation from a centroidal power diagram, whose generators a
 Within each time step, we solve \eqref{eq:flow-line-constraint} by Newton's method (Algorithm~\ref{alg:flow-constrained-newton}).
 We start from zero shifts, which satisfy the linear constraints, and from the weights that realize the prescribed volumes for the sites $\qq^k$, obtained by maximizing $\dualenergy$ warm-started from the shifted weights $\combweight^k$ of the previous step.
 Each iteration computes the Newton system of $\jointdual$ bordered by the $d \!+\! b$ rows of \subeqrange{eq:flow-line-constraint-trans}{d}, which returns the shift and weight updates together with the gauge.
-As discussed in Appendix~\ref{sec:appendix-bordered}, each Newton step costs $d \!+\! b \!+\! 1$ solves of a sparse linear system with the Hessian of $\jointdual$, followed by a dense $(d + b) \!\times\! (d + b)$ system for the gauge, where $b \!=\! 1$ unless the dual graph has cut cells.
+As discussed in Appendix~\ref{sec:appendix-bordered}, each Newton step costs $d \!+\! b \!+\! 1$ solves of a sparse linear system with the Hessian of $\jointdual$, followed by a dense $(d + b) \!\times\! (d + b)$ system for the gauge, where $b \!=\! 1$ unless the dual graph has cut cells. %, and the gauge of the solution follows from one more such step at convergence.
 At convergence, the centroids are the new particles $\smash{\qq^{k+1}}$ and the generators $\smash{\qq^k \!+\! \shift}$ give the next direction $\smash{\dual^{k+1}}$.
 
 \subsection{Penalty-based Integrator}
@@ -248,7 +248,7 @@ Matching their stiffness to the strength $1 \!+\! \alpha$ of our centroid residu
 
 \paragraph{Link to \citet{deGoes2015PowerParticles}}
 The Power Particles method \cite{deGoes2015PowerParticles} advances the sites $\qq^k$ and velocities $\vel^k$ via an operator splitting scheme whose individual steps relate to our penalty-based integrator.
-First, they enforce the volumes by maximizing $\dualenergy$ of \eqref{eq:volume-dual} over the weights for the sites $\qq^k$, which is equivalent to maximizing $\jointdual_\alpha$ with zero shifts, and keep the resulting power diagram fixed for the rest of the time step.
+First, they enforce the volumes by approximately maximizing $\dualenergy$ of \eqref{eq:volume-dual} over the weights for the sites $\qq^k$, with a fixed number of Newton steps, which is equivalent to maximizing $\jointdual_\alpha$ with zero shifts, and keep the resulting power diagram fixed for the rest of the time step.
 Next, they project the velocities $\vel^k$ onto those that preserve the volumes to first order (\ie that are discretely divergence-free), which yields the projected velocities $\smash{\vel^{k+1}}$.
 This projection resembles a single Newton step on $\jointdual_\alpha$ from zero shifts and the weights maximizing $\dualenergy$ in the first step, with targets $\smash{\tcentroid \!=\! \centroid^k \!+\! \tstep\,\vel^k/\alpha}$, for which the shift gradient \eqref{eq:regularized-gradient-shift} is $\smash{\tfrac{2}{\alpha}\,\tstep\,\pvol_i\,\vel^k_i}$.
 In particular, the discrete divergence and gradient operators of \citet{deGoes2015PowerParticles} correspond to the shift--weight block of the Hessian of $\jointdual_\alpha$ in \eqref{eq:joint-hessian}.
@@ -259,7 +259,7 @@ Finally, combining \eqref{eq:flow-softened-step-vel} and \eqref{eq:flow-softened
   \label{eq:flow-softened-combined}
 \end{equation}
 For the stiffness $(1 \!+\! \alpha)\,\tstep^2 \!=\! 1$, which saturates the time-step restriction of \citet{Gallouet2018Lagrangian}, \eqref{eq:flow-softened-combined} reduces to $\qq^{k+1} \!=\! \centroid^k \!+\! \tstep\,\vel^k$, \ie a full Lloyd step onto the centroids followed by advection.
-Their site update is exactly this one with $\vel^k$ replaced by the projected velocities $\smash{\vel^{k+1}}$, which they also store as the new velocities.
+Their site update is this one with $\vel^k$ replaced by the projected velocities $\smash{\vel^{k+1}}$, which they also store as the new velocities.
 Since this choice of stiffness is tied to the time step, the splitting does not discretize a Lagrangian, in contrast to our formulations.
 
 \end{document}
