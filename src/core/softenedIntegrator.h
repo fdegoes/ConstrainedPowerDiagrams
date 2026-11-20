@@ -12,13 +12,13 @@ namespace PP
 // constraints are softened with stiffness alpha (IntegratorOptions::_alpha).
 //   (u, w)  = SoftenedSolver with sites and targets q^k, from u = 0 and the
 //             weights of F at q^k, warm-started from lambda^k
-//   v^{k+1} = v^k - kappa (1 + 1/alpha) dt u
-//             (= v^k + kappa (1 + alpha) dt (c - q^k) at convergence)
+//   v^{k+1} = v^k - (1 + 1/alpha) dt u
+//             (= v^k + (1 + alpha) dt (c - q^k) at convergence)
 //   q^{k+1} = q^k + dt v^{k+1}
 //   p^{k+1} = q^k + u,  lambda^{k+1} = w + |u|^2
-// with kappa = IntegratorOptions::_stiffness (1 in latex/flow.tex). Stable
-// for dt < 2 / sqrt(kappa (1 + alpha)) (eq:softened-time-step).
-// Initialize() solves H_alpha with sites and targets at the positions.
+// Stable for dt < 2 / sqrt(1 + alpha) (eq:softened-time-step).
+// Initialize() moves the particles to a centroidal diagram (as the constrained
+// integrator) and solves H_alpha there, whose shifts vanish.
 class SoftenedIntegrator : public Integrator
 {
 public:
@@ -27,9 +27,10 @@ public:
     const char* GetName() const override { return "Softened"; }
     Result Initialize(ParticleState& state) const override;
     Result Step(ParticleState& state, double dt) const override;
+    bool Measure(const ParticleState& state, FlowMeasures& measures, std::string& err) const override;
     double GetPotential(double quantization, double centroidResidual) const override
     {
-        return _options._stiffness * (quantization + (1.0 + _options._alpha) * centroidResidual);
+        return quantization + (1.0 + _options._alpha) * centroidResidual;
     }
 
 private:

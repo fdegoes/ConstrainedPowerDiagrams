@@ -327,6 +327,68 @@ JointDual::_AddPairRegularization(const ShiftedDiagram& diagram, _Assembly& N) c
 }
 
 void
+JointDual::FreezeEdges(const ShiftedDiagram& diagram)
+{
+    _frozen.clear();
+    if (not HasShifts()) {
+        return;
+    }
+    for (size_t f = 0; f < diagram.GetNumFacets(); ++f) {
+        const double d = diagram.GetGeneratorDistance(f);
+        if (not (d > 0.0)) {
+            continue;  // coincident (no direction)
+        }
+        const ShiftedDiagram::Facet& F = diagram.GetFacet(f);
+        _FrozenEdge E{F._i, F._j, {0.0, 0.0, 0.0}, d};
+        const double* pi = diagram.GetGenerator(F._i);
+        const double* pj = diagram.GetGenerator(F._j);
+        for (int c = 0; c < _dim; ++c) {
+            E._e[c] = (pj[c] - pi[c]) / d;
+        }
+        _frozen.push_back(E);
+    }
+}
+
+double
+JointDual::_GetStretch(const _FrozenEdge& E, const Vector& z) const
+{
+    const int s = GetStride();
+    double t = 0.0;
+    for (int c = 0; c < _dim; ++c) {
+        const double pi = _sites[_dim * E._i + c] + z[s * E._i + c];
+        const double pj = _sites[_dim * E._j + c] + z[s * E._j + c];
+        t += (pj - pi) * E._e[c];
+    }
+    return t / E._d;
+}
+
+double
+JointDual::GetMinStretch(const Vector& z) const
+{
+    double m = HUGE_VAL;
+    for (const _FrozenEdge& E : _frozen) {
+        m = std::min(m, _GetStretch(E, z));
+    }
+    return m;
+}
+
+double
+JointDual::GetMaxStep(const Vector& z, const Vector& dz, double limit) const
+{
+    double t = 1.0;
+    const Vector z1 = z + dz;
+    for (const _FrozenEdge& E : _frozen) {
+        const double s0 = _GetStretch(E, z);
+        const double s1 = _GetStretch(E, z1);
+        const double bound = limit * s0;
+        if (s1 < bound and s0 > s1) {
+            t = std::min(t, (s0 - bound) / (s0 - s1));
+        }
+    }
+    return t;
+}
+
+void
 JointDual::_AddFacetBlocks(
     const ShiftedDiagram& diagram,
     size_t f,

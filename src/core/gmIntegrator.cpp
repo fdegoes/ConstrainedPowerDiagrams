@@ -36,6 +36,20 @@ GMIntegrator::Initialize(ParticleState& state) const
     return res;
 }
 
+bool
+GMIntegrator::Measure(const ParticleState& state, FlowMeasures& measures, std::string& err) const
+{
+    Result res;
+    ParticleState s;
+    std::vector<double> weights;
+    if (not _Prepare(state, s, res) or not _Solve(s, weights, res)) {
+        err = res._error;
+        return false;
+    }
+    measures = _Measure(res._solve._diagram, s);
+    return true;
+}
+
 Integrator::Result
 GMIntegrator::Step(ParticleState& state, double dt) const
 {
@@ -44,10 +58,17 @@ GMIntegrator::Step(ParticleState& state, double dt) const
     if (not _Prepare(state, cur, res)) {
         return res;
     }
+    const std::vector<double> startVelocities = cur._velocities;
     _ApplyGravity(cur._velocities, dt);
     std::vector<double> weights;
     if (not _Solve(cur, weights, res)) {
         return res;
+    }
+    {
+        // The state at the start of the step on the diagram solved for it.
+        ParticleState start = cur;
+        start._velocities = startVelocities;
+        res._startMeasures = _Measure(res._solve._diagram, start);
     }
 
     const std::vector<double>& q = cur._positions;

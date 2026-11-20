@@ -36,7 +36,7 @@ import tempfile
 import time
 
 import numpy as np
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, squareform
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -229,13 +229,18 @@ def run_theirs_default(case, args):
     out = dict(case=case.name, method="theirs", termination="theirs")
     try:
         if case.paper == "2025":
+            # Time cap, checked between iterations as in run_theirs_common.
+            def capped(X):
+                return time.perf_counter() - t0 > args.max_seconds
             if case.objective == "H":
                 res, X = ref.max_H_solver(case.start, case.b, case.v, case.om, R0=case.R0, d=case.d,
-                                          max_iter=case.maxiter, ptol=case.ptol)
+                                          max_iter=case.maxiter, ptol=case.ptol, callback=capped)
             else:
                 res, X = ref.min_F_solver(case.start, case.b, case.v, case.om, d=case.d, max_iter=case.maxiter,
-                                          ptol=case.ptol)
-            out.update(converged=bool(res.success), status=str(res.message), iterations=int(res.nit))
+                                          ptol=case.ptol, callback=capped)
+            timedOut = time.perf_counter() - t0 > args.max_seconds
+            out.update(converged=bool(res.success) and not timedOut,
+                       status="time cap" if timedOut else str(res.message), iterations=int(res.nit))
         else:
             y = case.t / (case.t - 1) * case.b
             B, k, status = ref.convex_order_projection_frank_wolfe(case.om, y, case.start, R0=case.R0, masses=case.v,
@@ -349,6 +354,21 @@ def run_theirs_common(case, args):
 # My methods
 # --------------------------------------------------------------------------
 
+
+def trim_to_solution(traj, generators):
+    """The trajectory up to the iterate returned by the solver. With restarts,
+    the trajectory chains all the attempts, each from the same start, and the
+    returned solution (the converged attempt, or else the one with the
+    smallest residual) need not be the last iterate."""
+    if not traj:
+        return traj
+    g = np.asarray(generators, dtype=float)
+    for k in range(len(traj) - 1, -1, -1):
+        p = np.asarray(traj[k]["generators"], dtype=float)
+        if p.shape == g.shape and np.array_equal(p, g):
+            return traj[:k + 1]
+    return traj
+
 def run_mine(case, solver, alpha, start, args):
     """One benchBourne solve, stopped on rule 3 at the smallest --tol (the
     larger ones are read off the trajectory); rule 1 is measured at its
@@ -368,12 +388,14 @@ def run_mine(case, solver, alpha, start, args):
         with open(opath) as f:
             r = json.load(f)
 
-    traj = r.pop("trajectory")
+    traj = trim_to_solution(r.pop("trajectory"), r["generators"])
     method = solver if solver == "H" else "Halpha(%.3g)" % alpha
     if len(args.start) > 1:
         method += " s=%g" % start
     out = dict(case=case.name, method=method, solverStatus=r["status"], solverIterations=r["iterations"],
                solverSeconds=r["seconds"], numBuilds=r["numBuilds"], startSeconds=r["startSeconds"],
+               # The residuals of the solver's termination test at the returned solution.
+               volumeResidual=r["volumeResidual"], shiftResidual=r["shiftResidual"],
                phaseSeconds=dict(build=r["buildSeconds"], hessian=r["hessianSeconds"], factor=r["factorSeconds"]))
     if r["volumes"]:
         out.update(_final_errors(case, V=np.asarray(r["volumes"]), c=np.reshape(r["centroids"], (-1, 2))))
@@ -411,11 +433,45 @@ def _rule1_at_solution(case, traj):
 # Driver
 # --------------------------------------------------------------------------
 
+def _start_residuals(case):
+    """|c0_i - b_i| per cell, with c0 the centroids of the power diagram of
+    the sites q = b with the prescribed volumes (max F at q): the tightest OT
+    solve that pysdot reaches, looser if needed."""
+    for tol in (OT_MIN_REL_TOL, 1e-8, 1e-7, 1e-6):
+        try:
+            with ref.Evaluation():
+                _, c0, _ = ref.solve_OT_problem(np.asarray(case.sites), case.v, case.om, relTol=tol)
+            return np.linalg.norm(c0 - case.b, axis=1)
+        except RuntimeError:
+            continue
+    raise RuntimeError("the volume solve at the sites cannot be solved to 1e-6 min(v)")
+
+
+def _site_distances(case):
+    D = squareform(pdist(np.asarray(case.sites)))
+    np.fill_diagonal(D, np.inf)
+    return D
+
+
 def distinct_alpha(case):
-    """Bound eq:regularized-distinct: below it, the maximizer of H_alpha with
-    sites q = b is a power diagram (distinct generators)."""
-    x0, y0, x1, y1 = case.box
-    return float(pdist(np.asarray(case.sites)).min() / (2 * math.hypot(x1 - x0, y1 - y0)))
+    """Bound eq:regularized-distinct at the sites q = b: below it, the
+    maximizer of H_alpha is a power diagram (distinct generators),
+        min_{i != j} |q_i - q_j| / sqrt(resid (1/Vbar_i + 1/Vbar_j)),
+    resid = sum_i Vbar_i |c0_i - b_i|^2."""
+    e, V = _start_residuals(case), case.v
+    resid = float(np.sum(V * e ** 2))
+    return float(np.min(_site_distances(case) / np.sqrt(resid * (1.0 / V[:, None] + 1.0 / V[None, :]))))
+
+
+def practical_alpha(case):
+    """Per-cell estimate eq:regularized-practical of the same bound, assuming
+    |u_i| <= alpha |c0_i - b_i|:
+        min_{i != j} |q_i - q_j| / (|c0_i - b_i| + |c0_j - b_j|).
+    Not a guarantee: it held, with a margin of at least 1.5, on the
+    synthetic and Bourne cases (2D and 3D), where the bound is up to 60 times
+    smaller."""
+    e = _start_residuals(case)
+    return float(np.min(_site_distances(case) / (e[:, None] + e[None, :])))
 
 
 def realizable_runs(case, methods, args):
@@ -430,7 +486,8 @@ def approximate_runs(case, methods, args):
     problem as their dilation t/(t-1))."""
     if "Halpha" not in methods:
         return []
-    alphas = list(args.alpha) + [r * distinct_alpha(case) for r in args.alpha_bound]
+    alphas = (list(args.alpha) + [r * distinct_alpha(case) for r in args.alpha_bound]
+              + [r * practical_alpha(case) for r in args.alpha_practical])
     if case.paper == "2026":
         alphas.append(case.t - 1)
     return [("Halpha", a, s) for a in sorted(set(alphas)) for s in args.start]
@@ -481,7 +538,7 @@ def add_common_args(ap, group, methods, out):
                     help="rule 3 tolerance (the smallest stops the runs; larger ones are read off the trajectory)")
     ap.add_argument("--start", nargs="+", type=float, default=[0.0],
                     help="s of MakeJointStart (irrelevant when the sites are the targets, the default)")
-    ap.add_argument("--max-iter-mine", type=int, default=200)
+    ap.add_argument("--max-iter-mine", type=int, default=100)
     ap.add_argument("--max-iter-theirs", type=int, default=5000, help="iteration cap of the common-rule runs")
     ap.add_argument("--max-seconds", type=float, default=1800.0, help="time cap of the common-rule runs")
     ap.add_argument("--out", default=os.path.join(HERE, "results", out))
@@ -517,7 +574,16 @@ def run(args, group, my_runs):
         for solver, alpha, start in my_runs(case, args.method, args):
             # Ours always stops on rule 3 (common); rule 1 is measured at
             # its solution (None on the 2026 cases).
-            r = run_mine(case, solver, alpha, start, args)
+            try:
+                r = run_mine(case, solver, alpha, start, args)
+            except subprocess.CalledProcessError as e:
+                # A crash of benchBourne on one run: record it and go on.
+                print("   %s %s alpha %g start %g: benchBourne failed (exit %d)" % (
+                    case.name, solver, alpha, start, e.returncode), flush=True)
+                with open(os.path.join(args.out, "%s__%s__error.json" % (case.name, solver)), "w") as f:
+                    json.dump(dict(case=case.name, method=solver, alpha=alpha, start=start,
+                                   error="exit %d" % e.returncode), f, indent=1)
+                continue
             if r["theirs"] is None:
                 r.pop("theirs")
             results.append(r)

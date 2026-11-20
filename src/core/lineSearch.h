@@ -37,7 +37,7 @@ public:
         double      _stepLength = 0.0;  // omega
         int         _halvings = 0;
         double      _value = 0.0;       // objective at the accepted point
-        std::string _error;             // geogram failure, if any
+        std::string _error;             // why the last unbuilt trial diagram failed, if any
     };
 
     LineSearch() = default;

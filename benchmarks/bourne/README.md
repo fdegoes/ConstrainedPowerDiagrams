@@ -6,8 +6,9 @@ Reproduces the experiments of
 - Bourne, Gallouët, Mérigot & Natale, *Semi-discrete convex order and Laguerre tessellation fitting* (2026) — `Bourne2026ConvexOrder`
 
 with their methods (SLSQP on their H or least squares; Frank–Wolfe) and with
-the dual solvers of this project (max H, max H_alpha), and compares them under
-their termination rules and a common per-cell L∞ residual.
+the dual solvers of this project (max H, max H_alpha). Each method stops on
+its own rule (their SLSQP rule, or a common per-cell L∞ residual), and the
+other rule is measured at its solution.
 
 ## Files
 
@@ -17,8 +18,8 @@ their termination rules and a common per-cell L∞ residual.
   our H_alpha over a sweep of stiffnesses.
 - `run_comparison.py` — head-to-head on the approximate cases (see
   `README_COMPARISON.md`): their
-  methods and our H_alpha, at our alpha bound (eq:regularized-distinct) and at
-  their hand-picked value (EBSD t = 10), each run to convergence or to the
+  methods and our H_alpha, at our alpha bound (eq:regularized-distinct), at
+  our practical estimate of it, and at their hand-picked value (EBSD t = 10), each run to convergence or to the
   caps (1000 iterations, 1800 s); reports the stop reason, iterations, time
   and the volume, centroid and stationarity residuals (`results.csv`).
 - `bourne_cases.py` — shared by both drivers: the cases, the runs of every
@@ -76,10 +77,10 @@ Options (both drivers, except where noted):
 |---|---|---|
 | `--case NAME...` | all in the driver's group | realizable: `2025-invert`, `2026-voronoi`, `2026-aligned`; approximate: `2025-perturbed-small`, `2025-perturbed-large`, `ebsd` |
 | `--method M...` | `theirs H` / `theirs Halpha` | their method of the case's paper; our H (realizable); our H_alpha (approximate) |
-| `--termination T...` | `theirs common` | the source paper's rule; the common residual |
-| `--tol X...` | `1e-1 1e-2 1e-3 1e-4` | tolerances of the common rule |
+| `--tol X...` | `1e-8` | tolerances of the common rule (the smallest stops the runs; the larger ones are read off the trajectory) |
 | `--alpha A...` | `10 100 1000` | approximate only: H_alpha stiffnesses |
-| `--alpha-bound R...` | `0.99 10 100` | approximate only: further stiffnesses, as multiples of the distinctness bound `min|q_i-q_j| / (2 diam)` (eq:regularized-distinct) |
+| `--alpha-bound R...` | `0.99 10 100` | approximate only: further stiffnesses, as multiples of the distinctness bound eq:regularized-distinct (`bourne_cases.distinct_alpha`) |
+| `--alpha-practical R...` | `0.99` | approximate only: further stiffnesses, as multiples of the per-cell estimate eq:regularized-practical (`bourne_cases.practical_alpha`) |
 | `--start S...` | `0` | `s` of `MakeJointStart` for our H when the sites differ from the targets (2025-invert) |
 | `--max-iter-mine N` | 200 | Newton iteration cap of my solves |
 | `--max-iter-theirs N` | 5000 | iteration cap of their common-rule runs |
@@ -93,7 +94,7 @@ Every numerical example of the two papers is a case of `make_cases()` in
 (`external/bourne/Laguerre-Polycrystalline-Microstructures/Examples/Inverting_Laguerre_Tessellations_2024/`
 for 2025, `external/bourne/Laguerre-fitting/semidiscrete_convex_order.ipynb`
 for 2026). Nothing is downloaded or cached: synthetic cases are rebuilt with
-their fixed random seeds on every run, and the two EBSD cases read the same
+their fixed random seeds on every run, and the EBSD case reads the same
 file (`EBSD_data.txt`, identical in both repositories; 243 grains; column 1
 is the grain id, columns 2–3 the centroid x, y in µm and column 4 the area
 in µm²; the rest is unused). The commands below assume
@@ -103,8 +104,7 @@ export MPLCONFIGDIR=/tmp/mplcfg
 PY=external/bourne/.venv/bin/python
 ```
 
-and run every method and rule of the case; add `--method`, `--termination`
-or `--tol` to narrow them.
+and run every method of the case; add `--method` to narrow them.
 
 ### 2025-invert — realizable, N = 20
 
@@ -200,29 +200,43 @@ Each group has its own driver: `run_realizable.py` or `run_approximate.py`.
 
 α sets the trade-off of the fit. Larger α matches the centroids more
 closely but lets the generators move far from the sites and come close to
-each other. Below the distinctness bound `min|q_i − q_j| / (2 diam)`
+each other. Below the distinctness bound (eq:regularized-distinct,
+`bourne_cases.distinct_alpha`)
+
+    α < min_{i≠j} |q_i − q_j| / ( r (1/V̄_i + 1/V̄_j) )^{1/2},   r = Σ_i V̄_i |c⁰_i − b_i|²
+
+with c⁰ the centroids of the volume solve (max F) at the sites q = b
 (`--alpha-bound` multiples < 1), the generators are guaranteed distinct, at
-the cost of a looser fit. The default sweep (`--alpha 10 100 1000`,
-`--alpha-bound 0.99 10 100`, plus t − 1 for 2026) shows the whole range
-instead of a single value.
+the cost of a looser fit. The per-cell estimate (eq:regularized-practical,
+`bourne_cases.practical_alpha`)
+
+    α < min_{i≠j} |q_i − q_j| / ( |c⁰_i − b_i| + |c⁰_j − b_j| )
+
+is larger but not guaranteed (`--alpha-practical` multiples). Both need one
+OT solve per case. The default sweep (`--alpha 10 100 1000`,
+`--alpha-bound 0.99 10 100`, `--alpha-practical 0.99`, plus t − 1 for 2026)
+shows the whole range instead of a single value.
 
 ## Termination rules
 
-**Theirs** (from their code and papers):
+Each method stops on its own rule, and the other rule is measured at its
+solution (latex/results.tex, "Termination of the comparison"):
 
-| case | method | rule |
+| case | method | stops on |
 |---|---|---|
-| 2025-invert, -perturbed-* | SLSQP on their H, pairwise (δ = 1e-3) and ball constraints | SLSQP `ftol = 1e-8·|H(X_init)|` (their notebook: 1e-10), maxiter 1000; inner OT `max|V-V̄| < 1e-3·min V̄` |
-| ebsd (theirs-2025) | SLSQP least squares, pairwise constraints, finite-difference gradient | `ftol = 1e-8·f(X_init)`, maxiter 1e4 |
-| 2026-voronoi | FW, t = 100 | gap < 1e-14, niter 4000 |
-| 2026-aligned | FW, t = 100 | gap < 1e-16, niter 1000 |
-| ebsd (theirs-2026) | FW, t = 10, start 0.5 | gap < 1e-9, niter 500 |
+| 2025-invert, -perturbed-* | SLSQP on their H, pairwise (δ = 1e-3) and ball constraints | rule 1: SLSQP `ftol = 1e-8·|H(X_init)|` (their notebook: 1e-10), maxiter 1000; inner OT `max|V-V̄| < 1e-3·min V̄` |
+| ebsd (theirs-2025) | SLSQP least squares, pairwise constraints, finite-difference gradient | rule 1: `ftol = 1e-8·f(X_init)`, maxiter 1e4 |
+| 2026-voronoi, 2026-aligned (t = 100), ebsd (theirs-2026: t = 10, start 0.5) | FW | the common rule, or `--max-iter-theirs` / `--max-seconds` |
+| all | our H or H_alpha | the common rule, or `--max-iter-mine` |
 
-Applied to my trajectory: the 2025 rule is `|obj_k − obj_{k−1}| ≤ ftol` with
-the 0.1 % volume condition; the 2026 rule is the FW gap at my centroids (one
-extra LMO per iterate, not charged), on iterates with volumes within 1e-8.
-When the rule is never met but my solve converged to round-off, it is
-reported as met at the final iterate.
+The FW gap of Bourne 2026 is not used as a rule: their paper sets no
+tolerance, and their code's (1e-14 to 1e-16) is at round-off for a gap that
+is quadratic in the error. FW therefore has no rule of its own.
+
+Rule 1 on my trajectory (2025 cases only) is `|obj_k − obj_{k−1}| ≤ ftol` at
+the final iterate, with the 0.1 % volume condition. The common rule is
+measured at the solution of their SLSQP when the case has one
+(`rule3AtSolution`).
 
 **Common:** `max|V−V̄|/V̄ ≤ tol` and `max_i |g_u,i| / V̄_i^{3/2} ≤ tol`, the
 shift gradient of the problem each method solves: H for SLSQP-on-H and my H;
@@ -243,9 +257,9 @@ timed up to that iterate. Evaluation of the rules is not charged.
   maximizer can collide, not a solver bug. The earlier "no H_alpha iterate"
   issue of the µm-box 2025-ebsd no longer applies: our H_alpha now runs in
   the unit square.
-- **2026-aligned: their FW stops at its iteration cap** (1000, about 36 s)
-  without meeting its gap rule (< 1e-16). This is their notebook's setting,
-  not a failure of the driver.
+- **2026-aligned: their notebook's FW never meets its gap** (< 1e-16): it
+  ends at its iteration cap (1000, about 36 s). This is one reason the gap is
+  not used as a rule; the drivers stop FW on the common rule instead.
 - **Long runs.** Their methods under the common rule run up to
   `--max-iter-theirs` (5000) or `--max-seconds` (1800 s) per case. Lower
   both for a quick check, e.g.

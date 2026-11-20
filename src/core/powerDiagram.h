@@ -41,10 +41,9 @@ bool ComputePowerDiagram(
     std::string& err);
 
 // Power diagram of 2D weighted sites clipped to a triangulated domain. The
-// power distance of x to site i is |x - sites_i|^2 - weights_i. Each
-// triangle is intersected with the power cells (geogram's restricted
-// Voronoi diagram), and the pieces of a cell are merged across shared
-// edges. Use Triangulate2D() to build the domain from polygons.
+// power distance of x to site i is |x - sites_i|^2 - weights_i. Each power
+// cell is clipped against the triangles it overlaps (powerCells2D.h), and
+// the pieces of a cell are merged across shared edges. Use Triangulate2D() to build the domain from polygons.
 //
 // Requirements on the triangle mesh (not checked; the caller must
 // guarantee them, otherwise the output is undefined):
@@ -75,9 +74,9 @@ bool ComputePowerDiagram2D(
     std::string& err);
 
 // Power diagram of 3D weighted sites clipped to the volume of a tetrahedral
-// mesh. Each tetrahedron is intersected with the power cells (geogram's
-// restricted Voronoi diagram), and the pieces of a cell are merged across
-// shared tet faces.
+// mesh. Each power cell is clipped against the tetrahedra it overlaps
+// (powerCells3D.h), and the pieces of a cell are merged across shared tet
+// faces.
 //
 // Requirements on the tetrahedral mesh (not checked; the caller must
 // guarantee them, otherwise the output is undefined):
@@ -95,12 +94,13 @@ bool ComputePowerDiagram2D(
 // weights   1 double per site
 // tetPts    3 doubles per tet mesh vertex
 // tets      4 vertex indices per tetrahedron
-// boundaryAngle  0 keeps the domain boundary exact (the boundary
-//           faces of a cell are the clipped boundary faces of the
-//           tets). A positive value merges adjacent boundary facets
-//           of a cell whose normals differ by less than this angle
-//           (degrees) into one flat polygon, which moves the
-//           boundary on curved domains.
+// boundaryAngle  degrees: the boundary pieces of a cell (its clipped
+//           boundary tet faces) that share an edge and whose normals
+//           differ by at most this angle are merged into one polygon.
+//           0 merges coplanar pieces only; a positive value also merges
+//           across edges of curved domains, into polygons that need not
+//           be planar. Pieces that do not merge into a single loop are
+//           kept apart.
 // out       closed boundary polygons of each non-empty cell, with
 //           outward normals (right-hand rule)
 bool ComputePowerDiagram3D(

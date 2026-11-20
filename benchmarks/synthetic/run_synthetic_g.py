@@ -71,7 +71,7 @@ def write_case_file(path, c, maxiter, volume_tol, shift_tol):
         f.write("\n".join(lines) + "\n")
 
 
-OUTCOMES = ("converged", "invalid start", "failed")
+OUTCOMES = ("converged", "invalid start", "failed", "error")
 
 
 def outcome(r):
@@ -130,7 +130,15 @@ def main():
                     c = G.make_case(args.out, n, noise, vol, seed, dim=args.dim)
                     load = os.getloadavg()[0]
                     t = time.time()
-                    r, gen, werr, mismatch = run_case(c, args)
+                    try:
+                        r, gen, werr, mismatch = run_case(c, args)
+                    except subprocess.CalledProcessError as e:
+                        # A crash of benchBourne on one case: record it and go on.
+                        rows.append({"case": c["name"], "n": n, "noise": noise, "volumes": vol, "seed": seed,
+                                     "outcome": "error", "status": "exit %d" % e.returncode, "converged": False,
+                                     "load": load})
+                        print("%-26s benchBourne failed (exit %d)" % (c["name"], e.returncode), flush=True)
+                        continue
                     row = {"case": c["name"], "n": n, "noise": noise, "volumes": vol, "seed": seed,
                            "outcome": outcome(r), "status": r["status"], "converged": r["converged"], "iterations": r["iterations"],
                            "numBuilds": r["numBuilds"], "seconds": r["seconds"],
@@ -148,9 +156,9 @@ def main():
                         w.writeheader()
                         w.writerows(rows)
     count = {o: sum(r["outcome"] == o for r in rows) for o in OUTCOMES}
-    valid = len(rows) - count["invalid start"]
-    print("converged %d / %d with a valid start (%d invalid starts, %d failed); summary in %s" % (
-        count["converged"], valid, count["invalid start"], count["failed"], csv_path))
+    valid = len(rows) - count["invalid start"] - count["error"]
+    print("converged %d / %d with a valid start (%d invalid starts, %d failed, %d errors); summary in %s" % (
+        count["converged"], valid, count["invalid start"], count["failed"], count["error"], csv_path))
 
 
 if __name__ == "__main__":

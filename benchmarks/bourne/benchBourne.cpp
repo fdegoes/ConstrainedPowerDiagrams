@@ -21,6 +21,7 @@
 //   lighttrajectory record the iterates without z, the shifted weights and
 //                   the close pairs (for the stopping rules of other methods)
 //   restarts k g    DualSolver::Parameters::_pairRestarts, _pairRestartGrowth
+//   stretchlimit t  DualSolver::Parameters::_stretchLimit
 //   volumes  n values
 //   targets  dim n values (cbar)
 //   sites    dim n values (q)
@@ -64,6 +65,7 @@ struct Case
     double              _pairScale = 2.0;
     int                 _restarts = -1;  // < 0: the solver default
     double              _restartGrowth = 2.0;
+    double              _stretchLimit = -1.0;  // < 0: the solver default
     bool                _trajectory = true;
     bool                _lightTrajectory = false;
     std::vector<double> _volumes, _targets, _sites;
@@ -123,6 +125,8 @@ _ReadCase(const std::string& path, Case& c, std::string& err)
             ok = bool(in >> c._restarts >> c._restartGrowth);
         } else if (key == "pairreg") {
             ok = bool(in >> c._pairRadius >> c._pairScale);
+        } else if (key == "stretchlimit") {
+            ok = bool(in >> c._stretchLimit);
         } else if (key == "volumes") {
             ok = _ReadValues(in, size_t(c._n), c._volumes);
         } else if (key == "targets") {
@@ -151,12 +155,52 @@ _ReadCase(const std::string& path, Case& c, std::string& err)
     return true;
 }
 
+// A JSON number: null for nan or inf, which JSON cannot represent.
+struct _Num
+{
+    double _v;
+};
+
+static std::ostream&
+operator<<(std::ostream& out, _Num n)
+{
+    if (std::isfinite(n._v)) {
+        out << n._v;
+    } else {
+        out << "null";
+    }
+    return out;
+}
+
+// A JSON string, with its quotes and the escapes of quotes, backslashes and
+// control characters.
+struct _Str
+{
+    const std::string& _s;
+};
+
+static std::ostream&
+operator<<(std::ostream& out, _Str s)
+{
+    out << '"';
+    for (const char ch : s._s) {
+        if (ch == '"' or ch == '\\') {
+            out << '\\' << ch;
+        } else if (static_cast<unsigned char>(ch) < 0x20) {
+            out << ' ';
+        } else {
+            out << ch;
+        }
+    }
+    return out << '"';
+}
+
 void
 _WriteArray(std::ostream& out, const std::vector<double>& v)
 {
     out << "[";
     for (size_t k = 0; k < v.size(); ++k) {
-        out << (k ? "," : "") << v[k];
+        out << (k ? "," : "") << _Num{v[k]};
     }
     out << "]";
 }
@@ -229,9 +273,12 @@ main(int argc, char** argv)
         params._pairRegularizationRadius = c._pairRadius;
         params._pairRegularizationScale = c._pairScale;
     }
+    if (c._stretchLimit >= 0.0) {
+        params._stretchLimit = c._stretchLimit;
+    }
 
     // Radius of the pair regularization, to record the regularized pairs.
-    // The cell size (|domain| / n)^(1/d) of JointDual::GetCellSize().
+    // The cell size (|domain| / n)^(1/d), as in JointDual::_GetCellSize().
     const double cellSize = std::pow(domain.GetVolume() / double(c._n), 1.0 / double(c._dim));
     const double pairRadius = (c._pairRadius >= 0.0 ? c._pairRadius : params._pairRegularizationRadius) * cellSize;
 
@@ -330,16 +377,16 @@ main(int argc, char** argv)
     out << "{\"dim\":" << c._dim << ",\"status\":\"" << DualSolver::GetStatusString(res._status) << "\""
         << ",\"converged\":" << (res.HasConverged() ? "true" : "false")
         << ",\"startConverged\":" << (start.HasConverged() ? "true" : "false")
-        << ",\"startVolumeResidual\":" << start._volumeResidual << ",\"startEmptyCells\":" << startEmptyCells
+        << ",\"startVolumeResidual\":" << _Num{start._volumeResidual} << ",\"startEmptyCells\":" << startEmptyCells
         << ",\"startIterations\":" << start._iterations
         << ",\"startBuilds\":" << start._numBuilds << ",\"startSeconds\":" << startSeconds
         << ",\"iterations\":" << res._iterations << ",\"attempts\":" << res._attempts
         << ",\"attemptIterations\":" << res._attemptIterations
         << ",\"numBuilds\":" << startBuilds + (usable ? res._numBuilds : 0) << ",\"seconds\":" << seconds
         << ",\"buildSeconds\":" << res._buildSeconds << ",\"hessianSeconds\":" << res._hessianSeconds
-        << ",\"factorSeconds\":" << res._factorSeconds << ",\"volumeResidual\":" << res._volumeResidual
-        << ",\"shiftResidual\":" << res._shiftResidual << ",\"value\":" << res._value << ",\"error\":\""
-        << res._error << "\"";
+        << ",\"factorSeconds\":" << res._factorSeconds << ",\"volumeResidual\":" << _Num{res._volumeResidual}
+        << ",\"shiftResidual\":" << _Num{res._shiftResidual} << ",\"value\":" << _Num{res._value} << ",\"error\":"
+        << _Str{res._error};
     out << ",\"shifts\":";
     _WriteArray(out, shifts);
     out << ",\"weights\":";
@@ -356,8 +403,8 @@ main(int argc, char** argv)
     for (size_t k = 0; k < trajectory.size(); ++k) {
         const Iterate& it = trajectory[k];
         out << (k ? "," : "") << "{\"seconds\":" << it._seconds << ",\"numBuilds\":" << it._numBuilds
-            << ",\"value\":" << it._value << ",\"volumeResidual\":" << it._volumeResidual
-            << ",\"shiftResidual\":" << it._shiftResidual << ",\"generators\":";
+            << ",\"value\":" << _Num{it._value} << ",\"volumeResidual\":" << _Num{it._volumeResidual}
+            << ",\"shiftResidual\":" << _Num{it._shiftResidual} << ",\"generators\":";
         _WriteArray(out, it._generators);
         out << ",\"shiftedWeights\":";
         _WriteArray(out, it._shiftedWeights);

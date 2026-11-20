@@ -1,8 +1,9 @@
 #include "core/powerDiagram.h"
-#include "core/cellBackend.h"
 #include "core/domain.h"
 #include "core/geogramContext.h"
 #include "core/liftSites.h"
+#include "core/powerCells2D.h"
+#include "core/powerCells3D.h"
 
 namespace PP
 {
@@ -27,13 +28,18 @@ ComputePowerDiagram(
         return false;
     }
 
+    // Cells read from the regular triangulation (powerCells2D.h,
+    // powerCells3D.h).
     GeogramLock lock;
-    ClippedPowerDiagram pd = MakeClippedPowerDiagram(domain, sites, weights);
-    if (pd._hiddenSeed) {
-        err = "Some power cells are empty and the diagram cannot be clipped.";
-        return false;
+    const PowerTriangulation pd = MakePowerTriangulation(domain, sites, weights);
+    if (out._dim == 2) {
+        if (not ComputePowerPolygons2D(domain, int(weights.size()), pd, out)) {
+            err = "The power cells could not be built (unbounded cell).";
+            return false;
+        }
+    } else {
+        ComputePowerPolygons3D(domain, int(weights.size()), pd, boundaryAngle, out);
     }
-    domain.GetBackend().ExtractPolygons(*pd._rvd, GEO::index_t(weights.size()), boundaryAngle, out);
     return true;
 }
 

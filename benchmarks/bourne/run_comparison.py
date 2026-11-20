@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
 """Head-to-head comparison on the approximate cases of Bourne et al.
 (2025-perturbed-small, 2025-perturbed-large, ebsd): their methods and our
-max H_alpha, each run until it terminates, with two stiffnesses per case:
+max H_alpha, each run until it terminates, with up to three stiffnesses per
+case:
 
-  ours     alpha at our bound (latex/contributions.tex, eq:regularized-distinct):
-             alpha < min_{i != j} |q_i - q_j| / (resid (1/Vbar_i + 1/Vbar_j)^(1/2)),
-             resid^2 = sum_i Vbar_i |c0_i - cbar_i|^2, c0 the centroids of max F
-             at the sites q = cbar; --bound-factor (0.99) times this value
-  theirs   their hand-picked value (Bourne 2026 sec. 6.3: "we set t = 10" for
-           the EBSD map, alpha = t - 1 = 9); none for the perturbed cases,
-           whose method (SLSQP on H, Bourne 2025) has no stiffness
+  bound      our bound (latex/contributions.tex, eq:regularized-distinct),
+             bourne_cases.distinct_alpha():
+               alpha < min_{i != j} |q_i - q_j| / sqrt(resid (1/Vbar_i + 1/Vbar_j)),
+               resid = sum_i Vbar_i |c0_i - cbar_i|^2, c0 the centroids of max F
+               at the sites q = cbar
+  practical  our per-cell estimate (eq:regularized-practical),
+             bourne_cases.practical_alpha():
+               alpha < min_{i != j} |q_i - q_j| / (|c0_i - cbar_i| + |c0_j - cbar_j|)
+             (both --bound-factor (0.99) times these values)
+  theirs     their hand-picked value (Bourne 2026 sec. 6.3: "we set t = 10" for
+             the EBSD map, alpha = t - 1 = 9); none for the perturbed cases,
+             whose method (SLSQP on H, Bourne 2025) has no stiffness
 
 Runs per case (FW with dilation t = 1 + alpha solves the same projection as
-our H_alpha):
-  perturbed-*  their SLSQP on H (no alpha), and ours at alpha_ours
-  ebsd         their FW at t = 1 + alpha_ours and at t = 10, their 2025
-               least-squares SLSQP (no alpha, in their 252.25 um box), and
-               ours at alpha_ours and at alpha = 9
+our H_alpha, so FW and ours run at the same alphas):
+  perturbed-*  their SLSQP on H (no alpha), and ours at bound and practical
+  ebsd         their FW and ours at bound, practical and theirs (t = 1 + alpha
+               for FW), and their 2025 least-squares SLSQP (no alpha, in their
+               251.25 um box)
 
 Every run stops when its method converges by its own rule (SLSQP: their
 relative objective change ptol; FW: their gap; ours: volume and shift
@@ -40,7 +46,7 @@ typically runs to the time cap. Run overnight, e.g.
 
 Usage:
   external/bourne/.venv/bin/python benchmarks/bourne/run_comparison.py
-      [--case NAME ...] [--max-iter 1000] [--max-seconds 1800] [--tol 1e-8]
+      [--case NAME ...] [--max-iter 1000] [--max-iter-mine 100] [--max-seconds 1800] [--tol 1e-8]
       [--bound-factor 0.99] [--out benchmarks/bourne/results/comparison]
       [--list]
 """
@@ -56,7 +62,6 @@ import tempfile
 import time
 
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -65,17 +70,6 @@ import bourne_ref as ref  # noqa: E402
 
 # Their hand-picked stiffness: Bourne 2026 sec. 6.3.2 ("we set t = 10").
 THEIR_T = {"ebsd": 10.0}
-
-
-def alpha_bound(case):
-    """Our bound eq:regularized-distinct at the sites q = cbar of case."""
-    q, b, V = np.asarray(case.sites), np.asarray(case.b), case.v
-    c0, _ = _solve_volumes(case, q)
-    resid = math.sqrt(float(np.sum(V * np.sum((c0 - b) ** 2, axis=1))))
-    D = squareform(pdist(q))
-    np.fill_diagonal(D, np.inf)
-    W = np.sqrt(1.0 / V[:, None] + 1.0 / V[None, :])
-    return float(np.min(D / (resid * W)))
 
 
 def _solve_volumes(case, X):
@@ -142,6 +136,12 @@ def run_slsqp(case, args):
     return out
 
 
+def slsqp_rule(case):
+    """Their 2025 rule: SLSQP's relative objective change, ptol times the
+    objective at the start."""
+    return "SLSQP objective change (Bourne 2025, %s)" % ("H" if case.objective == "H" else "least squares"), case.ptol
+
+
 def run_fw(case, t, args):
     """Their 2026 FW at dilation t (= H_alpha with alpha = t - 1), with their
     gap rule, capped."""
@@ -171,12 +171,16 @@ def run_fw(case, t, args):
     return out
 
 
+OUR_RULE = "volume and shift residuals of H_alpha (eq. results-termination)"
+FW_RULE = "FW gap (Bourne 2026)"
+
+
 def run_ours(case, alpha, args):
     """Our max H_alpha (benchBourne) with sites and targets cbar, stopped on
     volume and shift residuals <= --tol, capped."""
     lines = ["box %r %r %r %r" % tuple(float(x) for x in case.box), "n %d" % case.n, "solver Halpha",
              "alpha %r" % float(alpha), "start 0", "volumetol %r" % args.tol, "shifttol %r" % args.tol,
-             "maxiter %d" % args.max_iter, "notrajectory",
+             "maxiter %d" % args.max_iter_mine, "notrajectory",
              "volumes " + " ".join(repr(float(x)) for x in case.v),
              "targets " + " ".join(repr(float(x)) for x in case.b.ravel()),
              "sites " + " ".join(repr(float(x)) for x in np.asarray(case.sites).ravel())]
@@ -188,6 +192,9 @@ def run_ours(case, alpha, args):
             subprocess.run([bc.BENCH, cpath, opath], check=True, timeout=args.max_seconds + 60)
         except subprocess.TimeoutExpired:
             return dict(stop="time cap", seconds=float(args.max_seconds))
+        except subprocess.CalledProcessError as e:
+            # A crash of benchBourne on one run: record it and go on.
+            return dict(stop="error (exit %d)" % e.returncode)
         r = json.load(open(opath))
     stop = "converged" if r["status"] == "converged" else (
         "iteration cap" if r["status"] == "max iterations" else r["status"])
@@ -201,18 +208,20 @@ def run_ours(case, alpha, args):
     return out
 
 
-FIELDS = ["case", "method", "alphaChoice", "alpha", "stop", "iterations", "seconds", "otSolves", "builds", "volume",
-          "centroid", "stationary"]
+FIELDS = ["case", "method", "alphaChoice", "alpha", "rule", "tolerance", "stop", "iterations", "seconds", "otSolves",
+          "builds", "volume", "centroid", "stationary"]
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     names = [c.name for c in bc.make_cases() if c.group == bc.APPROXIMATE]
     ap.add_argument("--case", nargs="+", choices=names, default=names)
-    ap.add_argument("--max-iter", type=int, default=1000)
+    ap.add_argument("--max-iter", type=int, default=1000, help="iteration cap of their methods")
+    ap.add_argument("--max-iter-mine", type=int, default=100, help="Newton iterations per attempt of ours")
     ap.add_argument("--max-seconds", type=float, default=1800.0)
     ap.add_argument("--tol", type=float, default=1e-8, help="our volume and shift tolerance")
-    ap.add_argument("--bound-factor", type=float, default=0.99, help="alpha_ours = factor * our bound")
+    ap.add_argument("--bound-factor", type=float, default=0.99,
+                    help="alpha = factor * our bound and factor * our practical estimate")
     ap.add_argument("--out", default=os.path.join(HERE, "results", "comparison"))
     ap.add_argument("--list", action="store_true", help="print the runs and alphas, without running")
     args = ap.parse_args()
@@ -221,8 +230,8 @@ def main():
     plan = []
     for case in (c for c in bc.make_cases() if c.group == bc.APPROXIMATE and c.name in args.case):
         variants = getattr(case, "variants", [case])
-        a_ours = args.bound_factor * alpha_bound(case)
-        alphas = [("ours", a_ours)]
+        alphas = [("bound", args.bound_factor * bc.distinct_alpha(case)),
+                  ("practical", args.bound_factor * bc.practical_alpha(case))]
         if case.name in THEIR_T:
             alphas.append(("theirs", THEIR_T[case.name] - 1.0))
         for v in variants:
@@ -234,7 +243,7 @@ def main():
         for choice, a in alphas:
             plan.append((case, case, "ours-Halpha", choice, a))
     for case, v, method, choice, a in plan:
-        print("%-22s %-18s alpha %-6s %s" % (case.name, method, choice, "-" if a is None else "%.4g" % a), flush=True)
+        print("%-22s %-18s alpha %-9s %s" % (case.name, method, choice, "-" if a is None else "%.4g" % a), flush=True)
     if args.list:
         return
 
@@ -248,7 +257,13 @@ def main():
             r = run_fw(v, 1.0 + a, args)
         else:
             r = run_ours(case, a, args)
-        row = dict(case=case.name, method=method, alphaChoice=choice, alpha=a, **r)
+        if method.startswith("theirs-SLSQP"):
+            rule, tol = slsqp_rule(v)
+        elif method == "theirs-FW":
+            rule, tol = FW_RULE, v.gap
+        else:
+            rule, tol = OUR_RULE, args.tol
+        row = dict(case=case.name, method=method, alphaChoice=choice, alpha=a, rule=rule, tolerance=tol, **r)
         rows.append(row)
         tag = "%s__%s__%s" % (case.name, method, choice)
         with open(os.path.join(args.out, tag + ".json"), "w") as f:
@@ -258,13 +273,13 @@ def main():
             w.writeheader()
             w.writerows(rows)
         fmt = lambda k: "%.2e" % row[k] if isinstance(row.get(k), float) else "-"
-        print("%-22s %-18s alpha %-6s %-14s it %5s  %8.2fs  vol %s  centroid %s  stationary %s  (wall %.0fs)" % (
+        print("%-22s %-18s alpha %-9s %-14s it %5s  %8.2fs  vol %s  centroid %s  stationary %s  (wall %.0fs)" % (
             case.name, method, choice, row["stop"], row.get("iterations", "-"), row.get("seconds", float("nan")),
             fmt("volume"), fmt("centroid"), fmt("stationary"), time.time() - t0), flush=True)
 
     with open(os.path.join(args.out, "summary.txt"), "w") as f:
         for row in rows:
-            f.write("%-22s %-18s alpha %-6s %-10s %-14s it %5s  %9.2fs  vol %s  centroid %s  stationary %s\n" % (
+            f.write("%-22s %-18s alpha %-9s %-10s %-14s it %5s  %9.2fs  vol %s  centroid %s  stationary %s\n" % (
                 row["case"], row["method"], row["alphaChoice"], "-" if row["alpha"] is None else "%.4g" % row["alpha"],
                 row["stop"], row.get("iterations", "-"), row.get("seconds", float("nan")),
                 *["%.2e" % row[k] if isinstance(row.get(k), float) else "-" for k in ("volume", "centroid",

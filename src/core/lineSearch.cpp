@@ -33,8 +33,9 @@ LineSearch::Search(
     for (int k = 0; k <= _params._maxHalvings; ++k, omega *= 0.5) {
         res._halvings = k;
         const Vector zTrial = z + omega * dz;
+        // A trial whose diagram cannot be built is rejected like any other.
         if (not dual.Build(zTrial, trial, res._error)) {
-            return res;
+            continue;
         }
         if (_HasEmptyCell(trial)) {
             continue;

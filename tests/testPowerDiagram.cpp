@@ -1,9 +1,12 @@
 // Standalone checks of the clipped power diagram (no Houdini needed).
 
+#include "core/domain.h"
+#include "core/powerCells.h"
 #include "core/powerDiagram.h"
 #include "core/tetrahedralize.h"
 #include "core/triangulate2D.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <random>
@@ -340,6 +343,247 @@ _Test3DCavity()
     _Check(std::fabs(total - 0.992) < 1e-9, "3D cavity volumes sum to 0.992");
 }
 
+// The 2D power cells (ComputePowerCells, read from the regular
+// triangulation) against the diagram polygons (ComputePowerDiagram2D, the
+// welded fragments of the same cells) on random diagrams, and their tiling of the domain on
+// lattices, whose vertices are shared by four cells and lie on the edges of
+// the domain triangles.
+void
+_Test2DCells()
+{
+    struct Shape
+    {
+        const char*         _name;
+        std::vector<double> _loops;
+        std::vector<int>    _sizes;
+    };
+    const std::vector<Shape> shapes = {
+        {"square", {0, 0, 1, 0, 1, 1, 0, 1}, {4}},
+        {"L-shape", {0, 0, 1, 0, 1, 0.5, 0.5, 0.5, 0.5, 1, 0, 1}, {6}},
+        {"holed square", {0, 0, 1, 0, 1, 1, 0, 1, 0.3, 0.3, 0.7, 0.3, 0.7, 0.7, 0.3, 0.7}, {4, 4}},
+    };
+    std::mt19937 rng(17);
+    std::uniform_real_distribution<double> U(0.0, 1.0);
+    for (const Shape& s : shapes) {
+        std::vector<double> triPts;
+        std::vector<int> tris;
+        std::string err;
+        PP::Domain D;
+        if (not (PP::Triangulate2D(s._loops, s._sizes, triPts, tris, err) and PP::Domain::Make2D(triPts, tris, D, err))) {
+            _Check(false, (std::string("2D cells: domain ") + s._name + " " + err).c_str());
+            continue;
+        }
+        const int n = 60;
+        std::vector<double> sites(2 * n), weights(n);
+        for (double& x : sites) {
+            x = U(rng);
+        }
+        for (double& w : weights) {
+            w = 0.002 * U(rng);
+        }
+        PP::PowerCells cells;
+        PP::PolyMesh m;
+        const bool ok = PP::ComputePowerCells(D, sites, weights, cells, err) and
+                        PP::ComputePowerDiagram2D(sites, weights, triPts, tris, m, err);
+        _Check(ok, (std::string("2D cells and polygons on the ") + s._name + " " + err).c_str());
+        if (not ok) {
+            continue;
+        }
+        const std::vector<double> areas = _ComputeCellAreas2D(m, size_t(n));
+        double diff = 0.0, total = 0.0;
+        for (int i = 0; i < n; ++i) {
+            diff = std::max(diff, std::fabs(cells._volumes[size_t(i)] - areas[size_t(i)]));
+            total += cells._volumes[size_t(i)];
+        }
+        _Check(diff < 1e-12 and std::fabs(total - D.GetVolume()) < 1e-12,
+               (std::string("2D cells match the diagram polygons and tile the ") + s._name).c_str());
+    }
+    // k x k lattices of equal cells on the unit square (two triangles): every
+    // cell is a square of area 1/k^2, centred at its site.
+    PP::Domain square;
+    std::string err;
+    std::vector<double> triPts;
+    std::vector<int> tris;
+    PP::Triangulate2D({0, 0, 1, 0, 1, 1, 0, 1}, {4}, triPts, tris, err);
+    PP::Domain::Make2D(triPts, tris, square, err);
+    for (int k : {2, 3, 8, 27}) {
+        std::vector<double> sites, weights(size_t(k * k), 0.0);
+        for (int a = 0; a < k; ++a) {
+            for (int b = 0; b < k; ++b) {
+                sites.push_back((a + 0.5) / k);
+                sites.push_back((b + 0.5) / k);
+            }
+        }
+        PP::PowerCells cells;
+        const bool ok = PP::ComputePowerCells(square, sites, weights, cells, err);
+        double areaErr = 0.0, centroidErr = 0.0;
+        for (int i = 0; ok and i < k * k; ++i) {
+            areaErr = std::max(areaErr, std::fabs(cells._volumes[size_t(i)] - 1.0 / (k * k)));
+            for (int c = 0; c < 2; ++c) {
+                centroidErr = std::max(centroidErr, std::fabs(cells._centroids[2 * size_t(i) + c] - sites[2 * size_t(i) + c]));
+            }
+        }
+        // Facets of positive length: the lattice edges. The regular
+        // triangulation splits every vertex shared by four cells with a
+        // diagonal, whose facet has length zero (up to round-off).
+        size_t numFacets = 0;
+        for (const PP::PowerCells::Facet& F : cells._facets) {
+            numFacets += F._area > 1e-12;
+        }
+        _Check(ok and areaErr < 1e-14 and centroidErr < 1e-14 and numFacets == size_t(2 * k * (k - 1)),
+               ("2D " + std::to_string(k) + "x" + std::to_string(k) + " lattice: exact square cells and facets").c_str());
+    }
+    // A site whose weight hides it: an empty cell, without failing.
+    PP::PowerCells cells;
+    const bool ok = PP::ComputePowerCells(square, {0.25, 0.5, 0.75, 0.5, 0.5, 0.5}, {0.5, 0.5, -1.0}, cells, err);
+    _Check(ok and cells._volumes[2] == 0.0 and std::fabs(cells._volumes[0] + cells._volumes[1] - 1.0) < 1e-14,
+           "2D hidden site has an empty cell");
+}
+
+// The 3D power cells (ComputePowerCells) and polygons (ComputePowerDiagram3D)
+// on lattices, whose vertices are shared by eight cells and whose faces lie
+// on domain tet faces: in the 6-tet cube and in a cube meshed as a grid of
+// cubes split into tets. Also random diagrams (cells against polygons) in
+// the cube with a cavity, a hidden site, and the boundary merge angle.
+void
+_Test3DCells()
+{
+    std::vector<double> cubePts, tetPts;
+    std::vector<int> cubeTris, tets;
+    _MakeUnitCube(cubePts, cubeTris);
+    std::string err;
+    PP::Tetrahedralize(cubePts, cubeTris, PP::TetrahedralizeOptions(), tetPts, tets, err);
+    // 4^3 grid of cubes, each split into 6 tets around its diagonal.
+    std::vector<double> gridPts;
+    std::vector<int> gridTets;
+    const int m = 4;
+    auto id = [&](int a, int b, int c) { return (c * (m + 1) + b) * (m + 1) + a; };
+    for (int c = 0; c <= m; ++c) {
+        for (int b = 0; b <= m; ++b) {
+            for (int a = 0; a <= m; ++a) {
+                gridPts.insert(gridPts.end(), {double(a) / m, double(b) / m, double(c) / m});
+            }
+        }
+    }
+    const int perms[6][3] = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
+    for (int c = 0; c < m; ++c) {
+        for (int b = 0; b < m; ++b) {
+            for (int a = 0; a < m; ++a) {
+                for (const auto& p : perms) {
+                    int x[3] = {a, b, c};
+                    gridTets.push_back(id(x[0], x[1], x[2]));
+                    for (int k = 0; k < 3; ++k) {
+                        ++x[p[k]];
+                        gridTets.push_back(id(x[0], x[1], x[2]));
+                    }
+                }
+            }
+        }
+    }
+    struct Mesh
+    {
+        const char*                _name;
+        const std::vector<double>& _pts;
+        const std::vector<int>&    _tets;
+    };
+    for (const Mesh& M : {Mesh{"6-tet cube", tetPts, tets}, Mesh{"grid-of-cubes", gridPts, gridTets}}) {
+        PP::Domain D;
+        PP::Domain::Make3D(M._pts, M._tets, D, err);
+        for (int k : {2, 3, 4, 8}) {
+            const int n = k * k * k;
+            std::vector<double> sites, weights(size_t(n), 0.0);
+            for (int a = 0; a < k; ++a) {
+                for (int b = 0; b < k; ++b) {
+                    for (int c = 0; c < k; ++c) {
+                        sites.insert(sites.end(), {(a + 0.5) / k, (b + 0.5) / k, (c + 0.5) / k});
+                    }
+                }
+            }
+            PP::PowerCells cells;
+            PP::PolyMesh poly;
+            const bool ok = PP::ComputePowerCells(D, sites, weights, cells, err) and
+                            PP::ComputePowerDiagram3D(sites, weights, M._pts, M._tets, 0.0, poly, err);
+            double volumeErr = 0.0, centroidErr = 0.0, shellErr = 0.0;
+            size_t numFacets = 0;
+            if (ok) {
+                const std::vector<double> shells = _ComputeCellVolumes3D(poly, size_t(n));
+                for (int i = 0; i < n; ++i) {
+                    volumeErr = std::max(volumeErr, std::fabs(cells._volumes[size_t(i)] - 1.0 / n));
+                    shellErr = std::max(shellErr, std::fabs(shells[size_t(i)] - 1.0 / n));
+                    for (int c = 0; c < 3; ++c) {
+                        centroidErr = std::max(centroidErr, std::fabs(cells._centroids[3 * size_t(i) + c] - sites[3 * size_t(i) + c]));
+                    }
+                }
+                for (const PP::PowerCells::Facet& F : cells._facets) {
+                    numFacets += F._area > 1e-12;
+                }
+            }
+            // Each cell is a cube: 6 polygons once merged across tets.
+            _Check(ok and volumeErr < 1e-14 and centroidErr < 1e-14 and shellErr < 1e-14 and
+                       numFacets == size_t(3 * k * k * (k - 1)) and poly.GetNumPolygons() == size_t(6 * n),
+                   ("3D " + std::to_string(k) + "^3 lattice in the " + M._name +
+                    ": exact cube cells, facets, and 6 polygons per cell").c_str());
+        }
+    }
+    // Random diagrams in the cube with a cavity: cells tile the domain and
+    // agree with the polygon shells.
+    std::vector<double> cavPts = cubePts, inner = cubePts;
+    std::vector<int> cavTris = cubeTris, innerTris = cubeTris;
+    for (double& x : inner) {
+        x = 0.4 + 0.2 * x;
+    }
+    for (int& v : innerTris) {
+        v += 8;
+    }
+    cavPts.insert(cavPts.end(), inner.begin(), inner.end());
+    cavTris.insert(cavTris.end(), innerTris.begin(), innerTris.end());
+    std::vector<double> cavTetPts;
+    std::vector<int> cavTets;
+    PP::Tetrahedralize(cavPts, cavTris, PP::TetrahedralizeOptions(), cavTetPts, cavTets, err);
+    PP::Domain cavity;
+    PP::Domain::Make3D(cavTetPts, cavTets, cavity, err);
+    std::mt19937 rng(23);
+    std::uniform_real_distribution<double> U(0.0, 1.0);
+    const int n = 200;
+    std::vector<double> sites(3 * n), weights(n);
+    for (double& x : sites) {
+        x = U(rng);
+    }
+    for (double& w : weights) {
+        w = 0.003 * U(rng);
+    }
+    PP::PowerCells cells;
+    PP::PolyMesh poly;
+    bool ok = PP::ComputePowerCells(cavity, sites, weights, cells, err) and
+              PP::ComputePowerDiagram3D(sites, weights, cavTetPts, cavTets, 0.0, poly, err);
+    double total = 0.0, diff = 0.0;
+    if (ok) {
+        const std::vector<double> shells = _ComputeCellVolumes3D(poly, size_t(n));
+        for (int i = 0; i < n; ++i) {
+            total += cells._volumes[size_t(i)];
+            diff = std::max(diff, std::fabs(shells[size_t(i)] - cells._volumes[size_t(i)]));
+        }
+    }
+    _Check(ok and std::fabs(total - 0.992) < 1e-13 and diff < 1e-13,
+           "3D random cells tile the cube with a cavity and match their polygon shells");
+    // A hidden site: an empty cell and no polygon.
+    PP::Domain cube;
+    PP::Domain::Make3D(tetPts, tets, cube, err);
+    ok = PP::ComputePowerCells(cube, {0.25, 0.5, 0.5, 0.75, 0.5, 0.5, 0.5, 0.5, 0.5}, {0.5, 0.5, -1.0}, cells, err);
+    _Check(ok and cells._volumes[2] == 0.0 and std::fabs(cells._volumes[0] + cells._volumes[1] - 1.0) < 1e-14,
+           "3D hidden site has an empty cell");
+    // Boundary merge angle: a single cell is the cube, whose boundary pieces
+    // (two triangles per cube face) merge into the 6 faces up to 90 degrees.
+    // Above, the whole surface is one patch, which has no boundary loop, so
+    // its pieces are kept.
+    for (const auto& c : {std::make_pair(0.0, size_t(6)), std::make_pair(89.0, size_t(6)), std::make_pair(91.0, size_t(12))}) {
+        ok = PP::ComputePowerDiagram3D({0.3, 0.6, 0.4}, {0.0}, tetPts, tets, c.first, poly, err);
+        _Check(ok and poly.GetNumPolygons() == c.second,
+               ("3D boundary merge angle " + std::to_string(int(c.first)) + ": " + std::to_string(poly.GetNumPolygons()) +
+                " polygons").c_str());
+    }
+}
+
 } // namespace
 
 int
@@ -348,8 +592,10 @@ main()
     _TestTriangulate2D();
     _Test2D();
     _Test2DNonConvex();
+    _Test2DCells();
     _Test3D();
     _Test3DCavity();
+    _Test3DCells();
     std::printf("%s (%d failure%s)\n", failures ? "FAILED" : "PASSED", failures,
                 failures == 1 ? "" : "s");
     return failures ? 1 : 0;

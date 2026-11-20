@@ -28,6 +28,28 @@ _AppendMessage(std::string& message, const std::string& sentence)
     message += sentence;
 }
 
+// True if two generators of the diagram are equal: their cells cannot both
+// be non-empty (e.g. duplicate sites with equal shifts and weights).
+bool
+_HasCoincidentGenerators(const ShiftedDiagram& diagram)
+{
+    const int dim = diagram.GetDimension();
+    std::vector<int> order(diagram.GetNumSites());
+    std::iota(order.begin(), order.end(), 0);
+    const auto less = [&](int a, int b) {
+        const double* pa = diagram.GetGenerator(a);
+        const double* pb = diagram.GetGenerator(b);
+        return std::lexicographical_compare(pa, pa + dim, pb, pb + dim);
+    };
+    std::sort(order.begin(), order.end(), less);
+    for (size_t k = 1; k < order.size(); ++k) {
+        if (not less(order[k - 1], order[k])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool
 _CheckDualInputs(
     const Domain& domain,
@@ -119,9 +141,9 @@ DualSolver::_Start(const JointDual& dual, const Vector& z, Result& res)
         res._status = Status::InvalidInput;
         return false;
     }
-    if (not res._diagram.IsComplete()) {
+    if (_HasCoincidentGenerators(res._diagram)) {
         res._status = Status::InvalidInput;
-        res._error = "Some power cells are empty and the diagram cannot be clipped (e.g. duplicate sites).";
+        res._error = "Some generators coincide at the start (e.g. duplicate sites), so their cells cannot both be non-empty.";
         return false;
     }
     const int empty = res._diagram.GetNumEmptyCells();
@@ -204,13 +226,10 @@ DualSolver::_TakeLineSearchStep(const JointDual& dual, const Vector& g, const Ve
         LineSearch(_params._lineSearch).Search(dual, res._value, g, res._residual, dz, z, res._diagram);
     res._buildSeconds += _Seconds(t0);
     res._numBuilds += ls._halvings + 1;
-    if (not ls._error.empty()) {
-        res._status = Status::InvalidInput;
-        res._error = ls._error;
-        return false;
-    }
     if (not ls._accepted) {
+        // ls._error: why the last trial diagram could not be built, if so.
         res._status = Status::LineSearchFailed;
+        res._error = ls._error;
         return false;
     }
     res._value = ls._value;
@@ -226,23 +245,61 @@ DualSolver::_ComputeTrialResidual(const JointDual& dual, const Vector& g) const
         return dual.GetResidual(g);
     }
     // Residual of g - 2 C^T nu with nu minimizing it in the least-squares
-    // sense (the multipliers of the trial point; at the current point the
-    // bordered solve gives the same kind of stationarity residual).
-    const int m = int(_borderRows.size());
+    // sense, as at the current iterate (_ComputeStationarity()).
+    Eigen::VectorXd nu;
+    Vector stationarity;
+    if (not _ProjectOutRows(_borderRows, _borderMetric, g, nu, stationarity)) {
+        return HUGE_VAL;
+    }
+    return dual.GetResidual(stationarity);
+}
+
+bool
+DualSolver::_ProjectOutRows(
+    const std::vector<Vector>& rows,
+    const Vector& metric,
+    const Vector& g,
+    Eigen::VectorXd& nu,
+    Vector& stationarity) const
+{
+    const int m = int(rows.size());
     Eigen::MatrixXd G(m, m);
     Eigen::VectorXd r(m);
     for (int k = 0; k < m; ++k) {
-        r[k] = _borderRows[k].dot(g);
+        const Vector wk = metric.cwiseProduct(rows[k]);
+        r[k] = wk.dot(g);
         for (int l = 0; l < m; ++l) {
-            G(k, l) = 2.0 * _borderRows[k].dot(_borderRows[l]);
+            G(k, l) = 2.0 * wk.dot(rows[l]);
         }
     }
-    const Eigen::VectorXd nu = G.ldlt().solve(r);
-    Vector stationarity = g;
-    for (int k = 0; k < m; ++k) {
-        stationarity -= 2.0 * nu[k] * _borderRows[k];
+    const Eigen::LDLT<Eigen::MatrixXd> ldlt(G);
+    if (ldlt.info() != Eigen::Success) {
+        return false;
     }
-    return dual.GetResidual(stationarity);
+    nu = ldlt.solve(r);
+    stationarity = g;
+    for (int k = 0; k < m; ++k) {
+        stationarity -= 2.0 * nu[k] * rows[k];
+    }
+    return true;
+}
+
+bool
+DualSolver::_ComputeUndampedMultipliers(const std::vector<Vector>& rows, const Vector& g, Eigen::VectorXd& nu)
+{
+    _llt.factorize(_N);
+    if (_llt.info() != Eigen::Success) {
+        return false;
+    }
+    Vector dz, stationarity;
+    return _ComputeBorderedStep(rows, g, dz, nu, stationarity);
+}
+
+bool
+DualSolver::_ComputeStationarity(const JointDual&, const Vector& g, Vector& stationarity)
+{
+    stationarity = g;
+    return true;
 }
 
 double
@@ -269,11 +326,11 @@ DualSolver::_ComputeDampedStep(const JointDual& dual, const Vector& g, double mu
     const std::vector<Vector> rows = _borderRows;
     Eigen::VectorXd nu;
     Vector stationarity;
-    return _ComputeBorderedStep(dual, rows, g, p, nu, stationarity);
+    return _ComputeBorderedStep(rows, g, p, nu, stationarity);
 }
 
 bool
-DualSolver::_TakeDampedStep(const JointDual& dual, const Vector& g, const Vector& pN, Vector& z, Result& res)
+DualSolver::_TakeDampedStep(const JointDual& dual, const Vector& g, Vector& z, Result& res)
 {
     const Damping& lm = _params._damping;
     _scale2 = _N.diagonal().cwiseMax(1e-300);
@@ -284,6 +341,7 @@ DualSolver::_TakeDampedStep(const JointDual& dual, const Vector& g, const Vector
     }
     ShiftedDiagram trial;
     Vector p;
+    std::string trialError;
     for (int k = 0; k <= lm._maxRejections; ++k) {
         if (_mu > lm._maxDamping) {
             break;
@@ -295,19 +353,23 @@ DualSolver::_TakeDampedStep(const JointDual& dual, const Vector& g, const Vector
             res._status = Status::FactorizationFailed;
             return false;
         }
+        if (_params._stretchLimit > 0.0 and dual.HasFrozenEdges()) {
+            // Fraction to the boundary: shorten the step so that no frozen
+            // edge shrinks below the limit, rather than rejecting it (which
+            // would also raise the damping of the next steps).
+            p *= dual.GetMaxStep(z, p, _params._stretchLimit);
+        }
         const double predicted = _ComputeModelIncrease(g, p);
         const Vector zTrial = z + p;
         ++res._numBuilds;
         const auto t1 = std::chrono::steady_clock::now();
-        const bool built = dual.Build(zTrial, trial, res._error);
+        // A trial whose diagram cannot be built (e.g. an undefined power
+        // vertex of nearly collinear generators) is rejected like any other.
+        const bool built = dual.Build(zTrial, trial, trialError);
         res._buildSeconds += _Seconds(t1);
-        if (not built) {
-            res._status = Status::InvalidInput;
-            return false;
-        }
         double value = res._value;
         double rho = -1.0;
-        if (_AcceptTrial(dual, zTrial, trial, predicted, lm._acceptRatio, res, value, rho)) {
+        if (built and _AcceptTrial(dual, zTrial, trial, predicted, lm._acceptRatio, res, value, rho)) {
             // Nielsen: mu *= max(1/3, 1 - (2 rho - 1)^3).
             const double t = 2.0 * rho - 1.0;
             _mu = std::max(lm._minDamping, _mu * std::max(1.0 / 3.0, 1.0 - t * t * t));
@@ -323,6 +385,9 @@ DualSolver::_TakeDampedStep(const JointDual& dual, const Vector& g, const Vector
         _muGrowth *= 2.0;
     }
     res._status = Status::DampingFailed;
+    if (not trialError.empty()) {
+        res._error = trialError;
+    }
     return false;
 }
 
@@ -339,6 +404,10 @@ DualSolver::_AcceptTrial(
 {
     rho = -1.0;
     if (not (trial.GetMinVolume() > _params._lineSearch._minVolume)) {
+        return false;
+    }
+    if (_params._stretchLimit > 0.0 and dual.HasFrozenEdges() and
+        not (dual.GetMinStretch(zTrial) >= _params._stretchLimit * (1.0 - 1e-12))) {
         return false;
     }
     value = dual.GetValue(zTrial, trial);
@@ -371,6 +440,8 @@ DualSolver::_Solve(JointDual& dual, Vector& z, bool useLineSearch)
     dual.SetTolerances(_params._volumeTolerance, _params._shiftTolerance);
     dual.SetHessianMinDistanceRatio(_params._hessianClamp ? _params._regularization : 0.0);
     dual.SetPairRegularization(_params._pairRegularizationRadius, _params._pairRegularizationScale);
+    dual.ClearFrozenEdges();
+    const bool freeze = dual.HasShifts() and not _useLineSearch and _params._stretchLimit > 0.0;
     double startShiftResidual = -1.0;
     _resetDamping = true;
     Vector g, dz, stationarity;
@@ -386,6 +457,10 @@ DualSolver::_Solve(JointDual& dual, Vector& z, bool useLineSearch)
             }
             dual.SetPairActivity(startShiftResidual > 0.0 ? std::min(1.0, shift / startShiftResidual) : 0.0);
         }
+        if (freeze) {
+            // Edges of this diagram, whose shrinking the steps limit.
+            dual.FreezeEdges(res._diagram);
+        }
         if (not _Factorize(dual, res._diagram, res)) {
             res._status = Status::FactorizationFailed;
             return res;
@@ -395,7 +470,7 @@ DualSolver::_Solve(JointDual& dual, Vector& z, bool useLineSearch)
         if (_UsesUndampedStep()) {
             stepped = _ComputeStep(dual, z, res._diagram, g, dz, stationarity);
         } else {
-            stationarity = g;  // the damped steps alone use N
+            stepped = _ComputeStationarity(dual, g, stationarity);  // the damped steps alone use N
         }
         res._factorSeconds += _Seconds(t0);
         if (not stepped) {
@@ -416,7 +491,7 @@ DualSolver::_Solve(JointDual& dual, Vector& z, bool useLineSearch)
             return res;
         }
         const bool ok = useLineSearch ? _TakeLineSearchStep(dual, g, dz, z, res)
-                                      : _TakeDampedStep(dual, g, dz, z, res);
+                                      : _TakeDampedStep(dual, g, z, res);
         if (not ok) {
             return res;
         }
@@ -520,7 +595,10 @@ JointSolver::Solve(
         if (not res._warning.empty()) {
             warning += (warning.empty() ? "" : " ") + res._warning;
         }
-        if (res.HasConverged() or res._residual < best._residual) {
+        // Only attempts that ran their iterations have a residual (a failed
+        // factorization or start keeps the default 0).
+        const bool ran = res._status == Status::MaxIterations or res._status == Status::DampingFailed;
+        if (res.HasConverged() or (ran and res._residual < best._residual)) {
             best = res;
             best._attemptIterations = res._iterations;
             zBest = z;
@@ -576,24 +654,36 @@ MakeJointStart(
 }
 
 void
-ConstrainedJointSolver::_BuildConstraints(const JointDual& dual, const std::vector<double>& direction)
+ConstrainedJointSolver::_BuildConstraints(
+    const JointDual& dual,
+    const std::vector<double>& direction,
+    const std::vector<CutCellSide>& sides)
 {
-    // a = ({Vbar_i p_i}, 0), b_j = ({Vbar_i e_j}, 0), zero on the weights.
+    // a = ({Vbar_i p_i}, 0), b_j = ({Vbar_i e_j}, 0) and
+    // c_B = ({Vbar_i (p_i - p_{c_B})}, 0), zero on the weights.
     const int dim = dual.GetDimension();
     const int s = dual.GetStride();
     const std::vector<double>& volumes = dual.GetVolumes();
-    _rows.assign(dim + 1, Vector::Zero(dual.GetNumVariables()));
+    _rows.assign(dim + 1 + sides.size(), Vector::Zero(dual.GetNumVariables()));
     for (int i = 0; i < dual.GetNumSites(); ++i) {
         for (int c = 0; c < dim; ++c) {
             _rows[0][s * i + c] = volumes[i] * direction[dim * i + c];
             _rows[1 + c][s * i + c] = volumes[i];
         }
     }
+    for (size_t l = 0; l < sides.size(); ++l) {
+        Vector& row = _rows[dim + 1 + l];
+        const int cut = sides[l]._cut;
+        for (int i : sides[l]._side) {
+            for (int c = 0; c < dim; ++c) {
+                row[s * i + c] = volumes[i] * (direction[dim * i + c] - direction[dim * cut + c]);
+            }
+        }
+    }
 }
 
 bool
 DualSolver::_ComputeBorderedStep(
-    const JointDual& dual,
     const std::vector<Vector>& rows,
     const Vector& g,
     Vector& dz,
@@ -637,20 +727,31 @@ DualSolver::_ComputeBorderedStep(
 }
 
 bool
-ConstrainedJointSolver::_ComputeStep(
-    const JointDual& dual,
-    const Vector&,
-    const ShiftedDiagram&,
-    const Vector& g,
-    Vector& dz,
-    Vector& stationarity)
+ConstrainedJointSolver::_ComputeStationarity(const JointDual& dual, const Vector& g, Vector& stationarity)
 {
+    // The damped steps that follow are bordered by C; the multipliers of the
+    // stationarity condition, by least squares, give the gauge, which is the
+    // one of the solution at convergence (g = 2 C^T nu there).
+    // Metric 1 / Vbar_i on the shifts: the residual g_u_i / (2 Vbar_i) is the
+    // gap between the centroid and the particle of the correction
+    // (eq:flow-shake-step-corr), so that sum_i Vbar_i times this gap, i.e.
+    // the momentum change, vanishes with the translation rows. The weights
+    // have no rows.
+    Vector metric = Vector::Ones(dual.GetNumVariables());
+    const int s = dual.GetStride(), dim = dual.GetDimension();
+    for (int i = 0; i < dual.GetNumSites(); ++i) {
+        for (int c = 0; c < dim; ++c) {
+            metric[s * i + c] = 1.0 / dual.GetVolumes()[size_t(i)];
+        }
+    }
+    _SetBorderRows(_rows, metric);
     Eigen::VectorXd nu;
-    if (not _ComputeBorderedStep(dual, _rows, g, dz, nu, stationarity)) {
+    if (not _ProjectOutRows(_rows, metric, g, nu, stationarity)) {
         return false;
     }
     _gauge._dilation = nu[0];
-    _gauge._translation.assign(nu.data() + 1, nu.data() + nu.size());
+    _gauge._translation.assign(nu.data() + 1, nu.data() + 1 + dim);
+    _gauge._arms.assign(nu.data() + 1 + dim, nu.data() + nu.size());
     return true;
 }
 
@@ -661,6 +762,7 @@ ConstrainedJointSolver::Solve(
     const std::vector<double>& targets,
     const std::vector<double>& volumes,
     const std::vector<double>& direction,
+    const std::vector<CutCellSide>& sides,
     std::vector<double>& shifts,
     std::vector<double>& weights,
     Gauge& gauge)
@@ -672,9 +774,20 @@ ConstrainedJointSolver::Solve(
     if (direction.size() != sites.size() or not AreAllFinite(direction)) {
         return _MakeInputError("The direction must have one finite point per site.");
     }
+    const int numSites = int(volumes.size());
+    for (const CutCellSide& side : sides) {
+        if (side._cut < 0 or side._cut >= numSites or side._side.empty()) {
+            return _MakeInputError("Every cut cell must be a site and have a non-empty side.");
+        }
+        for (int i : side._side) {
+            if (i < 0 or i >= numSites or i == side._cut) {
+                return _MakeInputError("The side of a cut cell must hold other sites.");
+            }
+        }
+    }
     JointDual dual(domain, sites, targets, volumes, HUGE_VAL, JointDual::Unknowns::ShiftsAndWeights);
     Vector z = _PackInitial(dual, shifts, weights);
-    _BuildConstraints(dual, direction);
+    _BuildConstraints(dual, direction, sides);
 
     // The Newton steps keep C z constant, so the start must satisfy C z = 0.
     double violation = 0.0;
@@ -687,6 +800,25 @@ ConstrainedJointSolver::Solve(
 
     _gauge = Gauge();
     Result res = _Solve(dual, z);
+    if (res.HasConverged()) {
+        // The gauge of the correction from the undamped bordered Newton step
+        // at the solution (eq:flow-constrained-elimination-gauge), once per
+        // solve: unlike the least-squares multipliers of the iterations, it
+        // carries the second-order term of the step, so that the correction
+        // keeps the momentum to the accuracy of the step rather than to the
+        // tolerance of the solve.
+        Vector g;
+        dual.GetGradient(z, res._diagram, g);
+        Eigen::VectorXd nu;
+        if (_ComputeUndampedMultipliers(_rows, g, nu)) {
+            const int dim = dual.GetDimension();
+            _gauge._dilation = nu[0];
+            _gauge._translation.assign(nu.data() + 1, nu.data() + 1 + dim);
+            _gauge._arms.assign(nu.data() + 1 + dim, nu.data() + nu.size());
+        } else {
+            res._status = Status::FactorizationFailed;
+        }
+    }
     dual.Unpack(z, shifts, weights);
     gauge = _gauge;
     return res;

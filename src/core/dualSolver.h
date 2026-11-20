@@ -1,6 +1,7 @@
 #ifndef PP_CORE_DUALSOLVER_H
 #define PP_CORE_DUALSOLVER_H
 
+#include "core/dualGraph.h"
 #include "core/jointDual.h"
 #include "core/lineSearch.h"
 #include "core/shiftedDiagram.h"
@@ -101,7 +102,7 @@ public:
         // iteration by min(1, r / r0), with r the shift residual and r0 its
         // value at the start, so that the regularization fades out as the
         // solve converges.
-        double _pairRegularizationRadius = 0.3;
+        double _pairRegularizationRadius = 1.2;
         double _pairRegularizationScale = 2.0;
         // JointSolver restarts: when a solve stops without converging (max
         // iterations or no accepted step), solve again from the start, up to
@@ -109,6 +110,15 @@ public:
         // regularization multiplied by pairRestartGrowth each time.
         int    _pairRestarts = 3;
         double _pairRestartGrowth = 2.0;
+        // Damped steps (H, H_alpha, G, and the bordered steps of the constrained
+        // solve): a fraction-to-the-boundary rule
+        // on the dual edges of the current diagram (JointDual::FreezeEdges()).
+        // Each step is shortened so that no edge shrinks below stretchLimit
+        // times its length, which keeps generator pairs from collapsing
+        // within a step, notably along the extra null-space modes of
+        // reducible diagrams (latex/appendix-nullspace.tex). It changes the
+        // steps, not the objective or the solution. 0 disables it.
+        double _stretchLimit = 0.5;
         LineSearch::Parameters _lineSearch;  // VolumeSolver
         Damping                _damping;     // the other solvers
         // Optional progress log (one line per iteration).
@@ -182,10 +192,29 @@ protected:
     // Solves N x = b with the factorization of the current iteration.
     Vector _SolveFactorized(const Vector& b) const { return _llt.solve(b); }
     // Whether the iterations need the undamped step of N (_ComputeStep()):
-    // for the line search, and for the stationarity residual of the
-    // bordered step. The plain Levenberg-Marquardt step only factorizes the
-    // damped matrices.
-    virtual bool _UsesUndampedStep() const { return _useLineSearch; }
+    // for the line search only. The Levenberg-Marquardt steps, plain or
+    // bordered, only factorize the damped matrices.
+    bool _UsesUndampedStep() const { return _useLineSearch; }
+    // The stationarity vector whose residuals are tested at the current
+    // iterate of a damped solve: g itself, or, with constraint rows,
+    // g - 2 C^T nu with the multipliers nu by least squares (and the border
+    // rows of the following damped steps set). Returns false if it fails.
+    virtual bool _ComputeStationarity(const JointDual& dual, const Vector& g, Vector& stationarity);
+    // Multipliers nu of the undamped bordered Newton step at the iterate of
+    // the last factorization (_Factorize()), with gradient g: factorizes N
+    // itself. Returns false if a factorization or solve fails.
+    bool _ComputeUndampedMultipliers(const std::vector<Vector>& rows, const Vector& g, Eigen::VectorXd& nu);
+    // Border rows of the damped steps of the current iteration, and the
+    // metric of their least-squares multipliers (_ProjectOutRows()).
+    void _SetBorderRows(const std::vector<Vector>& rows, const Vector& metric)
+    {
+        _borderRows = rows;
+        _borderMetric = metric;
+    }
+    // g - 2 C^T nu for the border rows C, with nu minimizing its norm in the
+    // diagonal metric W, i.e. sum_k W_k (g - 2 C^T nu)_k^2.
+    bool _ProjectOutRows(const std::vector<Vector>& rows, const Vector& metric, const Vector& g,
+                         Eigen::VectorXd& nu, Vector& stationarity) const;
 
     // Bordered Newton step (latex/appendix-bordered.tex) with the
     // constraint rows C: solves [N C^T; C 0] [dz; 2 nu] = [g; 0] by block
@@ -194,7 +223,6 @@ protected:
     // g - 2 C^T nu.
     // The rows are kept for the damped steps of the iteration.
     bool _ComputeBorderedStep(
-        const JointDual& dual,
         const std::vector<Vector>& rows,
         const Vector& g,
         Vector& dz,
@@ -225,7 +253,7 @@ private:
         const Result& res,
         double& value,
         double& rho) const;
-    bool _TakeDampedStep(const JointDual& dual, const Vector& g, const Vector& dz, Vector& z, Result& res);
+    bool _TakeDampedStep(const JointDual& dual, const Vector& g, Vector& z, Result& res);
     // Step of (N + mu D^2) p = g with the border rows of the current
     // iteration; refactorizes. Returns false if the factorization fails.
     bool _ComputeDampedStep(const JointDual& dual, const Vector& g, double mu, Vector& p);
@@ -248,6 +276,7 @@ private:
     bool         _resetDamping = true;  // set mu to its initial value at the next step
     // Border rows of the current step (empty for the plain step).
     std::vector<Vector> _borderRows;
+    Vector              _borderMetric;
 };
 
 // Maximizes the softened joint dual H_alpha (latex/contributions.tex,
@@ -361,13 +390,15 @@ DualSolver::Result MakeJointStart(
     std::vector<double>& shifts,
     std::vector<double>& weights);
 
-// Maximizes H subject to the dilation and translation constraints of the
-// constrained integrator (latex/flow.tex, eq:flow-line-constraint):
+// Maximizes H subject to the dilation, translation and branch constraints of
+// the constrained integrator (latex/flow.tex, eq:flow-line-constraint):
 //   sum_i Vbar_i u_i^T p_i = 0,   sum_i Vbar_i u_i = 0,
-// for a direction p (the generators of the previous step). Each Newton step
-// is the bordered solve of latex/appendix-bordered.tex: d + 2 solves with N
-// and a dense (d + 1) x (d + 1) system for the gauge (s, t), the
-// multipliers of the constraints (scaled by 1/2).
+//   sum_{i in B_B} Vbar_i u_i^T (p_i - p_{c_B}) = 0  for every branch B,
+// for a direction p (the generators of the previous step) and the b - 1
+// sides (c_B, B_B) of the cut cells of its dual graph (FindCutCellSides).
+// Each Newton step is the bordered solve of latex/appendix-bordered.tex:
+// d + b + 1 solves with N and a dense (d + b) x (d + b) system for the gauge
+// (s, t, s_B), the multipliers of the constraints (scaled by 1/2).
 class ConstrainedJointSolver : public DualSolver
 {
 public:
@@ -377,12 +408,26 @@ public:
     {
         double              _dilation = 0.0;  // s
         std::vector<double> _translation;     // t, dim values
+        std::vector<double> _arms;            // s_B, one value per branch
     };
 
     // direction  dim doubles per site, p
     // shifts     must satisfy the constraints (e.g. zeros, the default
     //            when the size does not match)
-    // gauge      (s, t) of the last Newton step on return
+    // sides      the cut cells of the dual graph of the direction and their
+    //            sides; empty when it has none
+    // gauge      (s, t, s_B) of the last Newton step on return
+    Result Solve(
+        const Domain& domain,
+        const std::vector<double>& sites,
+        const std::vector<double>& targets,
+        const std::vector<double>& volumes,
+        const std::vector<double>& direction,
+        const std::vector<CutCellSide>& sides,
+        std::vector<double>& shifts,
+        std::vector<double>& weights,
+        Gauge& gauge);
+    // Without cut cells.
     Result Solve(
         const Domain& domain,
         const std::vector<double>& sites,
@@ -391,23 +436,23 @@ public:
         const std::vector<double>& direction,
         std::vector<double>& shifts,
         std::vector<double>& weights,
-        Gauge& gauge);
+        Gauge& gauge)
+    {
+        return Solve(domain, sites, targets, volumes, direction, {}, shifts, weights, gauge);
+    }
 
 protected:
-    bool _ComputeStep(
-        const JointDual& dual,
-        const Vector& z,
-        const ShiftedDiagram& diagram,
-        const Vector& g,
-        Vector& dz,
-        Vector& stationarity) override;
-    // The bordered step sets the border rows and the gauge.
-    bool _UsesUndampedStep() const override { return true; }
+    // Sets the border rows of the damped steps, and the gauge from the
+    // least-squares multipliers of the stationarity condition.
+    bool _ComputeStationarity(const JointDual& dual, const Vector& g, Vector& stationarity) override;
 
 private:
-    // Rows a, b_1, ..., b_d of the constraint matrix C
+    // Rows a, b_1, ..., b_d, c_1, ..., c_{b-1} of the constraint matrix C
     // (eq:appendix-constraint-matrix).
-    void _BuildConstraints(const JointDual& dual, const std::vector<double>& direction);
+    void _BuildConstraints(
+        const JointDual& dual,
+        const std::vector<double>& direction,
+        const std::vector<CutCellSide>& sides);
 
     std::vector<Vector> _rows;
     Gauge               _gauge;

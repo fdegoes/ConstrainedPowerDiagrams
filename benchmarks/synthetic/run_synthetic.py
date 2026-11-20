@@ -19,7 +19,7 @@ Usage:
   external/bourne/.venv/bin/python benchmarks/synthetic/run_synthetic.py
       [--dim 2] [--n 10 25 ...] [--noise 0 1 2] [--volumes uniform voronoi]
       [--seeds 1 2 3 4 5] [--maxiter 100] [--out benchmarks/synthetic/results(3d)]
-      [--force]
+      [--force] [--case-extra 'stretchlimit 0' --label nolimit]
 """
 
 import argparse
@@ -29,6 +29,7 @@ import math
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 import numpy as np
@@ -49,12 +50,13 @@ FIELDS = ["case", "n", "noise", "volumes", "seed", "status", "converged", "itera
           "rule1Ratio", "rule1Met"]
 
 
-def write_case_file(path, c, maxiter, volume_tol=VOLUME_TOL, shift_tol=SHIFT_TOL, trajectory="notrajectory"):
+def write_case_file(path, c, maxiter, volume_tol=VOLUME_TOL, shift_tol=SHIFT_TOL, trajectory="notrajectory", extra=()):
     d = c["dim"]
     xy = " ".join(repr(float(x)) for x in c["targets"].ravel())
     lines = ["dim %d" % d, "box " + " ".join(["0"] * d + ["1"] * d), "n %d" % c["n"], "solver H", "alpha 1e300", "start 0",
              "volumetol %r" % volume_tol, "shifttol %r" % shift_tol, "maxiter %d" % maxiter, trajectory,
              "volumes " + " ".join(repr(float(x)) for x in c["volumes"]), "targets " + xy, "sites " + xy]
+    lines += list(extra)
     with open(path, "w") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -98,16 +100,43 @@ def min_spacing(Y, n):
     return float(d[:, 1].min() / cell_size(n, Y.shape[1]))
 
 
+
+def _trim_to_solution(traj, generators):
+    """The trajectory up to the iterate returned by the solver. With restarts,
+    the trajectory chains all the attempts, each from the same start, and the
+    returned solution (the converged attempt, or else the one with the
+    smallest residual) need not be the last iterate."""
+    if not traj:
+        return traj
+    g = np.asarray(generators, dtype=float)
+    for k in range(len(traj) - 1, -1, -1):
+        p = np.asarray(traj[k]["generators"], dtype=float)
+        if p.shape == g.shape and np.array_equal(p, g):
+            return traj[:k + 1]
+    return traj
+
 def run_case(c, args):
+    if args.no_save:
+        # Status and counts only: the case and the result live in a temporary
+        # directory, deleted afterwards, and the costly measures are skipped.
+        with tempfile.TemporaryDirectory() as d:
+            cp, out = os.path.join(d, "case.txt"), os.path.join(d, "ours.json")
+            write_case_file(cp, c, args.maxiter, args.volumetol, args.shifttol, "notrajectory", args.case_extra)
+            subprocess.run([BENCH, cp, out], check=True)
+            r = json.load(open(out))
+        r["rule1"] = None
+        return r, float("nan"), float("nan")
     out = os.path.join(c["dir"], "ours%s.json" % args.tag)
     if args.force or not os.path.exists(out):
         cp = os.path.join(c["dir"], "case%s.txt" % args.tag)
-        write_case_file(cp, c, args.maxiter, args.volumetol, args.shifttol, "lighttrajectory")
+        write_case_file(cp, c, args.maxiter, args.volumetol, args.shifttol, "lighttrajectory", args.case_extra)
         subprocess.run([BENCH, cp, out], check=True)
     r = json.load(open(out))
     # Rule 1 of Bourne et al. (2025, their_rules.py) measured at our
     # solution; the trajectory is then dropped from memory.
     traj = r.pop("trajectory", None)
+    if traj:
+        traj = _trim_to_solution(traj, r["generators"])
     r["rule1"] = TR.slsqp_at_solution(c["targets"], c["volumes"], traj) if traj else None
     P = np.reshape(r["generators"], (-1, c["dim"]))
     return r, generator_error(P, c["truth"], c["n"]), diagram_mismatch(P, r["shiftedWeights"], c["truth"],
@@ -126,12 +155,19 @@ def main():
     ap.add_argument("--volumetol", type=float, default=VOLUME_TOL)
     ap.add_argument("--shifttol", type=float, default=SHIFT_TOL)
     ap.add_argument("--force", action="store_true", help="rerun cases that already have a result")
+    ap.add_argument("--case-extra", nargs="*", default=[],
+                    help="extra benchBourne case lines, e.g. 'stretchlimit 0' 'pairreg 0.3 2' (use with --label)")
+    ap.add_argument("--label", default="", help="suffix of the result files (ours-<label>.json, .csv)")
+    ap.add_argument("--no-save", action="store_true",
+                    help="keep no per-case files (temporary directory): status, iterations and counts in the CSV only")
     args = ap.parse_args()
     if args.out is None:
         args.out = os.path.join(HERE, "results" if args.dim == 2 else "results3d")
     # Results of non-default tolerances get their own files.
     default = args.volumetol == VOLUME_TOL and args.shifttol == SHIFT_TOL
     args.tag = "" if default else "-v%g-s%g" % (args.volumetol, args.shifttol)
+    if args.label:
+        args.tag += "-" + args.label
 
     rows = []
     csv_path = os.path.join(args.out, "ours%s.csv" % args.tag)
@@ -143,7 +179,14 @@ def main():
                     c = G.make_case(args.out, n, noise, vol, seed, dim=args.dim)
                     load = os.getloadavg()[0]
                     t = time.time()
-                    r, err, mismatch = run_case(c, args)
+                    try:
+                        r, err, mismatch = run_case(c, args)
+                    except subprocess.CalledProcessError as e:
+                        # A crash of benchBourne on one case: record it and go on.
+                        rows.append({"case": c["name"], "n": n, "noise": noise, "volumes": vol, "seed": seed,
+                                     "status": "error (exit %d)" % e.returncode, "converged": False, "load": load})
+                        print("%-26s benchBourne failed (exit %d)" % (c["name"], e.returncode), flush=True)
+                        continue
                     row = {"case": c["name"], "n": n, "noise": noise, "volumes": vol, "seed": seed,
                            "status": r["status"], "converged": r["converged"], "iterations": r["iterations"],
                            "attempts": r.get("attempts", 1), "attemptIterations": r.get("attemptIterations"),

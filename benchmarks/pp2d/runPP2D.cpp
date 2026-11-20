@@ -440,14 +440,28 @@ main(int argc, char** argv)
         std::fprintf(energy, "%s,frame,substeps,iterations,maxVolumeError,maxCentroidGap,projected\n",
                      PP::FlowMeasures::GetCSVHeader(2).c_str());
     }
-    auto log = [&](int frame, double t, int substeps, int iterations, const Integrator::Result& res) {
+    auto log = [&](int frame, double t, int substeps, int iterations, const Integrator::Result& res,
+                   const PP::FlowMeasures& measures) {
         if (not energy) {
             return;
         }
-        std::fprintf(energy, "%s,%d,%d,%d,%.6g,%.6g,%d\n", res._measures.GetCSVRow(t).c_str(), frame, substeps,
+        std::fprintf(energy, "%s,%d,%d,%d,%.6g,%.6g,%d\n", measures.GetCSVRow(t).c_str(), frame, substeps,
                      iterations, res._maxVolumeError, res._maxCentroidGap, res._numProjected);
         std::fflush(energy);
     };
+    // Our integrators measure the energy of a state at the start of the
+    // step from it (Integrator::Result::_startMeasures), so that its kinetic
+    // and potential energies are of the same time level: the row of a frame
+    // is written at the first step of the next frame, and the last frame is
+    // measured with one more solve (Integrator::Measure()).
+    const bool lagged = kinds.at(kindName) != PP::IntegratorKind::PowerParticles;
+    struct Pending
+    {
+        bool               _active = false;
+        int                _frame = 0, _substeps = 0, _iterations = 0;
+        double             _t = 0.0;
+        Integrator::Result _res;
+    } pending;
     char name[64];
     auto writeFrame = [&](int frame) {
         if (writeFrames) {
@@ -456,7 +470,7 @@ main(int argc, char** argv)
         }
     };
     writeFrame(0);
-    log(0, 0.0, 0, 0, r);
+    log(0, 0.0, 0, 0, r, r._measures);
 
     double t = 0.0;
     for (int frame = 1; frame <= frames; ++frame) {
@@ -471,6 +485,11 @@ main(int argc, char** argv)
                 }
                 h = std::min(h, pp._dt - done);
                 r = integrator->Step(state, h);
+                if (r.HasConverged() and pending._active) {
+                    log(pending._frame, pending._t, pending._substeps, pending._iterations, pending._res,
+                        r._startMeasures);
+                    pending._active = false;
+                }
                 if (not r.HasConverged()) {
                     std::cerr << "frame " << frame << ": step failed (" << r._status << ") " << r._error << std::endl;
                     if (energy) {
@@ -487,9 +506,21 @@ main(int argc, char** argv)
         }
         r._numProjected = projected;
         writeFrame(frame);
-        log(frame, t, substeps, iterations, r);
-        std::cout << "frame " << frame << "/" << frames << "  t " << t << "  substeps " << substeps << "  E "
-                  << r._measures._total << "  max vol err " << r._maxVolumeError << std::endl;
+        if (lagged) {
+            pending = {true, frame, substeps, iterations, t, r};
+        } else {
+            log(frame, t, substeps, iterations, r, r._measures);
+        }
+        std::cout << "frame " << frame << "/" << frames << "  t " << t << "  substeps " << substeps
+                  << "  max vol err " << r._maxVolumeError << std::endl;
+    }
+    if (pending._active) {
+        PP::FlowMeasures last;
+        if (integrator->Measure(state, last, err)) {
+            log(pending._frame, pending._t, pending._substeps, pending._iterations, pending._res, last);
+        } else {
+            std::cerr << "measure of the last frame failed: " << err << std::endl;
+        }
     }
     if (energy) {
         std::fclose(energy);

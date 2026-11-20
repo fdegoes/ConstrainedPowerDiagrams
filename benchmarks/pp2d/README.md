@@ -48,7 +48,10 @@ volumes drift, and none of our schemes reproduces that. The stored target volume
 ## How each integrator starts
 
 - `powerparticles`: from the loaded state, as the 2015 code does.
-- `softened` and `gm`: their own `Initialize()`, at the loaded positions.
+- `softened`: its own `Initialize()`, which first moves the particles to a centroidal
+  diagram (Lloyd, `--lloydtol`, 1e-6 in `run_examples.py`), so its frame 0 no
+  longer matches pp2.
+- `gm`: its own `Initialize()`, at the loaded positions.
 - `constrained`: not run by default. Its Lloyd start does not reach 1e-9 on
   5000 particles, and with a looser start (`--lloydtol 1e-6`) its first step
   reaches the iteration cap.

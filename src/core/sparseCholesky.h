@@ -58,9 +58,6 @@ public:
     // A^-1 b, from the last successful factorization.
     Vector solve(const Vector& b) const;
 
-    // Name of the backend ("Accelerate", "CHOLMOD" or "Eigen").
-    static const char* GetBackend();
-
 private:
     struct Impl;
     std::unique_ptr<Impl>  _impl;

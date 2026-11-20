@@ -32,9 +32,6 @@ struct PowerCells
     std::vector<double> _centroids;      // c_i, dim per site (site position if V_i = 0)
     std::vector<double> _secondMoments;  // M_i = ∫_{V_i} |x - q_i|^2 dx
     std::vector<Facet>  _facets;         // pairs of neighbor cells
-    // False when the cells could not be clipped (an empty cell would seed
-    // geogram's clipping walk): all cells are then reported empty.
-    bool                _complete = true;
 
     int GetNumEmptyCells() const;
 };

@@ -17,7 +17,8 @@ frame; not with --no-energy) and run.txt. render.py needs the frame CSVs.
 Usage:
   python3 benchmarks/pp2d/run_examples.py [--case CASE ...]
       [--integrator powerparticles softened gm constrained] [--frames 100]
-      [--every 1] [--alpha 0.01] [--stiffness 1] [--data DIR] [--out DIR]
+      [--every 1] [--alpha 0.01] [--stiffness 1] [--lloydtol 1e-6] [--lloyditers N]
+      [--data DIR] [--out DIR]
       [--no-csv] [--no-energy] [--list]
 """
 
@@ -39,9 +40,10 @@ CASES = {
     "yesweights-band2-4vort": ("yesweights", "band2_5k_4vort.pp"),
     "yesweights-radial": ("yesweights", "radial_5k.pp"),
 }
-# The constrained integrator does not yet run these cases (its Lloyd start
-# does not reach 1e-9 on 5000 particles, and with a looser start the first
-# step reaches the iteration cap): opt-in only.
+# softened and constrained start from a centroidal diagram (Lloyd), which does
+# not reach the default 1e-9 on 5000 particles, hence the looser --lloydtol.
+# The constrained integrator does not yet run these cases (with that start its
+# first step reaches the iteration cap): opt-in only.
 INTEGRATORS = ("powerparticles", "softened", "gm", "constrained")
 DEFAULT_INTEGRATORS = ("powerparticles", "softened", "gm")
 
@@ -53,7 +55,9 @@ def main():
     ap.add_argument("--frames", type=int, default=100)
     ap.add_argument("--every", type=int, default=1, help="advances of dt per saved frame")
     ap.add_argument("--alpha", type=float, default=0.01, help="softened integrator stiffness")
-    ap.add_argument("--stiffness", type=float, default=1.0, help="kappa of softened and GM")
+    ap.add_argument("--stiffness", type=float, default=1.0, help="kappa of GM (1 + alpha matches the softened integrator)")
+    ap.add_argument("--lloydtol", type=float, default=1e-6, help="tolerance of the centroidal start (softened, constrained)")
+    ap.add_argument("--lloyditers", type=int, default=None, help="iteration cap of the centroidal start")
     ap.add_argument("--data", default=DATA)
     ap.add_argument("--out", default=os.path.join(HERE, "results"))
     ap.add_argument("--no-csv", action="store_true", help="do not write the per-frame state CSVs")
@@ -76,6 +80,9 @@ def main():
             cmd = [RUN, os.path.join(src, "square.line"), os.path.join(src, f), os.path.join(src, "param.txt"), out,
                    "--integrator", integ, "--frames", str(args.frames), "--every", str(args.every),
                    "--alpha", repr(args.alpha), "--stiffness", repr(args.stiffness)]
+            cmd += ["--lloydtol", repr(args.lloydtol)]
+            if args.lloyditers is not None:
+                cmd += ["--lloyditers", str(args.lloyditers)]
             cmd += ["--no-csv"] * args.no_csv + ["--no-energy"] * args.no_energy
             t = time.time()
             r = subprocess.run(cmd, capture_output=True, text=True)

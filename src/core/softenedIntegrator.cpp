@@ -36,7 +36,10 @@ SoftenedIntegrator::Initialize(ParticleState& state) const
     Result res;
     ParticleState next;
     std::vector<double> shifts, weights;
-    if (not _Prepare(state, next, res) or not _Solve(next, shifts, weights, res)) {
+    // As the constrained integrator, start from a centroidal diagram, at which
+    // the shifts and thus the force vanish.
+    if (not _Prepare(state, next, res) or not _MakeCentroidal(next, res) or
+        not _Solve(next, shifts, weights, res)) {
         return res;
     }
     next._shifts = shifts;
@@ -47,6 +50,20 @@ SoftenedIntegrator::Initialize(ParticleState& state) const
     return res;
 }
 
+bool
+SoftenedIntegrator::Measure(const ParticleState& state, FlowMeasures& measures, std::string& err) const
+{
+    Result res;
+    ParticleState s;
+    std::vector<double> shifts, weights;
+    if (not _Prepare(state, s, res) or not _Solve(s, shifts, weights, res)) {
+        err = res._error;
+        return false;
+    }
+    measures = _Measure(res._solve._diagram, s);
+    return true;
+}
+
 Integrator::Result
 SoftenedIntegrator::Step(ParticleState& state, double dt) const
 {
@@ -55,16 +72,23 @@ SoftenedIntegrator::Step(ParticleState& state, double dt) const
     if (not _Prepare(state, cur, res)) {
         return res;
     }
+    const std::vector<double> startVelocities = cur._velocities;
     _ApplyGravity(cur._velocities, dt);
     std::vector<double> shifts, weights;
     if (not _Solve(cur, shifts, weights, res)) {
         return res;
     }
+    {
+        // The state at the start of the step on the diagram solved for it.
+        ParticleState start = cur;
+        start._velocities = startVelocities;
+        res._startMeasures = _Measure(res._solve._diagram, start);
+    }
 
     const int dim = _GetDimension();
     const std::vector<double>& q = cur._positions;
     const size_t m = q.size();
-    const double force = _options._stiffness * (1.0 + 1.0 / _options._alpha) * dt;
+    const double force = (1.0 + 1.0 / _options._alpha) * dt;
     ParticleState next;
     next._positions.resize(m);
     next._velocities.resize(m);

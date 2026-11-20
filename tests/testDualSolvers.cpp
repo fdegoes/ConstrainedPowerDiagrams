@@ -202,6 +202,7 @@ _TestJoint(const Domain& D, const std::string& name, int n)
     std::vector<double> u, w;
     const DualSolver::Result rF = PP::MakeJointStart(D, sites, targets, volumes, 0.5, u, w);
     Check(rF.HasConverged(), name + " H start: F at the midpoints converges (" + _Describe(rF) + ")");
+    const std::vector<double> uStart = u, wStart = w;  // Solve() overwrites u, w
 
     PP::JointSolver solver;
     const DualSolver::Result r = solver.Solve(D, sites, targets, volumes, u, w);
@@ -210,6 +211,18 @@ _TestJoint(const Domain& D, const std::string& name, int n)
     Check(r.HasConverged() and vErr < 1e-9 and cErr < 1e-8,
           name + " H from F: realizable volumes and centroids are recovered (" + _Describe(r) + ", centroid err " +
               FormatValue(cErr) + ")");
+
+    // Without the stretch limit (it only shortens steps), the same exact
+    // solution.
+    PP::JointSolver unlimited;
+    unlimited.GetParameters()._stretchLimit = 0.0;
+    std::vector<double> ub = uStart, wb = wStart;
+    const DualSolver::Result rb = unlimited.Solve(D, sites, targets, volumes, ub, wb);
+    const double vErrB = _GetVolumeError(rb, volumes, D.GetVolume());
+    const double cErrB = _GetCentroidError(rb, targets, dim);
+    Check(rb.HasConverged() and vErrB < 1e-9 and cErrB < 1e-8,
+          name + " H without stretch limit: realizable volumes and centroids are recovered (" + _Describe(rb) +
+              ", centroid err " + FormatValue(cErrB) + ")");
 
     // MakeJointStart: its multipliers give the power diagram of the
     // generators (1 - s) q + s cbar with the prescribed volumes.
@@ -228,6 +241,15 @@ _TestJoint(const Domain& D, const std::string& name, int n)
     }
     Check(pErr < 1e-14 and v1 < 1e-9,
           name + " MakeJointStart(s = 1): generators at the targets with the prescribed volumes");
+
+    // Duplicate sites with zero multipliers give coincident generators,
+    // which cannot both have a cell: rejected at the start.
+    std::vector<double> dup = sites;
+    std::copy(sites.begin() + dim, sites.begin() + 2 * dim, dup.begin());
+    std::vector<double> u0(sites.size(), 0.0), w0(volumes.size(), 0.0);
+    const DualSolver::Result rd = PP::JointSolver().Solve(D, dup, targets, volumes, u0, w0);
+    Check(rd._status == DualSolver::Status::InvalidInput and rd._error.find("coincide") != std::string::npos,
+          name + " H: duplicate sites are rejected at the start (" + _Describe(rd) + ")");
 }
 
 void
@@ -285,6 +307,107 @@ _TestConstrained(const Domain& D, const std::string& name, int n)
           name + " constrained H: infeasible initial shifts are rejected");
 }
 
+// A strip of n cells in [0,n] x [0,1], whose dual graph is a path: n - 2 cut
+// cells, hence n - 2 localized homotheties. From targets slightly off a
+// realizable configuration, the correction along the homotheties alone
+// cannot reach a realizable one, but it can with the branch gauges of the cut
+// cells (latex/flow.tex, eq:flow-line-constraint-arm).
+void
+_TestConstrainedStrip(int n)
+{
+    const int dim = 2;
+    Domain D;
+    PPTest::MakeDomain2D({0, 0, double(n), 0, double(n), 1, 0, 1}, {4}, D);
+    std::vector<double> generators(dim * n), w(n, 0.0);
+    for (int i = 0; i < n; ++i) {
+        generators[dim * i] = 0.5 + i;
+        generators[dim * i + 1] = 0.5 + (i % 2 ? 0.08 : -0.06);
+    }
+    PP::ShiftedDiagram d;
+    std::string err;
+    d.Build(D, generators, generators, std::vector<double>(generators.size(), 0.0), w, err);
+    const std::vector<double> volumes = d.GetCells()._volumes;
+    std::vector<std::pair<int, int>> edges;
+    for (size_t f = 0; f < d.GetNumFacets(); ++f) {
+        edges.emplace_back(d.GetFacet(f)._i, d.GetFacet(f)._j);
+    }
+    const std::vector<PP::CutCellSide> sides = PP::FindCutCellSides(n, edges);
+    Check(int(edges.size()) == n - 1 and int(sides.size()) == n - 2,
+          "strip: the dual graph is a path with " + std::to_string(sides.size()) + " cut-cell sides");
+
+    // Sites near the generators, and targets moved off the realizable centroids.
+    std::vector<double> sites = generators, targets = d.GetCells()._centroids;
+    const std::vector<double> noise = PPTest::RandomSites(n, dim, -1.0, 1.0, 51);
+    for (size_t k = 0; k < sites.size(); ++k) {
+        sites[k] += 1e-3 * noise[k];
+        targets[k] += 1e-2 * noise[(k + 3) % noise.size()];
+    }
+    const std::vector<double>& direction = sites;
+    PP::ConstrainedJointSolver solver;
+
+    // Homothety gauges only: no realizable correction.
+    {
+        std::vector<double> u, wh = w;
+        PP::ConstrainedJointSolver::Gauge gauge;
+        const DualSolver::Result r = solver.Solve(D, sites, targets, volumes, direction, u, wh, gauge);
+        Check(not r.HasConverged(),
+              "strip: without the arm gauges the correction does not converge (" + _Describe(r) + ")");
+    }
+
+    // With the branch gauges.
+    std::vector<double> u, wa = w;
+    PP::ConstrainedJointSolver::Gauge gauge;
+    const DualSolver::Result r = solver.Solve(D, sites, targets, volumes, direction, sides, u, wa, gauge);
+    const double vErr = _GetVolumeError(r, volumes, D.GetVolume());
+    Check(r.HasConverged() and vErr < 1e-9, "strip: with the arm gauges it converges with exact volumes (" +
+                                                _Describe(r) + ")");
+    if (not r.HasConverged()) {
+        return;
+    }
+    // C z = 0 on every row, including the branches.
+    double cz = 0.0, dil = 0.0;
+    std::vector<double> trans(dim, 0.0);
+    for (int i = 0; i < n; ++i) {
+        for (int c = 0; c < dim; ++c) {
+            dil += volumes[i] * u[dim * i + c] * direction[dim * i + c];
+            trans[c] += volumes[i] * u[dim * i + c];
+        }
+    }
+    cz = std::max({std::fabs(dil), std::fabs(trans[0]), std::fabs(trans[1])});
+    for (const PP::CutCellSide& side : sides) {
+        double arm = 0.0;
+        for (int i : side._side) {
+            for (int c = 0; c < dim; ++c) {
+                arm += volumes[i] * u[dim * i + c] * (direction[dim * i + c] - direction[dim * side._cut + c]);
+            }
+        }
+        cz = std::max(cz, std::fabs(arm));
+    }
+    Check(cz < 1e-10, "strip: shifts satisfy all the constraints (" + FormatValue(cz) + ")");
+    // Stationarity: c_i = cbar_i - s p_i - t - sum_B s_B (p_i - p_{c_B}).
+    std::vector<double> expected(targets);
+    for (int i = 0; i < n; ++i) {
+        for (int c = 0; c < dim; ++c) {
+            expected[dim * i + c] -= gauge._dilation * direction[dim * i + c] + gauge._translation[c];
+        }
+    }
+    for (size_t l = 0; l < sides.size(); ++l) {
+        for (int i : sides[l]._side) {
+            for (int c = 0; c < dim; ++c) {
+                expected[dim * i + c] -=
+                    gauge._arms[l] * (direction[dim * i + c] - direction[dim * sides[l]._cut + c]);
+            }
+        }
+    }
+    double sErr = 0.0;
+    for (int i = 0; i < n; ++i) {
+        for (int c = 0; c < dim; ++c) {
+            sErr = std::max(sErr, std::fabs(r._diagram.GetCentroid(i)[c] - expected[dim * i + c]));
+        }
+    }
+    Check(sErr < 1e-8, "strip: centroids are cbar - s p - t - sum s_B (p - p_c) (max err " + FormatValue(sErr) + ")");
+}
+
 } // namespace
 
 int
@@ -304,5 +427,7 @@ main()
     _TestJoint(cube, "3D cube", 30);
     _TestConstrained(square, "2D square", 40);
     _TestConstrained(cube, "3D cube", 30);
+    _TestConstrainedStrip(4);
+    _TestConstrainedStrip(6);
     return PPTest::Report();
 }

@@ -91,16 +91,6 @@ public:
     const CellBackend& GetBackend() const
     { return *_backend; }
 
-    // The mesh of the parallel integration of power cells (ComputePowerCells):
-    // the same domain, in Hilbert order (and in 2D refined by midpoint
-    // subdivision until each part has a few triangles), split into parts of
-    // contiguous elements, part p being [ranges[p], ranges[p + 1]). For the
-    // core library only.
-    GEO::Mesh& GetWalkMesh() const
-    { return *_walkMesh; }
-    const std::vector<unsigned>& GetWalkRanges() const
-    { return _walkRanges; }
-
 private:
     // Defined in domain.cpp, where GEO::Mesh is complete, so that this
     // header does not need the geogram headers.
@@ -109,12 +99,8 @@ private:
         void operator()(GEO::Mesh* mesh) const;
     };
 
-    // Builds _walkMesh and _walkRanges from _mesh.
-    void _MakeWalkMesh();
 
     std::unique_ptr<GEO::Mesh, MeshDeleter> _mesh;
-    std::unique_ptr<GEO::Mesh, MeshDeleter> _walkMesh;
-    std::vector<unsigned>                   _walkRanges;
     const CellBackend*                      _backend = nullptr;
     int                                     _dim = 0;
     double                                  _volume = 0.0;

@@ -67,19 +67,76 @@ ComputeDistance2(const double* a, const double* b, int dim)
     return s;
 }
 
-// Signed area of a closed 2D polygon given by indices into pts.
-inline double
-ComputeLoopSignedArea(
-    const std::vector<int>& loop, 
-    const std::vector<double>& pts)
+// Returns true if b is collinear with its neighbors a and c, and between
+// them, or if an incident edge has zero length.
+inline bool
+IsStraightVertex(const double* a, const double* b, const double* c)
 {
-    double a = 0.0;
-    for (size_t k = 0; k < loop.size(); ++k) {
-        const double* p = &pts[2 * loop[k]];
-        const double* q = &pts[2 * loop[(k + 1) % loop.size()]];
-        a += p[0] * q[1] - p[1] * q[0];
+    const double e1[2] = {b[0] - a[0], b[1] - a[1]};
+    const double e2[2] = {c[0] - b[0], c[1] - b[1]};
+    const double l1 = std::hypot(e1[0], e1[1]);
+    const double l2 = std::hypot(e2[0], e2[1]);
+    if (l1 == 0.0 or l2 == 0.0) {
+        return true;
     }
-    return 0.5 * a;
+    const double cross = e1[0] * e2[1] - e1[1] * e2[0];
+    const double dot = e1[0] * e2[0] + e1[1] * e2[1];
+    return dot > 0.0 and std::fabs(cross) <= 1e-10 * l1 * l2;
+}
+
+// Drops the vertices of a closed 2D loop (indices into pts) where it goes
+// straight through, e.g. on the internal edges of a triangulated domain.
+inline void
+RemoveCollinearVertices(std::vector<int>& loop, const std::vector<double>& pts)
+{
+    bool changed = true;
+    while (changed and loop.size() > 3) {
+        changed = false;
+        for (size_t k = 0; k < loop.size() and loop.size() > 3; ++k) {
+            const size_t prev = (k + loop.size() - 1) % loop.size();
+            const size_t next = (k + 1) % loop.size();
+            if (IsStraightVertex(&pts[2 * loop[prev]], &pts[2 * loop[k]], &pts[2 * loop[next]])) {
+                loop.erase(loop.begin() + k);
+                changed = true;
+                --k;
+            }
+        }
+    }
+}
+
+// Drops the vertices of a closed 3D loop (indices into pts, 3 coordinates
+// each) where it goes straight through, or that repeat their predecessor.
+inline void
+RemoveCollinearVertices3D(std::vector<int>& loop, const std::vector<double>& pts)
+{
+    auto straight = [&](int a, int b, int c) {
+        const double* p = &pts[3 * size_t(a)];
+        const double* q = &pts[3 * size_t(b)];
+        const double* r = &pts[3 * size_t(c)];
+        const double e1[3] = {q[0] - p[0], q[1] - p[1], q[2] - p[2]};
+        const double e2[3] = {r[0] - q[0], r[1] - q[1], r[2] - q[2]};
+        const double l1 = std::sqrt(e1[0] * e1[0] + e1[1] * e1[1] + e1[2] * e1[2]);
+        const double l2 = std::sqrt(e2[0] * e2[0] + e2[1] * e2[1] + e2[2] * e2[2]);
+        if (l1 == 0.0 or l2 == 0.0) {
+            return true;
+        }
+        const double x[3] = {e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]};
+        const double dot = e1[0] * e2[0] + e1[1] * e2[1] + e1[2] * e2[2];
+        return dot > 0.0 and std::sqrt(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) <= 1e-10 * l1 * l2;
+    };
+    bool changed = true;
+    while (changed and loop.size() > 3) {
+        changed = false;
+        for (size_t k = 0; k < loop.size() and loop.size() > 3; ++k) {
+            const size_t prev = (k + loop.size() - 1) % loop.size();
+            const size_t next = (k + 1) % loop.size();
+            if (straight(loop[prev], loop[k], loop[next])) {
+                loop.erase(loop.begin() + long(k));
+                changed = true;
+                --k;
+            }
+        }
+    }
 }
 
 // Axis-aligned bounding box of dim-dimensional points.

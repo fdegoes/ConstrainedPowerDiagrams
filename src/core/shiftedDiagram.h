@@ -62,8 +62,6 @@ public:
     double GetVolume(int i) const { return _cells._volumes[i]; }
     const double* GetCentroid(int i) const { return &_cells._centroids[GetDimension() * i]; }
     int GetNumEmptyCells() const { return _cells.GetNumEmptyCells(); }
-    // False when the cells could not be clipped (PowerCells::_complete).
-    bool IsComplete() const { return _cells._complete; }
     // Smallest cell volume.
     double GetMinVolume() const;
 

@@ -4,7 +4,8 @@
   1. the trajectory: residuals, smallest cell, and smallest generator distance
      (relative to the mean cell size h = sqrt(mean Vbar)) per iterate;
   2. an alpha sweep of H_alpha, as multiples of the distinctness bound
-     eq:regularized-distinct, with the smallest generator distance at the end;
+     eq:regularized-distinct, and at 0.99 times the per-cell estimate
+     eq:regularized-practical, with the smallest generator distance at the end;
   3. for the aligned seeds, whether the centroids are invariant under
      per-axis warps of the generators (flat directions of H beyond the
      homotheties, so that the maximizer is not unique).
@@ -42,8 +43,7 @@ def solve(case, solver, alpha, start=0.0, maxiter=200, tol=1e-13, sites=None, et
     if not trajectory:
         lines.append("notrajectory")
     if restarts is not None:  # (count, growth of the core radius)
-        lines.append("restarts %d %r" % (restarts[0], float(restarts[1]))
-                     + ("" if len(restarts) < 3 else " %d" % int(restarts[2])))
+        lines.append("restarts %d %r" % (restarts[0], float(restarts[1])))
     if pairreg is not None:  # R, scale
         lines.append("pairreg " + " ".join(repr(float(x)) for x in pairreg))
     lines += ["volumes " + " ".join(repr(float(x)) for x in case.v),
@@ -81,10 +81,10 @@ def trajectory(case, solver, alpha, start=0.0):
 
 
 def alpha_sweep(case, factors):
-    bound = rb.distinct_alpha(case)
+    bound, practical = rb.distinct_alpha(case), rb.practical_alpha(case)
     h = h_of(case)
-    print("  H_alpha sweep (bound %.3g, mean cell size h %.3g):" % (bound, h))
-    for f in factors:
+    print("  H_alpha sweep (bound %.3g, practical %.3g, mean cell size h %.3g):" % (bound, practical, h))
+    for f in sorted(list(factors) + [0.99 * practical / bound]):
         a = f * bound
         r = solve(case, "Halpha", a)
         T = r["trajectory"]

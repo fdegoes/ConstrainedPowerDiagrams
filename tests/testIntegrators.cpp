@@ -9,6 +9,7 @@
 #include "core/integrator.h"
 #include "core/powerParticlesIntegrator.h"
 #include "core/shiftedDiagram.h"
+#include "core/dualGraph.h"
 #include "testUtils.h"
 
 #include <algorithm>
@@ -128,6 +129,33 @@ _SetRandomVelocities(ParticleState& s, const std::vector<double>& volumes, int d
     }
 }
 
+// A smooth, divergence-free vortex (Taylor-Green, in the x-y plane) with
+// zero total momentum, as in the vortex examples of Power Particles. The
+// constrained integrator needs smooth velocities: under random ones, the
+// generators of the predicted centroids are ill-conditioned (neighboring
+// centroids moving apart and together), and the correction may fail.
+void
+_SetVortexVelocities(ParticleState& s, const std::vector<double>& volumes, int dim, double scale)
+{
+    s._velocities.assign(s._positions.size(), 0.0);
+    std::vector<double> m(dim, 0.0);
+    double total = 0.0;
+    for (size_t i = 0; i < volumes.size(); ++i) {
+        const double x = s._positions[dim * i], y = s._positions[dim * i + 1];
+        s._velocities[dim * i] = scale * std::sin(M_PI * x) * std::cos(M_PI * y);
+        s._velocities[dim * i + 1] = -scale * std::cos(M_PI * x) * std::sin(M_PI * y);
+        total += volumes[i];
+        for (int c = 0; c < dim; ++c) {
+            m[c] += volumes[i] * s._velocities[dim * i + c];
+        }
+    }
+    for (size_t i = 0; i < volumes.size(); ++i) {
+        for (int c = 0; c < dim; ++c) {
+            s._velocities[dim * i + c] -= m[c] / total;
+        }
+    }
+}
+
 void
 _TestConstrained(const Domain& D, const std::string& name, int n, int steps, double dt)
 {
@@ -137,7 +165,19 @@ _TestConstrained(const Domain& D, const std::string& name, int n, int steps, dou
     if (not _MakeCentroidalState(D, name, n, volumes, state)) {
         return;
     }
-    _SetRandomVelocities(state, volumes, dim, 0.05);
+    _SetVortexVelocities(state, volumes, dim, 0.05);
+    {
+        // Number of localized homotheties of the initial diagram, for the log.
+        const PP::ShiftedDiagram d = _BuildStateDiagram(D, state);
+        std::vector<std::pair<int, int>> edges;
+        for (size_t f = 0; f < d.GetNumFacets(); ++f) {
+            if (d.GetFacet(f)._area > 1e-12) {
+                edges.emplace_back(d.GetFacet(f)._i, d.GetFacet(f)._j);
+            }
+        }
+        std::printf("       %s: %zu cut-cell sides in the initial dual graph\n", name.c_str(),
+                    PP::FindCutCellSides(n, edges).size());
+    }
 
     PP::ConstrainedIntegrator integrator(D, volumes, Integrator::Parameters(), PP::IntegratorOptions());
     double vErr = 0.0, cErr = 0.0, momentum = 0.0;
@@ -287,6 +327,16 @@ _TestGravity(const Domain& D, const std::string& name, IntegratorKind kind, cons
         total += volumes[i];
     }
     vy /= total;
+    if (kind == IntegratorKind::Constrained) {
+        // The particles are the centroids of a partition of the closed
+        // domain, so sum_i Vbar_i q_i = the first moment of the domain stays
+        // fixed: the translation gauge (the pressure on the walls) takes back
+        // the whole push of gravity, i.e. hydrostatic balance.
+        Check(r.HasConverged() and std::fabs(vy) <= 1e-5 * 9.8 * dt,
+              label + " gravity: hydrostatic balance, the mean velocity stays zero (mean v_y " + FormatValue(vy) +
+                  ")" + (r._error.empty() ? "" : " " + r._error));
+        return;
+    }
     Check(r.HasConverged() and vy < 0.0 and vy >= -9.8 * dt * (1.0 + 1e-9),
           label + " gravity: the particles fall (mean v_y " + FormatValue(vy) + ", free fall " + FormatValue(-9.8 * dt) +
               ")" + (r._error.empty() ? "" : " " + r._error));
@@ -305,7 +355,11 @@ _TestMeasures(const Domain& D, const std::string& name, IntegratorKind kind, con
     if (not _MakeCentroidalState(D, name, 30, volumes, state)) {
         return;
     }
-    _SetRandomVelocities(state, volumes, dim, 0.05);
+    if (kind == IntegratorKind::Constrained) {
+        _SetVortexVelocities(state, volumes, dim, 0.05);
+    } else {
+        _SetRandomVelocities(state, volumes, dim, 0.05);
+    }
     const auto integrator = PP::MakeIntegrator(kind, D, volumes, Integrator::Parameters(), o);
     const std::string label = name + " " + integrator->GetName() + " measures";
     if (not integrator->Initialize(state).HasConverged()) {
@@ -342,22 +396,36 @@ _TestMeasures(const Domain& D, const std::string& name, IntegratorKind kind, con
             std::fprintf(csv, "%s\n%s\n", PP::FlowMeasures::GetCSVHeader(dim).c_str(), m0.GetCSVRow(0.0).c_str());
         }
     }
-    double drift = 0.0, pDrift = 0.0;
+    // The energy of each state from the step that starts from it, which
+    // pairs its kinetic and potential energies (Result::_startMeasures), and
+    // of the last state from Measure().
+    double drift = 0.0, pDrift = 0.0, startGap = 0.0;
     int done = 0;
-    for (; done < steps; ++done) {
-        const Integrator::Result r = integrator->Step(state, dt);
-        if (not r.HasConverged()) {
-            break;
-        }
-        const PP::FlowMeasures& m = r._measures;
+    auto record = [&](const PP::FlowMeasures& m, double t) {
         drift = std::max(drift, std::fabs(m._total - m0._total) / std::max(m0._total, 1e-300));
         for (int c = 0; c < dim; ++c) {
             pDrift = std::max(pDrift, std::fabs(m._momentum[c] - m0._momentum[c]));
         }
         if (csv) {
-            std::fprintf(csv, "%s\n", m.GetCSVRow(dt * (done + 1)).c_str());
+            std::fprintf(csv, "%s\n", m.GetCSVRow(t).c_str());
+        }
+    };
+    for (; done < steps; ++done) {
+        const Integrator::Result r = integrator->Step(state, dt);
+        if (not r.HasConverged()) {
+            break;
+        }
+        if (done == 0) {
+            startGap = std::fabs(r._startMeasures._total - m0._total) / std::max(m0._total, 1e-300);
+        } else {
+            record(r._startMeasures, dt * done);
         }
     }
+    PP::FlowMeasures last;
+    if (done == steps and integrator->Measure(state, last, err)) {
+        record(last, dt * steps);
+    }
+    Check(startGap < 1e-10, label + ": the first step starts from the measured state (" + FormatValue(startGap) + ")");
     if (csv) {
         std::fclose(csv);
     }
@@ -474,8 +542,13 @@ main()
     Domain square, cube;
     PPTest::MakeUnitSquare(square);
     PPTest::MakeUnitCube(cube);
+    // A strip, whose centroidal diagram of a few cells is a row of cells: its
+    // dual graph is a path, so the constrained steps need the branch gauges.
+    Domain strip;
+    PPTest::MakeDomain2D({0, 0, 4, 0, 4, 1, 0, 1}, {4}, strip);
 
     _TestConstrained(square, "2D square", 40, 20, 0.01);
+    _TestConstrained(strip, "2D strip", 4, 20, 0.01);
     _TestConstrained(cube, "3D cube", 30, 10, 0.01);
     _TestPenalty(square, "2D square", 40, 20, 0.001);
     _TestPenalty(cube, "3D cube", 30, 10, 0.001);
@@ -494,8 +567,10 @@ main()
         _TestGravity(*D, name, IntegratorKind::Softened, softened);
         _TestGravity(*D, name, IntegratorKind::GM, gm);
         _TestGravity(*D, name, IntegratorKind::PowerParticles, pp);
+        _TestGravity(*D, name, IntegratorKind::Constrained, PP::IntegratorOptions());
         _TestMeasures(*D, name, IntegratorKind::Softened, softened, 0.01, 50, 0.05);
         _TestMeasures(*D, name, IntegratorKind::GM, gm, 0.01, 50, 0.05);
+        _TestMeasures(*D, name, IntegratorKind::Constrained, PP::IntegratorOptions(), 0.01, 50, 0.05);
         _TestGMLimit(*D, name);
         _TestPowerParticlesOperators(*D, name);
     }

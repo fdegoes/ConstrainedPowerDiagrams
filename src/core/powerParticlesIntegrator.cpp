@@ -257,7 +257,7 @@ PowerParticlesIntegrator::_SolveWeights(ParticleState& state, ShiftedDiagram& di
     if (not _Build(q, w, diagram, res._error)) {
         return false;
     }
-    auto valid = [&](const ShiftedDiagram& d) { return d.IsComplete() and d.GetNumEmptyCells() == 0; };
+    auto valid = [&](const ShiftedDiagram& d) { return d.GetNumEmptyCells() == 0; };
     if (not valid(diagram)) {
         res._error = "The power diagram of the advected particles has empty cells.";
         return false;
@@ -357,7 +357,7 @@ PowerParticlesIntegrator::Step(ParticleState& state, double dt) const
     if (not _Build(next._positions, next._weights, diagram, res._error)) {
         return res;
     }
-    if (not diagram.IsComplete() or diagram.GetNumEmptyCells() > 0) {
+    if (diagram.GetNumEmptyCells() > 0) {
         res._error = "The power diagram of the particles has empty cells.";
         return res;
     }

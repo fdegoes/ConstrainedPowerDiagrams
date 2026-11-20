@@ -125,6 +125,8 @@ add_library(pp_core STATIC
     src/core/constrainedIntegrator.cpp
     src/core/domain.h
     src/core/domain.cpp
+    src/core/dualGraph.h
+    src/core/dualGraph.cpp
     src/core/dualSolver.h
     src/core/dualSolver.cpp
     src/core/feasibleVolumes.h
@@ -152,6 +154,11 @@ add_library(pp_core STATIC
     src/core/powerDiagram.cpp
     src/core/powerCells.h
     src/core/powerCells.cpp
+    src/core/powerCells2D.h
+    src/core/powerCells2D.cpp
+    src/core/powerCells3D.h
+    src/core/powerCells3D.cpp
+    src/core/cellClip.h
     src/core/shiftedDiagram.h
     src/core/shiftedDiagram.cpp
     src/core/sparseCholesky.h
@@ -233,6 +240,9 @@ if(PP_BUILD_TESTS)
 
     add_executable(testIntegrators tests/testIntegrators.cpp)
     target_link_libraries(testIntegrators PRIVATE pp_core)
+
+    add_executable(testDualGraph tests/testDualGraph.cpp)
+    target_link_libraries(testDualGraph PRIVATE pp_core)
 endif()
 
 ##############

@@ -14,8 +14,10 @@ namespace PP
 //   v^{k+1} = v^k + kappa dt (c - q^k)
 //   q^{k+1} = q^k + dt v^{k+1}
 //   p^{k+1} = q^k,  lambda^{k+1} = w
-// with kappa = IntegratorOptions::_stiffness: 1 is the limit of the softened
-// integrator, 1 / eps^2 the stiffness of Gallouet & Merigot.
+// with kappa = IntegratorOptions::_stiffness: 1 is the limit alpha -> 0 of the
+// softened integrator, 1 + alpha the strength of its centroid residual
+// (latex/flow.tex, Link to Gallouet & Merigot), 1 / eps^2 the stiffness of
+// Gallouet & Merigot.
 // Initialize() solves the weights for the volumes at the positions.
 class GMIntegrator : public Integrator
 {
@@ -25,6 +27,7 @@ public:
     const char* GetName() const override { return "GM"; }
     Result Initialize(ParticleState& state) const override;
     Result Step(ParticleState& state, double dt) const override;
+    bool Measure(const ParticleState& state, FlowMeasures& measures, std::string& err) const override;
     double GetPotential(double quantization, double centroidResidual) const override
     {
         return _options._stiffness * (quantization + centroidResidual);

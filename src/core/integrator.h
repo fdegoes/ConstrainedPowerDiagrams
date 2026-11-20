@@ -27,8 +27,6 @@ struct ParticleState
     // Power Particles only: the pressures of the previous step (unused by
     // the other integrators).
     std::vector<double> _pressures;
-
-    int GetNumParticles(int dim) const { return dim > 0 ? int(_positions.size() / size_t(dim)) : 0; }
 };
 
 // Energy and momentum of a particle fluid, to monitor a simulation over
@@ -68,9 +66,10 @@ struct IntegratorOptions
 {
     // Softened: stiffness alpha > 0 of the centroid penalty.
     double _alpha = 1.0;
-    // Softened and GM: scale kappa of the restoring force. GM: 1 is the
-    // limit alpha -> 0 of the softened integrator, 1 / eps^2 the stiffness
-    // of Gallouet & Merigot (2018).
+    // GM: scale kappa of the restoring force. 1 is the limit alpha -> 0 of
+    // the softened integrator, 1 + alpha the strength of its centroid
+    // residual (latex/flow.tex, Link to Gallouet & Merigot), 1 / eps^2 the
+    // stiffness of Gallouet & Merigot (2018).
     double _stiffness = 1.0;
     // Power Particles: fraction beta of the move to the centroid in the
     // advection (0.5 in the 2015 code), Newton steps of the weights
@@ -81,6 +80,18 @@ struct IntegratorOptions
     int    _weightIterations = 2;
     double _weightTolerance = 0.0;
     double _regularization = -1.0;
+    // Constrained: projection of the velocities onto the tangent space of
+    // the holonomic constraint (latex/flow.tex, the RATTLE paragraph of
+    // sec:flow-discussion), i.e. Vbar-orthogonal to the generators, the
+    // translations and the localized homotheties of the diagram: never
+    // (SHAKE), on the initial velocities only, or after every step (RATTLE).
+    enum class VelocityProjection
+    {
+        None,
+        Initial,
+        EveryStep
+    };
+    VelocityProjection _velocityProjection = VelocityProjection::None;
 };
 
 // One time step of a particle fluid whose particles carry the prescribed
@@ -128,8 +139,17 @@ public:
         double _maxVolumeError = 0.0;  // max_i |V_i - Vbar_i| / Vbar_i
         double _maxCentroidGap = 0.0;  // max_i |q_i - c_i|
         int    _numProjected = 0;      // Power Particles: particles pushed back into the domain
-        // Energy and momentum of the state on return.
+        // Energy and momentum of the state on return. For the softened and GM
+        // integrators, its potential is measured on the diagram solved at the
+        // start of the step, i.e. at the previous positions: use
+        // _startMeasures, or Measure(), to pair the kinetic and potential
+        // energies of one time level.
         FlowMeasures _measures;
+        // Energy and momentum of the state at the start of the step (before
+        // the gravity kick), on the diagram the step solves for it, so that
+        // the kinetic and potential energies are those of the same time
+        // level, at no extra solve. Empty for Power Particles.
+        FlowMeasures _startMeasures;
 
         bool HasConverged() const { return _converged; }
     };
@@ -146,12 +166,9 @@ public:
     Integrator(const Integrator&) = delete;
     Integrator& operator=(const Integrator&) = delete;
 
-    const Domain& GetDomain() const { return _domain; }
     const std::vector<double>& GetVolumes() const { return _volumes; }
     Parameters& GetParameters() { return _params; }
     const Parameters& GetParameters() const { return _params; }
-    IntegratorOptions& GetOptions() { return _options; }
-    const IntegratorOptions& GetOptions() const { return _options; }
 
     virtual const char* GetName() const = 0;
 
@@ -166,13 +183,16 @@ public:
     // The potential U of this integrator from the quantization error Q and
     // the centroid residual R of a diagram (FlowMeasures):
     //   Constrained:     Q + R            (R = 0 at the solution)
-    //   Softened:        kappa (Q + (1 + alpha) R)   (eq:flow-softened-potential)
+    //   Softened:        Q + (1 + alpha) R   (eq:flow-softened-potential)
     //   GM:              kappa (Q + R)
     //   Power Particles: 0 (the pressure is not a potential force)
     virtual double GetPotential(double quantization, double centroidResidual) const = 0;
 
-    // Energy and momentum of state (its power diagram is built).
-    bool Measure(const ParticleState& state, FlowMeasures& measures, std::string& err) const;
+    // Energy and momentum of state, on its power diagram: built from the
+    // state for the constrained integrator and Power Particles, and solved
+    // at its positions for the softened and GM integrators (one dual solve),
+    // as at the start of their steps.
+    virtual bool Measure(const ParticleState& state, FlowMeasures& measures, std::string& err) const;
 
 protected:
     int _GetDimension() const;

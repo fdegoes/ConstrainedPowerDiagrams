@@ -120,12 +120,6 @@ SparseCholesky::SetBlockSize(int blockSize)
 
 SparseCholesky::~SparseCholesky() = default;
 
-const char*
-SparseCholesky::GetBackend()
-{
-    return "Accelerate";
-}
-
 void
 SparseCholesky::analyzePattern(const SparseMatrix& A)
 {
@@ -298,12 +292,6 @@ SparseCholesky::SetBlockSize(int)
 
 SparseCholesky::~SparseCholesky() = default;
 
-const char*
-SparseCholesky::GetBackend()
-{
-    return "CHOLMOD";
-}
-
 void
 SparseCholesky::analyzePattern(const SparseMatrix& A)
 {
@@ -394,12 +382,6 @@ SparseCholesky::SetBlockSize(int)
 
 
 SparseCholesky::~SparseCholesky() = default;
-
-const char*
-SparseCholesky::GetBackend()
-{
-    return "Eigen";
-}
 
 void
 SparseCholesky::analyzePattern(const SparseMatrix& A)

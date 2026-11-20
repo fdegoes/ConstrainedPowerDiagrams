@@ -14,6 +14,7 @@ Usage (all cases, methods, rules and tolerances by default):
   external/bourne/.venv/bin/python benchmarks/bourne/run_approximate.py
       [--case NAME ...] [--method theirs Halpha]
       [--tol 1e-8] [--alpha 10 100 1000] [--alpha-bound 0.99 10 100]
+      [--alpha-practical 0.99]
       [--start S ...] [--max-iter-mine N] [--max-iter-theirs N]
       [--max-seconds T] [--out DIR] [--list]
 """
@@ -31,7 +32,9 @@ def main():
     bc.add_common_args(ap, bc.APPROXIMATE, ["theirs", "Halpha"], "approximate")
     ap.add_argument("--alpha", nargs="*", type=float, default=[10.0, 100.0, 1000.0], help="stiffnesses of H_alpha")
     ap.add_argument("--alpha-bound", nargs="*", type=float, default=[0.99, 10.0, 100.0],
-                    help="further stiffnesses, as multiples of the distinctness bound min|q_i - q_j| / (2 diam)")
+                    help="further stiffnesses, as multiples of the distinctness bound eq:regularized-distinct")
+    ap.add_argument("--alpha-practical", nargs="*", type=float, default=[0.99],
+                    help="further stiffnesses, as multiples of the per-cell estimate eq:regularized-practical")
     bc.run(ap.parse_args(), bc.APPROXIMATE, bc.approximate_runs)
 
 

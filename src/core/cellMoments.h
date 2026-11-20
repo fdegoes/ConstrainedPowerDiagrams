@@ -1,9 +1,9 @@
 #ifndef PP_CORE_CELLMOMENTS_H
 #define PP_CORE_CELLMOMENTS_H
 
-// Moments of power cells and facets, accumulated over the fragments of a
-// restricted Voronoi diagram (internal to the core library). Shared by
-// ComputePowerCells() and the dimension backends (cellBackend.h).
+// Moments of power cells and facets, accumulated over the fragments of the
+// cells clipped to the domain elements (internal to the core library).
+// Shared by ComputePowerCells(), powerCells2D.h and powerCells3D.h.
 
 #include "core/powerCells.h"
 
@@ -116,7 +116,7 @@ MakeRelative(const double* p, const double* reference, int dim, double* r)
     }
 }
 
-// Accumulates cell and facet moments over the RVD fragments.
+// Accumulates cell and facet moments over the cell fragments.
 class Accumulator
 {
 public:
@@ -153,16 +153,6 @@ public:
             _cells[i].Add(other._cells[i], 1.0);
         }
         _facets.insert(_facets.end(), other._facets.begin(), other._facets.end());
-    }
-
-    // Total measure of the cells, i.e. of the walked part of the domain.
-    double GetTotalMass() const
-    {
-        double m = 0.0;
-        for (int i = 0; i < _n; ++i) {
-            m += _cells[i]._mass;
-        }
-        return m;
     }
 
     void Fill(PowerCells& out) const

@@ -7,38 +7,10 @@
 #include <geogram/mesh/mesh.h>
 
 #include <algorithm>
-#include <thread>
 #include <utility>
 
 namespace PP
 {
-
-namespace
-{
-
-// Number of parts of the walk mesh: one per hardware thread (at most 64).
-GEO::index_t
-_GetNumWalkParts()
-{
-    const unsigned n = std::thread::hardware_concurrency();
-    return GEO::index_t(std::max(1u, std::min(n, 64u)));
-}
-
-} // namespace
-
-void
-Domain::_MakeWalkMesh()
-{
-    const GEO::index_t parts = _GetNumWalkParts();
-    std::unique_ptr<GEO::Mesh> walk = _backend->MakeWalkMesh(*_mesh, parts > 1 ? 8 * size_t(parts) : 0);
-    const GEO::index_t nb = _backend->GetNumElements(*walk);
-    const GEO::index_t used = std::max(GEO::index_t(1), std::min(parts, nb));
-    _walkRanges.assign(used + 1, 0);
-    for (GEO::index_t p = 0; p <= used; ++p) {
-        _walkRanges[p] = unsigned(GEO::index_t(uint64_t(nb) * p / used));
-    }
-    _walkMesh.reset(walk.release());
-}
 
 void
 Domain::MeshDeleter::operator()(GEO::Mesh* mesh) const
@@ -85,7 +57,6 @@ Domain::Make(
     out._mesh.reset(backend->MakeMesh(pts, elems).release());
     out._backend = backend;
     out._dim = dim;
-    out._MakeWalkMesh();
     out._volume = measure;
     out._centroid = std::move(centroid);
     out._points = pts;

@@ -11,28 +11,41 @@ measured with the same residuals.
 |---|---|---|---|
 | `2025-perturbed-small` | 20 | unit square | Voronoi cells of 20 random generators (seed 999), centroids moved by up to 0.001 (seed 1002) |
 | `2025-perturbed-large` | 20 | unit square | same data, centroids moved by up to 0.05 |
-| `ebsd` | 243 | unit square (ours, their FW); 252.25 µm square (their 2025 least squares) | the Tata Steel EBSD map used in both papers |
+| `ebsd` | 243 | unit square (ours, their FW); 251.25 µm square (their 2025 least squares) | the Tata Steel EBSD map used in both papers |
 
 The cases are built in `bourne_cases.py`, exactly as in their notebooks.
 
 ## Stiffness α
 
-Each case runs with up to two stiffnesses:
+Each case runs with up to three stiffnesses. FW and ours run at the same
+values:
 
-- **ours**: 0.99 × our bound (latex/contributions.tex, eq:regularized-distinct)
+- **bound**: 0.99 × our bound (latex/contributions.tex,
+  eq:regularized-distinct; `bourne_cases.distinct_alpha`)
 
-      α < min_{i≠j} |q_i − q_j| / ( r (1/V̄_i + 1/V̄_j)^{1/2} ),   r² = Σ_i V̄_i |c⁰_i − c̄_i|²
+      α < min_{i≠j} |q_i − q_j| / ( r (1/V̄_i + 1/V̄_j) )^{1/2},   r = Σ_i V̄_i |c⁰_i − c̄_i|²
 
   Here q = c̄ are the sites, and c⁰ are the centroids of the volume solve
   (max F) at q. Below this bound, the maximizer of H_α is a power diagram,
   i.e. its generators are distinct. It is computed for each case: 0.777
-  (perturbed-small), 0.299 (perturbed-large) and 0.0152 (ebsd). Change the
-  factor with `--bound-factor`.
+  (perturbed-small), 0.299 (perturbed-large) and 0.0152 (ebsd).
+- **practical**: 0.99 × our per-cell estimate (`bourne_cases.practical_alpha`)
+
+      α < min_{i≠j} |q_i − q_j| / ( |c⁰_i − c̄_i| + |c⁰_j − c̄_j| )
+
+  It assumes that each shift is at most α times the residual of its cell,
+  |u_i| ≤ α |c⁰_i − c̄_i|, which is not proven. In sweeps over the
+  synthetic cases (2D and 3D, up to 1129 cells) and these three cases, the
+  generators stayed distinct up to at least 1.5 times this value. It is 4.21
+  (perturbed-small), 1.21 (perturbed-large) and 0.938 (ebsd), i.e. 4 to 60
+  times the bound.
 - **theirs**: their hand-picked value. Bourne 2026 (§6.3.2) sets t = 10 for
   the EBSD map, which is α = t − 1 = 9. Their papers give no rule for t: the
   theory only asks for t "large enough", and they observe that "numerically,
   the approach seems robust". The 2025 SLSQP on H has no stiffness, so the
   perturbed cases have no "theirs" value.
+
+Change the factor of both of ours with `--bound-factor`.
 
 Their Frank–Wolfe with dilation t solves the same projection as our H_α with
 α = t − 1, so the two methods are compared at equal α.
@@ -42,12 +55,12 @@ Their Frank–Wolfe with dilation t solves the same projection as our H_α with
 | case | method | α |
 |---|---|---|
 | perturbed-small, perturbed-large | their SLSQP on H (2025) | none |
-| | our H_α | ours |
+| | our H_α | bound, practical |
 | ebsd | their least-squares SLSQP (2025, finite-difference gradient, µm box) | none |
-| | their FW (2026), started at 0.5 | ours, theirs (t = 1 + α) |
-| | our H_α, started at the sites q = c̄ | ours, theirs |
+| | their FW (2026), started at 0.5 | bound, practical, theirs (t = 1 + α) |
+| | our H_α, started at the sites q = c̄ | bound, practical, theirs |
 
-These are 9 runs in total.
+These are 13 runs in total.
 
 ## Stopping
 
@@ -61,8 +74,10 @@ Each run stops at the first of:
 - **the iteration cap**, `--max-iter` (1000 iterations);
 - **the time cap**, `--max-seconds` (1800 s of wall time).
 
-The time cap is checked at every iterate. For our solver it is a process
-timeout.
+For their methods the time cap is checked at every iterate. Our solver is
+not given it: benchBourne runs to the iteration cap, and the process is
+killed after `--max-seconds` + 60 s, which is reported as `time cap` at
+`--max-seconds` seconds, with no residuals.
 
 ## What is reported
 
@@ -99,7 +114,7 @@ For a quick check (a few minutes, small caps):
 
 ```sh
 external/bourne/.venv/bin/python benchmarks/bourne/run_comparison.py \
-    --max-iter 20 --max-seconds 20 --out /tmp/comparison_check
+    --max-iter 30 --max-seconds 30 --out /tmp/comparison_check
 ```
 
 For the full run (about 1–1.5 h; the EBSD least squares usually runs to its
@@ -128,7 +143,7 @@ tail -f benchmarks/bourne/results/comparison.log
 | `--max-iter N` | 1000 | iteration cap of every method |
 | `--max-seconds T` | 1800 | wall-time cap of every run |
 | `--tol T` | 1e-8 | our volume and shift tolerance |
-| `--bound-factor F` | 0.99 | α_ours = F × our bound |
+| `--bound-factor F` | 0.99 | α = F × our bound, and F × our practical estimate |
 | `--out DIR` | `benchmarks/bourne/results/comparison` | outputs |
 | `--list` | | print the plan and exit |
 
@@ -143,13 +158,18 @@ In `--out`:
 
 ## What to expect
 
-From a run with small caps (20 iterations, 20 s):
+From a run with small caps (30 iterations, 30 s):
 
-- **At our α:** our H_α converges in 3–4 Newton iterations, with stationarity
-  residuals of 1e-10 to 1e-13. Their FW on EBSD stops on its gap after 2
+- **At our bound:** our H_α converges in 3 Newton iterations, with
+  stationarity residuals of 1e-10. Their FW on EBSD stops on its gap after 2
   iterations, but at a stationarity residual of 3e-4, so their gap rule fires
   before the projection is solved.
+- **At our practical α:** our H_α converges in 4–6 iterations (stationarity
+  5e-9 to 5e-12), with a smaller centroid error (EBSD: 1.6e-2 against
+  1.9e-2). Their FW stops on its gap after 13 iterations, at a stationarity
+  residual of 3e-2.
 - **At their α = 9 (EBSD):** both FW and ours reach the cap. α = 9 is about
-  600 times our bound, where the generators of the maximizer can collide.
-- **Their SLSQP on perturbed-large:** still far from stationary after 20
-  iterations (2.4). The full caps show whether it gets there.
+  600 times our bound and 10 times our practical estimate, where the
+  generators of the maximizer can collide.
+- **Their SLSQP on perturbed-large:** still far from stationary after 30
+  iterations (1.4). The full caps show whether it gets there.

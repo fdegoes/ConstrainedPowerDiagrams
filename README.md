@@ -80,10 +80,9 @@ PY=external/bourne/.venv/bin/python
 | `2025-invert` | Bourne 2025 §5.1 | 2 | 20 | yes | `benchmarks/bourne/README.md` |
 | `2025-perturbed-small` | Bourne 2025 §5.2.1 | 2 | 20 | no (fit only) | `benchmarks/bourne/README.md` |
 | `2025-perturbed-large` | Bourne 2025 §5.2.2 | 2 | 20 | no (fit only) | `benchmarks/bourne/README.md` |
-| `2025-ebsd` | Bourne 2025 §5.3 | 2 | 243 | no (fit only) | `benchmarks/bourne/README.md` |
+| `ebsd` | Bourne 2025 §5.3, 2026 §6.3.2 | 2 | 243 | no (fit only) | `benchmarks/bourne/README.md` |
 | `2026-voronoi` | Bourne 2026 §6.3.1 | 2 | 20 | yes | `benchmarks/bourne/README.md` |
 | `2026-aligned` | Bourne 2026 §6.3.1 | 2 | 728 | yes | `benchmarks/bourne/README.md` |
-| `2026-ebsd` | Bourne 2026 §6.3.2 | 2 | 243 | no (fit only) | `benchmarks/bourne/README.md` |
 
 Bourne 2025 is *Inverting Laguerre tessellations* (Bourne, Pearce & Roper);
 Bourne 2026 is *Semi-discrete convex order and Laguerre tessellation fitting*
@@ -106,7 +105,9 @@ afterwards. All cases have an exact solution, so they use our H solver;
 weights w = w_Y − |Y − c̄|²).
 `run_theirs.py` can be slow: FW runs up to `--max-iter` (100000) or
 `--max-seconds` (1800 s) per case, e.g. about 290 s on
-`noise2-uniform-10-1` without meeting their gap rule.
+`noise2-uniform-10-1`: FW has no rule of its own and stops on our residual
+of H, which it cannot meet (it solves H_α with α = t − 1, so its residual
+stalls at about 1/t).
 
 ```sh
 # Our solver on every 2D case (writes results/ours.csv); --dim 3 for 3D
@@ -130,19 +131,22 @@ $PY benchmarks/synthetic/render_all.py
 
 ### Bourne et al. (2025, 2026)
 
-The seven examples of the two papers, generated as in their notebooks. The
+The six examples of the two papers (the EBSD map, used by both, is one case
+`ebsd`, which runs their methods with each paper's scaling and settings),
+generated as in their notebooks. The
 realizable ones (exact solution) run with `run_realizable.py`, the others
-with `run_approximate.py`. Each runs their method and ours, under their
-termination rule and a common residual, and writes JSON and `summary.txt`
+with `run_approximate.py`. Each runs their method and ours, each stopped on
+its own rule (their SLSQP rule, or a common residual) with the other rule
+measured at its solution, and writes JSON and `summary.txt`
 to `benchmarks/bourne/results/realizable/` or `.../approximate/`.
 
 ```sh
 # All cases of a group
 $PY benchmarks/bourne/run_realizable.py      # 2025-invert, 2026-voronoi, 2026-aligned
-$PY benchmarks/bourne/run_approximate.py     # 2025-perturbed-small, -large, 2025-ebsd, 2026-ebsd
+$PY benchmarks/bourne/run_approximate.py     # 2025-perturbed-small, -large, ebsd
 # One dataset
 $PY benchmarks/bourne/run_realizable.py --case 2026-aligned
-$PY benchmarks/bourne/run_approximate.py --case 2025-ebsd
+$PY benchmarks/bourne/run_approximate.py --case ebsd
 # List the cases of a driver
 $PY benchmarks/bourne/run_realizable.py --list
 ```
@@ -153,8 +157,11 @@ they use the softened solver H_alpha over a sweep of stiffnesses α. Their
 2026 Frank–Wolfe solves the same problem with α = t − 1.
 
 How each dataset is built, the choice of α, all the options, and the known
-issues (currently: our solver does not start on `2025-ebsd`) are in
-`benchmarks/bourne/README.md`.
+issues are in `benchmarks/bourne/README.md`.
+
+`run_comparison.py` compares their methods and our H_α head to head on the
+approximate cases, each run until it terminates, at our stiffness bound,
+our practical estimate and their α; see `benchmarks/bourne/README_COMPARISON.md`.
 
 ### Overnight comparison (ours vs. Bourne et al.)
 
@@ -172,13 +179,15 @@ What it runs, the rules, and the output are in `benchmarks/OVERNIGHT.md`.
 
 ## Why the domain must be simplicial
 
-geogram's restricted Voronoi diagram never clips against a polygon or a
-surface directly. It walks a simplicial mesh of the domain: triangles in 2D,
-tetrahedra in 3D. Each simplex is a convex starting cell that gets cut by the
-power planes of nearby sites. The cut pieces of a cell are then glued together
-across shared edges or faces, using the simplex adjacency. That is why a
-non-convex domain (or one with holes or cavities) works: each simplex is
-convex even when the domain isn't. Building that mesh is a separate step,
+The power cells are never clipped against a polygon or a surface directly.
+Each cell is read from geogram's regular triangulation of the weighted sites
+as a convex polygon (2D) or polyhedron (3D), and clipped against each simplex
+of a mesh of the domain that it overlaps: triangles in 2D, tetrahedra in 3D
+(`src/core/powerCells2D.h`, `src/core/powerCells3D.h`). Every (cell, simplex)
+piece is computed on its own, so no piece can be missed or counted twice, even
+when cell vertices lie on simplex edges or faces, as with lattice sites. That
+is why a non-convex domain (or one with holes or cavities) works: each simplex
+is convex even when the domain isn't. Building that mesh is a separate step,
 handled by the two helper SOPs.
 
 ## PP Power Diagram
@@ -221,10 +230,12 @@ output.
   normals.
 - A detail int `nb_empty_cells`: the number of sites with no cell. This
   happens when a site is outside the domain or hidden by heavier neighbors.
-- **Boundary Merge Angle** (3D): at the default of 0 the domain boundary is
-  exact. A positive value merges nearly coplanar boundary faces of each cell
-  into one polygon. That gives fewer polygons but flattens curved domains, and
-  on domains with cavities it was measured to give wrong volumes.
+- **Boundary Merge Angle** (3D): the boundary pieces of a cell (its clipped
+  boundary tet faces) that share an edge and whose normals differ by at most
+  this angle are merged into one polygon. At the default of 0, only coplanar
+  pieces merge. A positive value also merges across the edges of curved
+  domains, into polygons that need not be planar. The geometry is unchanged
+  either way: no vertex moves.
 
 ## PP Triangulate 2D
 
@@ -255,7 +266,8 @@ pieces:
   `p = q + u`, `lambda = w + |u|² + 2 uᵀ(q − c̄)` (eq:shifted-site), with the
   cell volumes and centroids and the facet coefficients of the Hessian blocks.
   The per-cell quantities come from `ComputePowerCells` (`src/core/powerCells.h`),
-  built with geogram's restricted Voronoi callbacks over the `Domain` mesh.
+  read from geogram's regular triangulation and clipped against the `Domain`
+  mesh one cell at a time (`powerCells2D.h`, `powerCells3D.h`).
 - `JointDual`: the concave objectives as functions of the multipliers:
   `H` (shifts and weights), `H_α` (softened centroids), `G` (shifts, fixed
   weights) and `F` (weights). It gives the value, the gradient, the relative

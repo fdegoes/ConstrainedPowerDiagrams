@@ -112,6 +112,36 @@ _TestDerivatives(const JointDual& dual, const std::string& name)
     Check((N - N.transpose()).cwiseAbs().maxCoeff() < 1e-12 * hessScale, what + ": Hessian is symmetric");
 }
 
+// Frozen dual edges (JointDual::FreezeEdges()): unit stretches at the
+// freeze, and GetMaxStep() keeps every stretch at or above the limit, with
+// equality for the edge that binds.
+void
+_TestStretchLimit(JointDual& dual, const std::string& name)
+{
+    const std::string what = name + " " + _GetDualName(dual) + " stretch limit";
+    const Vector z0 = _MakeRandomMultipliers(dual, 0.002, 7);
+    ShiftedDiagram d;
+    std::string err;
+    dual.Build(z0, d, err);
+    dual.FreezeEdges(d);
+    Check(dual.HasFrozenEdges() and std::fabs(dual.GetMinStretch(z0) - 1.0) < 1e-12,
+          what + ": unit stretches at the freeze");
+    // A step large enough to collapse some edges, and a small one.
+    const double limit = 0.5;
+    Vector dz = _MakeRandomMultipliers(dual, 0.2, 9);
+    while (not (dual.GetMinStretch(z0 + dz) < limit)) {
+        dz *= 2.0;
+    }
+    const double t = dual.GetMaxStep(z0, dz, limit);
+    const double s = dual.GetMinStretch(z0 + t * dz);
+    Check(t > 0.0 and t < 1.0 and std::fabs(s - limit) < 1e-12,
+          what + ": a long step is shortened to the limit (t " + PPTest::FormatValue(t) + ", min stretch " +
+              PPTest::FormatValue(s) + ")");
+    const Vector small = 1e-6 * dz;
+    Check(dual.GetMaxStep(z0, small, limit) == 1.0, what + ": a short step is kept");
+    dual.ClearFrozenEdges();
+}
+
 // Null-space modes of the Hessian of H at z (eq:joint-nullspace):
 //   du_i = mu p_i + t,   dw_i = mu gamma_i + 2 t^T cbar_i + c,
 // gamma_i = |cbar_i|^2 - (|cbar_i - q_i|^2 - w_i) (eq:pivot), with the
@@ -230,6 +260,9 @@ _TestDomain(const Domain& D, const std::string& name, int n)
     JointDual G(D, sites, targets, volumes, HUGE_VAL, JointDual::Unknowns::Shifts);
     G.SetFixedWeights(PPTest::RandomValues(n, -0.002, 0.002, 14));
     _TestDerivatives(G, name);
+    JointDual H(D, sites, targets, volumes, HUGE_VAL, JointDual::Unknowns::ShiftsAndWeights);
+    _TestStretchLimit(H, name);
+    _TestStretchLimit(G, name);
     _TestNullSpace(D, name, n);
 }
 

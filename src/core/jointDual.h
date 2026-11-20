@@ -60,7 +60,6 @@ public:
         double alpha,
         Unknowns unknowns);
 
-    const Domain& GetDomain() const { return _domain; }
     const std::vector<double>& GetSites() const { return _sites; }
     const std::vector<double>& GetTargets() const { return _targets; }
     const std::vector<double>& GetVolumes() const { return _volumes; }
@@ -123,9 +122,9 @@ public:
     // both tests pass.
     double GetResidual(const Vector& g) const;
 
-    // N = -Hessian + eta M (latex/appendix-bordered.tex,
-    // eq:appendix-bordered-matrix, with diag(Vbar) replaced by the
-    // dimensionally consistent mass M of GetMassDiagonal()), from the facet
+    // N = -Hessian + eta M (latex/implementation.tex, the diagonal
+    // regularization; latex/appendix-algorithms.tex, Algorithm hessian-reg,
+    // with the mass M of GetMassDiagonal()), from the facet
     // blocks of latex/appendix-joint.tex, with the distance clamp and the
     // pair regularization below. Both triangles are filled.
     void GetNegatedHessian(const ShiftedDiagram& diagram, double eta, SparseMatrix& N) const;
@@ -162,10 +161,22 @@ public:
     // convergence).
     void SetPairActivity(double activity) { _pairActivity = activity; }
 
-
-    // Cell size h = (|domain| / n)^(1/d): the size of a cell of the
-    // average volume, the length unit of the regularizations of N.
-    double GetCellSize() const { return _GetCellSize(); }
+    // Frozen dual edges: the facets f = (i, j) of a diagram with distinct
+    // generators, with their unit direction e = (p_j - p_i) / d and
+    // distance d at the freeze. At z, the stretch of an edge is
+    //   s(z) = (p_j(z) - p_i(z)) . e / d,    p = q + u,
+    // linear in the shifts and 1 at the freeze. DualSolver freezes the
+    // edges of the current diagram once per iteration (FreezeEdges()) to
+    // limit how much its steps shrink them (Parameters::_stretchLimit).
+    void FreezeEdges(const ShiftedDiagram& diagram);
+    void ClearFrozenEdges() { _frozen.clear(); }
+    bool HasFrozenEdges() const { return not _frozen.empty(); }
+    // Smallest stretch s_f(z) of the frozen edges (infinity if none).
+    double GetMinStretch(const Vector& z) const;
+    // Largest t in (0, 1] such that every frozen edge keeps
+    // s_f(z + t dz) >= limit s_f(z) (the stretches are linear in t; at the
+    // freeze, s_f(z) = 1).
+    double GetMaxStep(const Vector& z, const Vector& dz, double limit) const;
 
 private:
     int _GetWeightIndex(int i) const { return GetStride() * i + GetStride() - 1; }
@@ -196,6 +207,16 @@ private:
     double                     _pairRadiusRatio = 0.0;
     double                     _pairScale = 1.0;
     double                     _pairActivity = 1.0;
+
+    // A frozen dual edge (FreezeEdges()).
+    struct _FrozenEdge
+    {
+        int    _i, _j;
+        double _e[3];
+        double _d;
+    };
+    std::vector<_FrozenEdge> _frozen;
+    double _GetStretch(const _FrozenEdge& E, const Vector& z) const;
 
     double _GetCellSize() const;
     // Adds the pair regularization (SetPairRegularization()) to N, which
