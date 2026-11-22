@@ -40,3 +40,6 @@ external/install/
 
 # Compiled pp2d baseline (built by benchmarks/pp2d/pp2/build_pp2.sh)
 benchmarks/pp2d/pp2/bin/
+
+# Per-case trajectories of the overnight synthetic run (2.4 GB); the summaries are in log-synthetic.csv
+benchmarks/overnight/*/synthetic/

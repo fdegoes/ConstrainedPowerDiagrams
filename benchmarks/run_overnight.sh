@@ -93,17 +93,42 @@ step() {
     return $code
 }
 
+# Idle check: the timings need a quiet machine. Refuses to start when the 1-
+# or 5-minute load average is >= MAX_LOAD, or when another user is logged in.
+# Skipped by the smoke test, whose timings are not kept.
+if [ "${OVERNIGHT_QUICK:-0}" != 1 ]; then
+    MAX_LOAD=${MAX_LOAD:-1.0}
+    read -r LOAD1 LOAD5 < <("$PY" -c "import os; print('%.2f %.2f' % os.getloadavg()[:2])")
+    OTHERS=$(who | awk '{print $1}' | sort -u | grep -v -x "${USER:-$(id -un)}" || true)
+    if awk -v a="$LOAD1" -v b="$LOAD5" -v m="$MAX_LOAD" 'BEGIN { exit !(a >= m || b >= m) }'; then
+        echo "refusing to start: load average $LOAD1 (1 min), $LOAD5 (5 min); need both < $MAX_LOAD (set MAX_LOAD to override)" >&2
+        exit 1
+    fi
+    if [ -n "$OTHERS" ]; then
+        echo "refusing to start: other users logged in: $(echo $OTHERS)" >&2
+        exit 1
+    fi
+fi
+
+# Keep the machine awake for the whole run, through systemd-inhibit (not on
+# macOS, where caffeinate is used instead). The re-run skips this step.
+if [ "${OVERNIGHT_QUICK:-0}" != 1 ] && [ "${OVERNIGHT_INHIBITED:-0}" != 1 ] &&
+    command -v systemd-inhibit > /dev/null && systemd-inhibit --what=sleep:idle true > /dev/null 2>&1; then
+    export OVERNIGHT_INHIBITED=1
+    exec systemd-inhibit --what=sleep:idle --why="overnight benchmark" bash "$PWD/benchmarks/$(basename "$0")" "$@"
+fi
+
 environment start
 note "output in $OUT; worst case ~8 h for the full run (theirs on synthetic <= 66 cases x 2 x 120 s = 4.4 h, theirs on the approximate Bourne examples <= 6 runs x 1800 s = 3 h)"
-if [ "$(load_average | cut -d. -f1)" -ge 2 ]; then
-    note "warning: load average >= 2 at the start; timings may be affected"
-fi
+note "load at the start: ${LOAD1:-n/a} (1 min), ${LOAD5:-n/a} (5 min); sleep and idle inhibited: ${OVERNIGHT_INHIBITED:-0}"
 
 # Only these targets: the build tree may also configure the Houdini plugin,
 # which is not needed here (configure with PP_BUILD_HOUDINI=OFF sh config.sh
 # on a machine without Houdini). Stale binaries would give wrong timings, so
 # a failed build stops the run.
-step build cmake --build build --target benchBourne makeSynthetic || { note "stopping: the build failed"; exit 1; }
+# The cmake that configured the tree (the cmake on PATH may be too old for --build).
+CMAKE_BIN=$(sed -n 's/^CMAKE_COMMAND:INTERNAL=//p' build/CMakeCache.txt)
+step build "$CMAKE_BIN" --build build --target benchBourne makeSynthetic || { note "stopping: the build failed"; exit 1; }
 step ours-bourne "$PY" benchmarks/bourne/run_realizable.py --method H --tol 1e-8 "${BOURNE_ARGS[@]}" \
     --out "$OUT/bourne-realizable"
 step ours-synthetic "$PY" benchmarks/synthetic/run_synthetic.py ${OURS_ARGS[@]+"${OURS_ARGS[@]}"} --force --out "$OUT/synthetic"

@@ -68,7 +68,6 @@ With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1
 % - Terminations: report both cross-comparisons. Their methods stop on the change of their objective (SLSQP ftol)
 %   or on the Frank-Wolfe gap, not on the centroid residual: run them until our per-cell L-infinity residual is met,
 %   and evaluate their rules on our iterates.
-% - Synthetic benchmark: scaling with n, per noise level and volume distribution.
 % Test cases from the papers (in bib/):
 % - [Bourne2025Inverting, Sec. 5.1, Figs. 1-2]: recover a Laguerre diagram from the areas and centroids of its cells (2D, random generators).
 % - [Bourne2025Inverting, Sec. 5.2, Figs. 3-7]: fit to synthetic data perturbed with small (0.001) and larger (0.05) noise; minimum-distance constraint active.
@@ -99,6 +98,70 @@ With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1
   }
   \label{fig:synthetic-gallery}
 \end{figure}
+
+\subsection{Timing and Iterations}
+\label{sec:results-timing}
+
+We time our H on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling-time} shows the time and Fig.~\ref{fig:scaling-iterations} the iterations against $n$. Each marker is one case, and each line joins the medians over the seeds.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{figures/synthetic/scaling-time.pdf}
+  \caption{%
+    Time of our H to converge against the number of sites $n$, on the synthetic cases. Each marker is a case (one per seed); each line joins the medians over the seeds. Colors are the noise levels, markers and line styles the volume distributions.%
+  }
+  \label{fig:scaling-time}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{figures/synthetic/scaling-iterations.pdf}
+  \caption{%
+    Iterations of our H to converge against the number of sites $n$, with the same encoding as Fig.~\ref{fig:scaling-time}.%
+  }
+  \label{fig:scaling-iterations}
+\end{figure}
+
+The median time grows from 10 ms at $n = 10$ to 1.4--1.5 s at $n = 10000$ for Voronoi volumes, and to 3.0--4.2 s for uniform volumes. The log-log slope of the median time is between $0.76$ and $0.77$ for Voronoi volumes and between $0.87$ and $0.90$ for uniform volumes, which is about $0.84$ pooled, so the time grows sublinearly in $n$ over this range. Uniform volumes are two to three times slower than Voronoi volumes at $n = 10000$, and they also take more iterations (median 12, against 9). At $n = 10000$, the noise level changes the median time by less than a factor of 1.5.
+
+Table~\ref{tab:realizable} compares our H with the two methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} on the three realizable cases. Each method stops on its own rule at $10^{-8}$; our H stops on \eqref{eq:results-termination}, and the other rule is evaluated at its solution, as described above. The times are wall-clock seconds on one machine.
+
+\begin{table}[t]
+  \centering
+  \caption{Realizable cases: our H against the methods of Bourne et al. Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where the method stopped.}
+  \label{tab:realizable}
+  \begin{tabular}{llrrrrr}
+    \hline
+    case & method & stopped by & iterations & time (s) & volume & centroid \\
+    \hline
+    2025-invert  & our H         & \eqref{eq:results-termination} & 7    & 0.0125 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
+    2025-invert  & SLSQP (2025)  & rule 1                         & 190  & 4.51   & $1.7{\times}10^{-14}$ & $3.5{\times}10^{-3}$ \\
+    2026-voronoi & our H         & \eqref{eq:results-termination} & 7    & 0.0108 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
+    2026-voronoi & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 51.7   & $5.2{\times}10^{-13}$ & $3.5{\times}10^{-3}$ \\
+    2026-aligned & our H         & \eqref{eq:results-termination} & 27   & 0.243  & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ \\
+    2026-aligned & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 290    & $8.4{\times}10^{-9}$ & $4.7{\times}10^{-1}$ \\
+    \hline
+  \end{tabular}
+\end{table}
+
+On the synthetic cases, Table~\ref{tab:matched} compares the methods on the 66 cases with seed 1 and $n \le 500$, the largest sizes for which their methods were run. Each method runs until it meets \eqref{eq:results-termination} or reaches a 60 s cutoff, which excludes the evaluations of the residuals.
+
+\begin{table}[t]
+  \centering
+  \caption{Synthetic cases (seed 1, $n \le 500$, 66 cases), each method run on \eqref{eq:results-termination} with a 60 s cutoff: the number of cases where it was met, the median time to meet it, and its residuals at the iterate where it stopped (median, with the maximum in parentheses). The rule-1 stop of SLSQP is in the text.}
+  \label{tab:matched}
+  \begin{tabular}{lllll}
+    \hline
+    method & met & median time (ms) & volume & centroid \\
+    \hline
+    our H                & 66/66 & 15     & $3.0{\times}10^{-9}$ ($9.5{\times}10^{-9}$) & $4.7{\times}10^{-10}$ ($8.8{\times}10^{-9}$) \\
+    SLSQP (2025)         & 2/66  & 10\,600 & $5.5{\times}10^{-13}$ ($4.9{\times}10^{-10}$) & $1.5{\times}10^{-4}$ ($1.7{\times}10^{-1}$) \\
+    Frank--Wolfe (2026)  & 0/66  & ---    & $9.1{\times}10^{-13}$ ($5.3{\times}10^{-7}$) & $3.8{\times}10^{-3}$ ($4.1{\times}10^{-1}$) \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Our H meets \eqref{eq:results-termination} in all 66 cases, in a median of 15 ms. SLSQP meets it in 2 cases, in a median of 10.6 s; in the other 63 it reaches the cutoff, and in one its line search fails. Frank--Wolfe meets it in none of the 66 cases, and all of them reach the cutoff. At the cutoff, the centroid residuals of SLSQP and Frank--Wolfe have medians of $1.5\cdot10^{-4}$ and $3.8\cdot10^{-3}$ of the cell size, and maxima of $0.17$ and $0.41$. Their volume errors are near $10^{-12}$. On its own rule 1, SLSQP stops earlier, in 57 of the 66 cases, with a median of 9.8 s and a centroid residual at that stop of median $3.6\cdot10^{-4}$.
 
 \subsection{Incompressible Flows}
 \label{sec:results-flows}

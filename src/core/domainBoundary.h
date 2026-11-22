@@ -1,6 +1,7 @@
 #ifndef PP_CORE_DOMAINBOUNDARY_H
 #define PP_CORE_DOMAINBOUNDARY_H
 
+#include <cstddef>
 #include <vector>
 
 namespace PP

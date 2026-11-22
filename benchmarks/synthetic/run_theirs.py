@@ -116,15 +116,20 @@ def run_fw(c, args):
 
 
 def run_slsqp(c, args):
-    """SLSQP on H stopped on rule 1 (ptol = SLSQP_PTOL), or the time cap."""
-    rec = Recorder(c, args, stop_on_rule3=False)
+    """SLSQP on H stopped on rule 1 (ptol = SLSQP_PTOL), or on rule 3 at TOL
+    with --slsqp-stop rule3, or the time cap."""
+    rule3 = args.slsqp_stop == "rule3"
+    rec = Recorder(c, args, stop_on_rule3=rule3)
     n = c["n"]
+    # With rule 3 as the stop, rule 1 is switched off (ptol = 0), so that SLSQP runs until our rule holds.
+    ptol = 0.0 if rule3 else TR.SLSQP_PTOL
     try:
         res, X = ref.max_H_solver(c["targets"].copy(), c["targets"], c["volumes"], c["om"], R0=math.sqrt(n),
-                                  d=1e-3, max_iter=args.max_iter, ptol=TR.SLSQP_PTOL,
+                                  d=1e-3, max_iter=args.max_iter, ptol=ptol,
                                   callback=lambda X: (rec.record(X), rec.done())[1])
         status = str(res.message)
-        stopped = "rule 1" if res.success else ("time cap" if rec.elapsed() > args.max_seconds else status)
+        stopped = "rule 3" if rec.met else ("rule 1" if res.success else
+                                             ("time cap" if rec.elapsed() > args.max_seconds else status))
         rec.last = X
     except Exception as e:  # noqa: BLE001
         status = stopped = "error: %s" % e
@@ -134,7 +139,7 @@ def run_slsqp(c, args):
 def summarize(c, method, rec, status, stopped, load):
     """One row; rule 3 measured at the solution (the last iterate)."""
     row = {"case": c["name"], "n": c["n"], "noise": c["noise"], "volumes": c["vol"], "seed": c["seed"],
-           "method": method, "stoppingRule": "rule 3" if method == "fw" else "rule 1", "status": status,
+           "method": method, "stoppingRule": "rule 3" if rec.stop_on_rule3 else "rule 1", "status": status,
            "stopped": stopped, "iterations": rec.k, "seconds": rec.elapsed(), "otSolves": ref.COUNTERS.otSolves,
            "load": load}
     if rec.last is not None:
@@ -158,6 +163,8 @@ def main():
     ap.add_argument("--max-iter", type=int, default=100000)
     ap.add_argument("--max-seconds", type=float, default=1800.0)
     ap.add_argument("--slsqp-max-n", type=int, default=500)
+    ap.add_argument("--slsqp-stop", choices=["rule1", "rule3"], default="rule1",
+                    help="SLSQP stops on its own rule 1 (default) or on rule 3 at 1e-8 (our termination)")
     ap.add_argument("--out", default=os.path.join(HERE, "results"))
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
