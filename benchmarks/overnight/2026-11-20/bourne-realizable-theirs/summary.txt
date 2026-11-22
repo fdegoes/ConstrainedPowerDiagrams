@@ -1,0 +1,6 @@
+2025-invert            theirs         rule 1   met, 190 it, 4.51 s, 388 OT solves
+2025-invert            theirs         rule 3 at solution: 1.7e-14 / 3.5e-03 (not met)
+2026-voronoi           theirs         tol 1e-08 -
+2026-voronoi           theirs         stopped at iteration 5000 (max iterations): rule 3 residuals 5.2e-13 / 3.5e-03
+2026-aligned           theirs         tol 1e-08 -
+2026-aligned           theirs         stopped at iteration 5000 (max iterations): rule 3 residuals 8.4e-09 / 4.7e-01

@@ -1,0 +1,15 @@
+{
+ "case": "ebsd",
+ "method": "ours-Halpha",
+ "alphaChoice": "practical",
+ "alpha": 0.9380755360182067,
+ "rule": "volume and shift residuals of H_alpha (eq. results-termination)",
+ "tolerance": 1e-08,
+ "stop": "converged",
+ "iterations": 6,
+ "seconds": 0.027499815,
+ "builds": 14,
+ "volume": 2.1351818330707824e-13,
+ "centroid": 0.016080975691888207,
+ "stationary": 2.0955048822866403e-13
+}

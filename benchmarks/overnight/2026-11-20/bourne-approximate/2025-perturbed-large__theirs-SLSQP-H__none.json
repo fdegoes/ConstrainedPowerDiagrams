@@ -1,0 +1,15 @@
+{
+ "case": "2025-perturbed-large",
+ "method": "theirs-SLSQP-H",
+ "alphaChoice": "none",
+ "alpha": null,
+ "rule": "SLSQP objective change (Bourne 2025, H)",
+ "tolerance": 1e-08,
+ "stop": "converged",
+ "iterations": 202,
+ "seconds": 7.102323773084208,
+ "otSolves": 443,
+ "volume": 8.128229647980267e-10,
+ "centroid": 0.09944882844769651,
+ "stationary": 1.217675877487649
+}

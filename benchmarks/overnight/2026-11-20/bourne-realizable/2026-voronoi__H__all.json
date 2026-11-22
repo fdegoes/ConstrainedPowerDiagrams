@@ -1,0 +1,31 @@
+{
+ "case": "2026-voronoi",
+ "method": "H",
+ "solverStatus": "converged",
+ "solverIterations": 7,
+ "solverSeconds": 0.010861249,
+ "numBuilds": 13,
+ "startSeconds": 0.004535402,
+ "volumeResidual": 9.662660226133883e-09,
+ "shiftResidual": 4.716445313501012e-09,
+ "phaseSeconds": {
+  "build": 0.005829292999999999,
+  "hessian": 0.000111792,
+  "factor": 0.00029678100000000003
+ },
+ "finalVolumeError": 9.662660226133883e-09,
+ "finalCentroidError": 1.2659694331843166e-09,
+ "finalF": 1.6392076412504033e-17,
+ "common": {
+  "referenceAlpha": Infinity,
+  "stops": {
+   "1e-08": {
+    "iteration": 7,
+    "seconds": 0.010849749,
+    "solves": 13,
+    "volumeResidual": 9.662660226133883e-09,
+    "shiftResidual": 4.716445313501012e-09
+   }
+  }
+ }
+}

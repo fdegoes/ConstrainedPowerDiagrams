@@ -1,0 +1,7 @@
+case,method,converged,stoppedBy,iterations,seconds,rule,tolerance,volumeResidual,shiftResidual
+2025-invert,their SLSQP,True,rule 1,190,4.513919123914093,"rule 1: SLSQP objective change <= tol |H(start)|, volumes within 0.1 % (Bourne 2025)",1e-08,1.6701646785890507e-14,0.0035309219929066833
+2026-aligned,their FW (t = 100),False,max iterations,5000,289.5451170527376,rule 3: volume and shift residuals of H (eq. results-termination),1e-08,8.403693328022717e-09,0.4733079154057197
+2026-voronoi,their FW (t = 100),False,max iterations,5000,51.73031910485588,rule 3: volume and shift residuals of H (eq. results-termination),1e-08,5.174141021205556e-13,0.0034889043871188987
+2025-invert,our H,True,rule 3,7,0.012547507000000001,rule 3: volume and shift residuals of H (eq. results-termination),1e-08,9.662660226133883e-09,4.716445313501012e-09
+2026-aligned,our H,True,rule 3,27,0.243189519,rule 3: volume and shift residuals of H (eq. results-termination),1e-08,4.5883540022995155e-12,3.0660472707184157e-12
+2026-voronoi,our H,True,rule 3,7,0.010849749,rule 3: volume and shift residuals of H (eq. results-termination),1e-08,9.662660226133883e-09,4.716445313501012e-09

@@ -1,0 +1,14 @@
+{
+ "case": "ebsd",
+ "method": "theirs-SLSQP-LSQ",
+ "alphaChoice": "none",
+ "alpha": null,
+ "rule": "SLSQP objective change (Bourne 2025, least squares)",
+ "tolerance": 1e-08,
+ "stop": "time cap",
+ "iterations": 208,
+ "seconds": 1808.2668654499575,
+ "otSolves": 101298,
+ "volume": 2.6424491172250617e-13,
+ "centroid": 0.030551162943492947
+}

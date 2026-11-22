@@ -1,0 +1,14 @@
+case,method,alphaChoice,alpha,rule,tolerance,stop,iterations,seconds,otSolves,builds,volume,centroid,stationary
+2025-perturbed-small,theirs-SLSQP-H,none,,"SLSQP objective change (Bourne 2025, H)",1e-08,converged,399,9.693732770974748,811,,1.3653802644548464e-14,0.002390402046517741,0.029268669652621038
+2025-perturbed-small,ours-Halpha,bound,0.7768464465608849,volume and shift residuals of H_alpha (eq. results-termination),1e-08,converged,4,0.009997187,,10,2.561843484764279e-12,0.013587008033691702,5.702970391982017e-13
+2025-perturbed-small,ours-Halpha,practical,4.209844299635747,volume and shift residuals of H_alpha (eq. results-termination),1e-08,converged,4,0.011980893,,10,1.2291676466078633e-09,0.006593255589253751,9.72500042478362e-10
+2025-perturbed-large,theirs-SLSQP-H,none,,"SLSQP objective change (Bourne 2025, H)",1e-08,converged,202,7.102323773084208,443,,8.128229647980267e-10,0.09944882844769651,1.217675877487649
+2025-perturbed-large,ours-Halpha,bound,0.29939085233669066,volume and shift residuals of H_alpha (eq. results-termination),1e-08,converged,3,0.008811641,,9,3.577857919287143e-09,0.03960486431640049,1.3143565317556905e-09
+2025-perturbed-large,ours-Halpha,practical,1.2143102155596346,volume and shift residuals of H_alpha (eq. results-termination),1e-08,converged,4,0.009722161,,10,3.2351645076532285e-10,0.03690497236330557,4.1374387416125293e-10
+ebsd,theirs-SLSQP-LSQ,none,,"SLSQP objective change (Bourne 2025, least squares)",1e-08,time cap,208,1808.2668654499575,101298,,2.6424491172250617e-13,0.030551162943492947,
+ebsd,theirs-FW,bound,0.015216911026027877,FW gap (Bourne 2026),1e-09,converged,2,0.1700837129028514,3,,4.621920984212476e-11,0.019264990598498795,0.0002897147344141381
+ebsd,theirs-FW,practical,0.9380755360182067,FW gap (Bourne 2026),1e-09,converged,13,0.7846569700632244,14,,6.470996417172296e-14,0.01614509154768053,0.034420214983429974
+ebsd,theirs-FW,theirs,9.0,FW gap (Bourne 2026),1e-09,converged,428,28.30171741801314,429,,2.5739587794262287e-09,0.008569018949903157,0.1892788447292458
+ebsd,ours-Halpha,bound,0.015216911026027877,volume and shift residuals of H_alpha (eq. results-termination),1e-08,converged,3,0.021001076,,11,3.94162651013978e-09,0.019264983662566685,3.228963051727368e-09
+ebsd,ours-Halpha,practical,0.9380755360182067,volume and shift residuals of H_alpha (eq. results-termination),1e-08,converged,6,0.027499815,,14,2.1351818330707824e-13,0.016080975691888207,2.0955048822866403e-13
+ebsd,ours-Halpha,theirs,9.0,volume and shift residuals of H_alpha (eq. results-termination),1e-08,damping failed,91,0.253239107,,137,0.08965178403947698,0.008568298238275006,0.09086969375778658

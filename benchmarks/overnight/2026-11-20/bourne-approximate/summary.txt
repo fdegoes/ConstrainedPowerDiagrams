@@ -1,0 +1,13 @@
+2025-perturbed-small   theirs-SLSQP-H     alpha none      -          converged      it   399       9.69s  vol 1.37e-14  centroid 2.39e-03  stationary 2.93e-02
+2025-perturbed-small   ours-Halpha        alpha bound     0.7768     converged      it     4       0.01s  vol 2.56e-12  centroid 1.36e-02  stationary 5.70e-13
+2025-perturbed-small   ours-Halpha        alpha practical 4.21       converged      it     4       0.01s  vol 1.23e-09  centroid 6.59e-03  stationary 9.73e-10
+2025-perturbed-large   theirs-SLSQP-H     alpha none      -          converged      it   202       7.10s  vol 8.13e-10  centroid 9.94e-02  stationary 1.22e+00
+2025-perturbed-large   ours-Halpha        alpha bound     0.2994     converged      it     3       0.01s  vol 3.58e-09  centroid 3.96e-02  stationary 1.31e-09
+2025-perturbed-large   ours-Halpha        alpha practical 1.214      converged      it     4       0.01s  vol 3.24e-10  centroid 3.69e-02  stationary 4.14e-10
+ebsd                   theirs-SLSQP-LSQ   alpha none      -          time cap       it   208    1808.27s  vol 2.64e-13  centroid 3.06e-02  stationary -
+ebsd                   theirs-FW          alpha bound     0.01522    converged      it     2       0.17s  vol 4.62e-11  centroid 1.93e-02  stationary 2.90e-04
+ebsd                   theirs-FW          alpha practical 0.9381     converged      it    13       0.78s  vol 6.47e-14  centroid 1.61e-02  stationary 3.44e-02
+ebsd                   theirs-FW          alpha theirs    9          converged      it   428      28.30s  vol 2.57e-09  centroid 8.57e-03  stationary 1.89e-01
+ebsd                   ours-Halpha        alpha bound     0.01522    converged      it     3       0.02s  vol 3.94e-09  centroid 1.93e-02  stationary 3.23e-09
+ebsd                   ours-Halpha        alpha practical 0.9381     converged      it     6       0.03s  vol 2.14e-13  centroid 1.61e-02  stationary 2.10e-13
+ebsd                   ours-Halpha        alpha theirs    9          damping failed it    91       0.25s  vol 8.97e-02  centroid 8.57e-03  stationary 9.09e-02

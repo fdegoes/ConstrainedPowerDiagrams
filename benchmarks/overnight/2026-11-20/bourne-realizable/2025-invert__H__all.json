@@ -1,0 +1,39 @@
+{
+ "case": "2025-invert",
+ "method": "H",
+ "solverStatus": "converged",
+ "solverIterations": 7,
+ "solverSeconds": 0.012559487000000001,
+ "numBuilds": 13,
+ "startSeconds": 0.005121723,
+ "volumeResidual": 9.662660226133883e-09,
+ "shiftResidual": 4.716445313501012e-09,
+ "phaseSeconds": {
+  "build": 0.006921933,
+  "hessian": 0.000112609,
+  "factor": 0.0003063059999999999
+ },
+ "finalVolumeError": 9.662660226133883e-09,
+ "finalCentroidError": 1.2659694331843166e-09,
+ "finalF": 1.6392076412504033e-17,
+ "common": {
+  "referenceAlpha": Infinity,
+  "stops": {
+   "1e-08": {
+    "iteration": 7,
+    "seconds": 0.012547507000000001,
+    "solves": 13,
+    "volumeResidual": 9.662660226133883e-09,
+    "shiftResidual": 4.716445313501012e-09
+   }
+  }
+ },
+ "theirs": {
+  "rule": "SLSQP ftol (ptol 1e-08)",
+  "ratio": 1.417384902529818e-05,
+  "met": false,
+  "iteration": 7,
+  "seconds": 0.012547507000000001,
+  "solves": 13
+ }
+}

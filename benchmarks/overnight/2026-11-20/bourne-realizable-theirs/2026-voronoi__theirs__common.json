@@ -1,0 +1,17 @@
+{
+ "case": "2026-voronoi",
+ "method": "theirs",
+ "termination": "common",
+ "referenceAlpha": Infinity,
+ "status": "max iterations",
+ "stops": {
+  "1e-08": null
+ },
+ "seconds": 51.73031910485588,
+ "otSolves": 5001,
+ "final": {
+  "iteration": 5000,
+  "volumeResidual": 5.174141021205556e-13,
+  "shiftResidual": 0.0034889043871188987
+ }
+}

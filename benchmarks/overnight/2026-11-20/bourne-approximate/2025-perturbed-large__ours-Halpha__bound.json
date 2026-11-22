@@ -1,0 +1,15 @@
+{
+ "case": "2025-perturbed-large",
+ "method": "ours-Halpha",
+ "alphaChoice": "bound",
+ "alpha": 0.29939085233669066,
+ "rule": "volume and shift residuals of H_alpha (eq. results-termination)",
+ "tolerance": 1e-08,
+ "stop": "converged",
+ "iterations": 3,
+ "seconds": 0.008811641,
+ "builds": 9,
+ "volume": 3.577857919287143e-09,
+ "centroid": 0.03960486431640049,
+ "stationary": 1.3143565317556905e-09
+}

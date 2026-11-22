@@ -1,0 +1,31 @@
+{
+ "case": "2026-aligned",
+ "method": "H",
+ "solverStatus": "converged",
+ "solverIterations": 27,
+ "solverSeconds": 0.243685992,
+ "numBuilds": 32,
+ "startSeconds": 0.015841265,
+ "volumeResidual": 4.5883540022995155e-12,
+ "shiftResidual": 3.0660472707184157e-12,
+ "phaseSeconds": {
+  "build": 0.068060837,
+  "hessian": 0.016411725000000002,
+  "factor": 0.135768981
+ },
+ "finalVolumeError": 4.5883540022995155e-12,
+ "finalCentroidError": 1.1363527221390169e-13,
+ "finalF": 7.523419359012851e-25,
+ "common": {
+  "referenceAlpha": Infinity,
+  "stops": {
+   "1e-08": {
+    "iteration": 27,
+    "seconds": 0.243189519,
+    "solves": 32,
+    "volumeResidual": 4.5883540022995155e-12,
+    "shiftResidual": 3.0660472707184157e-12
+   }
+  }
+ }
+}

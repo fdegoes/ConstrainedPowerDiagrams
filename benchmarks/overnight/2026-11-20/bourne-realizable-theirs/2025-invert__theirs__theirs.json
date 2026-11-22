@@ -1,0 +1,20 @@
+{
+ "case": "2025-invert",
+ "method": "theirs",
+ "termination": "theirs",
+ "converged": true,
+ "status": "Optimization terminated successfully",
+ "iterations": 190,
+ "seconds": 4.513919123914093,
+ "otSolves": 388,
+ "otNewton": 1987,
+ "finalVolumeError": 6.701069216475094e-08,
+ "finalCentroidError": 0.0004212532147967386,
+ "finalF": 2.4633288653105037e-07,
+ "rule3AtSolution": {
+  "volumeResidual": 1.6701646785890507e-14,
+  "shiftResidual": 0.0035309219929066833,
+  "tol": 1e-08,
+  "met": false
+ }
+}

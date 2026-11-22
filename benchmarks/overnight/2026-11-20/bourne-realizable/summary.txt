@@ -1,0 +1,4 @@
+2025-invert            H              rule 1 at solution: |dobj|/|obj0| 1.4e-05 (not met)
+2025-invert            H              tol 1e-08 7 it, 0.0125 s, 13 solves
+2026-voronoi           H              tol 1e-08 7 it, 0.0108 s, 13 solves
+2026-aligned           H              tol 1e-08 27 it, 0.243 s, 32 solves

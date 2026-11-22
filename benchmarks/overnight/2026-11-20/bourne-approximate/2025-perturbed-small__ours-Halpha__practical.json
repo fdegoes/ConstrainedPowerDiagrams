@@ -1,0 +1,15 @@
+{
+ "case": "2025-perturbed-small",
+ "method": "ours-Halpha",
+ "alphaChoice": "practical",
+ "alpha": 4.209844299635747,
+ "rule": "volume and shift residuals of H_alpha (eq. results-termination)",
+ "tolerance": 1e-08,
+ "stop": "converged",
+ "iterations": 4,
+ "seconds": 0.011980893,
+ "builds": 10,
+ "volume": 1.2291676466078633e-09,
+ "centroid": 0.006593255589253751,
+ "stationary": 9.72500042478362e-10
+}

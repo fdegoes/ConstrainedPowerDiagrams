@@ -1,0 +1,17 @@
+{
+ "case": "2026-aligned",
+ "method": "theirs",
+ "termination": "common",
+ "referenceAlpha": Infinity,
+ "status": "max iterations",
+ "stops": {
+  "1e-08": null
+ },
+ "seconds": 289.5451170527376,
+ "otSolves": 5001,
+ "final": {
+  "iteration": 5000,
+  "volumeResidual": 8.403693328022717e-09,
+  "shiftResidual": 0.4733079154057197
+ }
+}

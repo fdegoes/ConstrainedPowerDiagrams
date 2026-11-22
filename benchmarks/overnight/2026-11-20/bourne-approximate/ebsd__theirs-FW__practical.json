@@ -1,0 +1,15 @@
+{
+ "case": "ebsd",
+ "method": "theirs-FW",
+ "alphaChoice": "practical",
+ "alpha": 0.9380755360182067,
+ "rule": "FW gap (Bourne 2026)",
+ "tolerance": 1e-09,
+ "stop": "converged",
+ "iterations": 13,
+ "seconds": 0.7846569700632244,
+ "otSolves": 14,
+ "volume": 6.470996417172296e-14,
+ "centroid": 0.01614509154768053,
+ "stationary": 0.034420214983429974
+}

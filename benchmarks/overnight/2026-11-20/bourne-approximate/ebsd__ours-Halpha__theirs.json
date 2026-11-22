@@ -1,0 +1,15 @@
+{
+ "case": "ebsd",
+ "method": "ours-Halpha",
+ "alphaChoice": "theirs",
+ "alpha": 9.0,
+ "rule": "volume and shift residuals of H_alpha (eq. results-termination)",
+ "tolerance": 1e-08,
+ "stop": "damping failed",
+ "iterations": 91,
+ "seconds": 0.253239107,
+ "builds": 137,
+ "volume": 0.08965178403947698,
+ "centroid": 0.008568298238275006,
+ "stationary": 0.09086969375778658
+}
