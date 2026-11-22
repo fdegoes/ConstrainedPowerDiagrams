@@ -102,35 +102,41 @@ With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1
 \subsection{Timing and Iterations}
 \label{sec:results-timing}
 
-We time our H on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling-time} shows the time and Fig.~\ref{fig:scaling-iterations} the iterations against $n$. Each marker is one case, and each line joins the medians over the seeds.
+We time our H on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling-time} shows the time and Fig.~\ref{fig:scaling-iterations} the iterations against $n$. Each line joins the medians over the five seeds, and the shaded band spans the 25th to 75th percentiles.
 
-\begin{figure}[t]
+\paragraph{Machine.} The timings were measured on one virtual machine: a KVM guest with 15 logical CPUs of an AMD EPYC 7763 host, 111 GB of memory, and AlmaLinux 9.6 (Linux 5.14). Our H was compiled with GCC 11.5.0 in release mode, with OpenMP enabled, against Eigen 3.3.7 and the CHOLMOD 3.0.14 sparse Cholesky backend of SuiteSparse. The methods of Bourne et al. ran in Python 3.11.13 with NumPy 2.4.6 and SciPy 1.17.1, and their optimal-transport solves used pysdot 0.2.39. We did not fix the number of threads of any method. The overnight run began with a 1-minute load average of 0.4 and ended at 2.8; the load was not recorded for each case. During the rule-3 runs of the Bourne methods the 1-minute load average reached 21 on the 15 CPUs (median 7), so their timings include multithreaded work from their numerical libraries. Our runs of H did not overlap with them.
+
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{figures/synthetic/scaling-time.pdf}
+  \includegraphics[width=\textwidth]{figures/synthetic/scaling-time.pdf}
   \caption{%
-    Time of our H to converge against the number of sites $n$, on the synthetic cases. Each marker is a case (one per seed); each line joins the medians over the seeds. Colors are the noise levels, markers and line styles the volume distributions.%
+    Time of our H to converge against the number of sites $n$, on the synthetic cases, one panel per noise level. Each line joins the medians over the five seeds, and the band spans the 25th to 75th percentiles. Circles and solid lines: Voronoi volumes; squares and dashed lines: uniform volumes. The dotted grey line is proportional to $n$.%
   }
   \label{fig:scaling-time}
-\end{figure}
+\end{figure*}
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=0.9\columnwidth]{figures/synthetic/scaling-iterations.pdf}
+  \includegraphics[width=\textwidth]{figures/synthetic/scaling-iterations.pdf}
   \caption{%
-    Iterations of our H to converge against the number of sites $n$, with the same encoding as Fig.~\ref{fig:scaling-time}.%
+    Iterations of our H to converge against the number of sites $n$, with the same panels and encoding as Fig.~\ref{fig:scaling-time}. The runs with up to 59 iterations lie above the axis and are discussed in the text.%
   }
   \label{fig:scaling-iterations}
-\end{figure}
+\end{figure*}
 
-The median time grows from 10 ms at $n = 10$ to 1.4--1.5 s at $n = 10000$ for Voronoi volumes, and to 3.0--4.2 s for uniform volumes. The log-log slope of the median time is between $0.76$ and $0.77$ for Voronoi volumes and between $0.87$ and $0.90$ for uniform volumes, which is about $0.84$ pooled, so the time grows sublinearly in $n$ over this range. Uniform volumes are two to three times slower than Voronoi volumes at $n = 10000$, and they also take more iterations (median 12, against 9). At $n = 10000$, the noise level changes the median time by less than a factor of 1.5.
+In Fig.~\ref{fig:scaling-time}, the median time stays between 10 and 17 ms up to about $n = 100$, which is the fixed cost of a solve on a small diagram. Above that it grows with $n$, from 10 ms at $n = 10$ to 1.4--1.5 s at $n = 10000$ for Voronoi volumes and 3.0--4.2 s for uniform volumes. The log-log slope of the median is between $0.76$ and $0.77$ for Voronoi volumes and between $0.87$ and $0.90$ for uniform volumes (about $0.84$ pooled), so the time grows sublinearly in $n$ over this range. The noise level changes the median time at $n = 10000$ by less than a factor of 1.5.
+
+Fig.~\ref{fig:scaling-iterations} explains the gap between the two volume distributions. The Voronoi medians stay between 8 and 11 iterations at every size and noise level. The uniform medians match them up to a few hundred sites and then rise, to 23 (low noise), 33 (mid noise) and 36 (high noise) at $n = 10000$. At that size the time per iteration is similar for the two distributions (116--129 ms for uniform, 140--154 ms for Voronoi, from the group medians), so the iteration count accounts for the difference in time. The noise level matters for uniform volumes at large $n$, and hardly for Voronoi volumes.
+
+The two largest iteration counts, 59, occur in two runs: one at $n = 785$ (Voronoi, mid noise), which takes 0.6 s, and one at $n = 6952$ (Voronoi, high noise). The second is the slowest of all 600 runs, at 7.7 s. Its 59 iterations compare with 12 for the other seeds at that size, and its time per iteration, 130 ms, is also above the 88--94 ms of those seeds. The data do not show whether this excess comes from the solver or from other activity on the machine, because the load was not recorded for each case. This run should be repeated on an idle machine before its time is quoted.
 
 Table~\ref{tab:realizable} compares our H with the two methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} on the three realizable cases. Each method stops on its own rule at $10^{-8}$; our H stops on \eqref{eq:results-termination}, and the other rule is evaluated at its solution, as described above. The times are wall-clock seconds on one machine.
 
-\begin{table}[t]
+\begin{table*}[t]
   \centering
   \caption{Realizable cases: our H against the methods of Bourne et al. Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where the method stopped.}
   \label{tab:realizable}
-  \begin{tabular}{llrrrrr}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrr}
     \hline
     case & method & stopped by & iterations & time (s) & volume & centroid \\
     \hline
@@ -141,16 +147,16 @@ Table~\ref{tab:realizable} compares our H with the two methods of \citet{Bourne2
     2026-aligned & our H         & \eqref{eq:results-termination} & 27   & 0.243  & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ \\
     2026-aligned & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 290    & $8.4{\times}10^{-9}$ & $4.7{\times}10^{-1}$ \\
     \hline
-  \end{tabular}
-\end{table}
+  \end{tabular*}
+\end{table*}
 
 On the synthetic cases, Table~\ref{tab:matched} compares the methods on the 66 cases with seed 1 and $n \le 500$, the largest sizes for which their methods were run. Each method runs until it meets \eqref{eq:results-termination} or reaches a 60 s cutoff, which excludes the evaluations of the residuals.
 
-\begin{table}[t]
+\begin{table*}[t]
   \centering
   \caption{Synthetic cases (seed 1, $n \le 500$, 66 cases), each method run on \eqref{eq:results-termination} with a 60 s cutoff: the number of cases where it was met, the median time to meet it, and its residuals at the iterate where it stopped (median, with the maximum in parentheses). The rule-1 stop of SLSQP is in the text.}
   \label{tab:matched}
-  \begin{tabular}{lllll}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllll}
     \hline
     method & met & median time (ms) & volume & centroid \\
     \hline
@@ -158,8 +164,8 @@ On the synthetic cases, Table~\ref{tab:matched} compares the methods on the 66 c
     SLSQP (2025)         & 2/66  & 10\,600 & $5.5{\times}10^{-13}$ ($4.9{\times}10^{-10}$) & $1.5{\times}10^{-4}$ ($1.7{\times}10^{-1}$) \\
     Frank--Wolfe (2026)  & 0/66  & ---    & $9.1{\times}10^{-13}$ ($5.3{\times}10^{-7}$) & $3.8{\times}10^{-3}$ ($4.1{\times}10^{-1}$) \\
     \hline
-  \end{tabular}
-\end{table}
+  \end{tabular*}
+\end{table*}
 
 Our H meets \eqref{eq:results-termination} in all 66 cases, in a median of 15 ms. SLSQP meets it in 2 cases, in a median of 10.6 s; in the other 63 it reaches the cutoff, and in one its line search fails. Frank--Wolfe meets it in none of the 66 cases, and all of them reach the cutoff. At the cutoff, the centroid residuals of SLSQP and Frank--Wolfe have medians of $1.5\cdot10^{-4}$ and $3.8\cdot10^{-3}$ of the cell size, and maxima of $0.17$ and $0.41$. Their volume errors are near $10^{-12}$. On its own rule 1, SLSQP stops earlier, in 57 of the 66 cases, with a median of 9.8 s and a centroid residual at that stop of median $3.6\cdot10^{-4}$.
 

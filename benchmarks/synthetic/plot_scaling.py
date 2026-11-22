@@ -3,10 +3,13 @@
 2D synthetic cases (log-synthetic.csv of run_overnight.sh), and the summary
 statistics for the text.
 
-One color per noise level (low, mid, high). One marker per volume type:
-a dot for the Voronoi volumes, a square for the uniform volumes. Every case
-is a marker (one per seed); a line joins the medians over the seeds at each n,
-solid for Voronoi and dashed for uniform. Time is in milliseconds.
+One panel per noise level (low, mid, high), the same y-scale in all panels.
+In each panel, the Voronoi volumes (circles, solid) and the uniform volumes
+(squares, dashed) are drawn as the median over the seeds at each n, with a
+shaded band between the 25th and 75th percentiles. The lines are labeled at
+their right end. The time figure has a grey reference line proportional to n.
+The figures are drawn at the width of the text (the paper's figure*), so the
+type is at its printed size. Time is in milliseconds.
 
 Usage:
   external/bourne/.venv/bin/python benchmarks/synthetic/plot_scaling.py
@@ -25,15 +28,19 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from matplotlib.lines import Line2D  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 
-# Categorical slots 1-3 of the dataviz reference palette (as plot_timing.py).
+# Categorical slots 1-3 of the dataviz reference palette (validated; see the
+# skill's references/palette.md), one per noise level.
 NOISE = {"0": ("low", "#2a78d6"), "1": ("mid", "#eb6834"), "2": ("high", "#1baf7a")}
-VOLUMES = {"voronoi": ("o", "-"), "uniform": ("s", "--")}  # marker, line style
+VOLUMES = {"voronoi": ("o", "-", "Voronoi"), "uniform": ("s", "--", "uniform")}  # marker, line style, label
+INK = "#2b2a27"  # text ink, not a series color
+GRID = "#e4e2dc"
 TOL = 1e-8
+
+plt.rcParams.update({"font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 7, "ytick.labelsize": 7})
 
 
 def load(path):
@@ -52,33 +59,47 @@ def groups(rows):
     return g
 
 
-def plot(g, index, ylabel, title, path):
-    fig, ax = plt.subplots(figsize=(4.6, 3.4))
-    for noise, (name, color) in NOISE.items():
-        for vol, (marker, ls) in VOLUMES.items():
+def band(values):
+    """Median, 25th and 75th percentiles of the seeds."""
+    q1, med, q3 = np.percentile(values, [25, 50, 75])
+    return med, q1, q3
+
+
+def plot(g, index, ylabel, path, reference):
+    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.5), sharey=True)
+    for ax, (noise, (name, color)) in zip(axes, NOISE.items()):
+        for vol, (marker, ls, label) in VOLUMES.items():
             by_n = g[(noise, vol)]
-            ns = sorted(by_n)
-            for n in ns:
-                ax.scatter([n] * len(by_n[n]), [v[index] for v in by_n[n]], marker=marker, s=12,
-                           color=color, alpha=0.55, linewidths=0, zorder=2)
-            meds = [statistics.median(v[index] for v in by_n[n]) for n in ns]
-            ax.plot(ns, meds, ls, color=color, lw=1.4, zorder=3)
-    ax.set_xscale("log")
-    if index == 0:
-        ax.set_yscale("log")
-    ax.set_xlabel("number of sites $n$")
-    ax.set_ylabel(ylabel)
-    ax.set_title(title, fontsize=9)
-    ax.grid(True, which="major", color="#e4e2dc", lw=0.6)
-    ax.set_axisbelow(True)
-    handles = [Line2D([], [], color=c, lw=0, marker="o", ms=5, label=f"{name} noise")
-               for name, c in NOISE.values()]
-    handles += [Line2D([], [], color="#52514e", lw=0, marker=m, ms=5, label=f"{v} volumes")
-                for v, (m, _) in VOLUMES.items()]
-    handles += [Line2D([], [], color="#52514e", lw=1.4, ls=ls, label=f"{v}, median")
-                for v, (_, ls) in VOLUMES.items()]
-    ax.legend(handles=handles, fontsize=7, frameon=False, loc="upper left", bbox_to_anchor=(1.01, 1.0))
-    fig.tight_layout()
+            ns = np.array(sorted(by_n))
+            stats = np.array([band([v[index] for v in by_n[n]]) for n in ns])
+            med, lo, hi = stats[:, 0], stats[:, 1], stats[:, 2]
+            ax.fill_between(ns, lo, hi, color=color, alpha=0.32, lw=0, zorder=1)
+            ax.plot(ns, med, ls, color=color, lw=1.4, zorder=3)
+            ax.plot(ns, med, marker, color=color, ms=3.5, mec="white", mew=0.4, lw=0, zorder=4)
+            ax.annotate(label, (ns[-1], med[-1]), xytext=(4, 0), textcoords="offset points",
+                        va="center", ha="left", fontsize=7, color=INK)
+        if reference and index == 0:
+            # Linear scaling, through the pooled median at the size nearest to 1000.
+            sizes = sorted({n for key in g if key[0] == noise for n in g[key]})
+            n0 = min(sizes, key=lambda n: abs(n - 1000))
+            c = statistics.median(v[0] for key in g if key[0] == noise for v in g[key][n0]) / n0
+            xs = np.array([10, 10000])
+            ax.plot(xs, c * xs, color="#8a8880", lw=0.9, ls=(0, (1, 1.5)), zorder=0)
+            ax.annotate("$\\propto n$", (25, c * 25), xytext=(3, -8), textcoords="offset points",
+                        fontsize=7, color="#8a8880")
+        ax.set_xscale("log")
+        ax.set_xlim(8, 40000)
+        if index == 0:
+            ax.set_yscale("log")
+        ax.set_xlabel("number of sites $n$")
+        ax.text(0.04, 0.96, f"{name} noise", transform=ax.transAxes, va="top", ha="left",
+                fontsize=8, color=INK)
+        ax.grid(True, which="major", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    axes[0].set_ylabel(ylabel)
+    fig.tight_layout(w_pad=1.2)
     fig.savefig(path)
     plt.close(fig)
 
@@ -154,8 +175,8 @@ def main():
     rows = load(args.log)
     g = groups(ours(rows))
     os.makedirs(args.out, exist_ok=True)
-    plot(g, 0, "time (ms)", "Our H, time to converge", os.path.join(args.out, "scaling-time.pdf"))
-    plot(g, 1, "iterations", "Our H, iterations to converge", os.path.join(args.out, "scaling-iterations.pdf"))
+    plot(g, 0, "time (ms)", os.path.join(args.out, "scaling-time.pdf"), reference=True)
+    plot(g, 1, "iterations", os.path.join(args.out, "scaling-iterations.pdf"), reference=False)
 
     lines = ["## Our H on the synthetic benchmark", ""] + summary(rows, g)
     lines += ["## Matched cases (seed 1, n <= 500)", ""] + comparison(rows) + [""]
