@@ -1,0 +1,5 @@
+case,set,n,noise,volumes,seed,method,stoppingRule,status,stopped,iterations,seconds,capSeconds,otSolves,theirRuleValue,theirRuleTol,finalVolumeResidual,finalShiftResidual,rule3Met,finalGeneratorError,load
+2026-voronoi,realizable,20,,,,fw,FW gap (Bourne 2026),,their rule,558,6.117668648948893,1800.0,559,7.315892681493751e-15,1e-14,5.137730880820093e-13,0.0034890787884528374,False,0.0023820082541911956,0.36
+2026-voronoi,realizable,20,,,,subgrad,change of the running average (Bourne 2026),,their rule,441,4.6833752118982375,1800.0,441,9.9763125823057e-06,1e-05,5.470623592915751e-13,0.0035187087037954422,False,0.08182737649100223,0.49
+2026-aligned,realizable,728,,,,fw,FW gap (Bourne 2026),,iteration cap,1000,56.37331335921772,1800.0,1001,6.640380158604048e-09,1e-16,1.4719522357928736e-08,0.48125276054712945,False,0.048523535906670676,0.53
+2026-aligned,realizable,728,,,,subgrad,change of the running average (Bourne 2026),,iteration cap,600,27.357971378834918,1800.0,600,2.344238444351616e-05,1e-05,2.46766496125872e-12,0.4933695759215437,False,1.6112344014904432,1.44
