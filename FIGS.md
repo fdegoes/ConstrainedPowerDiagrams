@@ -47,6 +47,24 @@ Data: the original Power Particles inputs in
 `~/Documents/Projects/Before2015/pp/data/2D/`. The runner is
 `benchmarks/pp2d/run_examples.py` (`runPP2D`, fluid-only cases).
 
+Every fluid example is compared across the same four integrators, all
+run with the same inputs, time step and frame count:
+
+- **PP**: `powerparticles` (Power Particles, with its weight solve).
+- **GM**: `gm` (Gallouët–Mérigot, kappa = 1 with `--stiffness 1`). This
+  is the limit alpha -> 0 of the softened scheme.
+- **Constrained**: `constrained` (SHAKE, or RATTLE with the velocity
+  projection, see `src/core/integrator.h`).
+- **Softened, alpha > 0**: `softened` with `--alpha` set to a value
+  different from the GM limit. The default `--alpha 0.01` is the
+  baseline; a second value (for example 0.1) would show the trend.
+  Open question: which alpha values go in the paper.
+
+The runner already supports all four (`--integrator powerparticles softened
+gm constrained`), so no code change is needed for the comparison. What is
+missing is the figure (energy, momentum and frames per integrator) and the
+choice of alpha values.
+
 - **2D, four vortices, three volume distributions.** Only
   `yesweights/band2_5k_4vort.pp` exists. The uniform and radial versions
   of the four-vortex case are not in the data folder, so they would have to
