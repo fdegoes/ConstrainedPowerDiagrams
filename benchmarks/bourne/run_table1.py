@@ -502,14 +502,18 @@ def _tex_time(s):
     return "%#.3g" % s if s < 1000 else "%.0f" % s
 
 
-TEX_METHOD = {"ours": "our solver", "slsqp": "SLSQP (2025)", "fw": "Frank--Wolfe (2026, $t = %g$)",
-              "subgrad": "subgradient (2026, $t = %g$)"}
-TEX_STOP = {"rule 3": "\\eqref{eq:results-termination}", "time cap": "time cap", "iteration cap": "iteration cap"}
+TEX_METHOD = {"ours": "our $\\jointdual$", "slsqp": "Bourne 2025", "fw": "Bourne 2026 FW",
+              "subgrad": "Bourne 2026 subgrad."}  # the caption cites the two papers
+TOL = 1e-8
 
 
 def tex_method(r):
-    m = TEX_METHOD[r["method"]]
-    return m % r["settings"]["t"] if "%" in m else m
+    return TEX_METHOD[r["method"]]
+
+
+def tex_met(v, c):
+    """A check mark when both residuals of rule 3 are within the tolerance, a cross otherwise."""
+    return "\\cmark" if v is not None and c is not None and v <= TOL and c <= TOL else "\\xmark"  # latex/alias.tex
 
 
 def write_reports(d):
@@ -531,22 +535,28 @@ def write_reports(d):
 
     lines = ["%% benchmarks/bourne/run_table1.py: rows of tab:realizable, generated %s on %s" % (
                  time.strftime("%Y-%m-%d %H:%M"), platform.node()),
-             "% columns: case & method & stopped by & iterations & time (s) & volume & centroid",
-             "% time: wall seconds, excluding the evaluations of rule 3; residuals of rule 3 at the last iterate"]
+             "% columns: benchmark & method & iterations & time (s) & volume & centroid & met",
+             "% time: wall seconds, excluding the evaluations of rule 3; residuals of rule 3 at the last iterate;",
+             "% met: both residuals <= 1e-8"]
+    shown = set()
+
+    def row(r, method, it, sec, vol, cen):
+        b = r["benchmark"]
+        label = "" if b in shown else LABEL[b]
+        shown.add(b)
+        lines.append("    %-22s & %-42s & %s & %s & %s & %s & %s \\\\" % (
+            label, method, it, _tex_time(sec), _tex_num(vol), _tex_num(cen), tex_met(vol, cen)))
+
     for r in rs:
-        stop = r["stop"]
-        stop = TEX_STOP.get(stop, "failure" if stop.startswith("error") else stop)
-        lines.append("    %-8s & %-30s & %-30s & %s & %s & %s & %s \\\\" % (
-            LABEL[r["benchmark"]], tex_method(r), stop, r.get("iterations", "---"), _tex_time(r.get("seconds")),
-            _tex_num(r.get("volumeResidual")), _tex_num(r.get("centroidResidual"))))
+        if r["stop"].startswith("error"):
+            lines.append("    %% %s %s: failure (%s)" % (LABEL[r["benchmark"]], r["method"], r["stop"]))
+            continue
+        row(r, tex_method(r), r.get("iterations", "---"), r.get("seconds"), r.get("volumeResidual"),
+            r.get("centroidResidual"))
         own = r.get("ownRule")
-        if r["method"] == "slsqp" and own:
-            if own["met"]:
-                lines.append("    %-8s & %-30s & %-30s & %s & %s & %s & %s \\\\" % (
-                    LABEL[r["benchmark"]], tex_method(r), "rule 1", own["iteration"], _tex_time(own["seconds"]),
-                    _tex_num(own["volumeResidual"]), _tex_num(own["centroidResidual"])))
-            else:
-                lines.append("    %% %s SLSQP: rule 1 not met within the run" % LABEL[r["benchmark"]])
+        if r["method"] == "slsqp" and own and own["met"]:
+            row(r, tex_method(r) + " (own rule)", own["iteration"], own["seconds"], own["volumeResidual"],
+                own["centroidResidual"])
         elif own:
             lines.append("    %% %s %s: their rule (%s) %s" % (
                 LABEL[r["benchmark"]], r["method"], own["rule"],

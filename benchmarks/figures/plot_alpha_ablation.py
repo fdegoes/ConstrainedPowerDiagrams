@@ -2,7 +2,8 @@
 """Draws the ablation of the stiffness alpha (fig:alpha-ablation): one synthetic case with
 n = 20 cells of equal area, solved by G (the joint dual, H in the code) and by G_alpha at
 the guaranteed bound (eq:regularized-distinct) and at 1, 4 and 16 times the practical bound
-(eq:regularized-practical), all with alpha at 0.99 times the value, from the same sites.
+(eq:regularized-practical), all with alpha at 0.99 times the value, from the same sites;
+each column uses the same alpha in both rows, the smaller of the two rows' values.
 Two rows: the realizable targets (the centroids of a power diagram, as plot_alpha_example.py),
 and the same targets with each centroid moved by up to 0.2 cell sizes in a random direction
 and translated back to verify eq:partition-feasibility, which no power diagram realizes.
@@ -50,6 +51,8 @@ def run(cbar, V, q, tool, column):
                 f.write("closest 1\n")
             elif k == "g":
                 f.write("alpha -0.99\nguaranteed 1\n")
+            elif isinstance(k, tuple):                  # ("alpha", value): this stiffness
+                f.write("alpha %.17g\n" % k[1])
             else:
                 f.write("alpha %.17g\n" % (-0.99 * k))
         r = subprocess.run([tool, src, dst], capture_output=True, text=True)
@@ -100,12 +103,23 @@ def main():
     cols = GL.colors(n, args.seed)
     base, ext = os.path.splitext(args.out)
     table = {}
+    # The same alpha in both rows: for each column, the smaller of the two rows' values (their
+    # bounds depend on the targets), so that every alpha is within the bounds of both rows.
+    def bounds(targets):
+        _, msg = run(targets, V, q, args.tool, ("1", 1.0))
+        g = float(msg.split("guaranteed bound ")[1].split(",")[0])
+        p = float(msg.split("practical bound ")[1].split(",")[0])
+        return g, p
+    B = {row: bounds(t) for row, t in rows.items()}
+    alphas = {key: min(0.99 * (B[r][0] if k == "g" else k * B[r][1]) for r in rows)
+              for key, k in COLUMNS if k is not None}
+    print("bounds (guaranteed, practical):", B, " alphas:", alphas)
     for row, targets in rows.items():
-        recs = {key: run(targets, V, q, args.tool, (key, k)) for key, k in COLUMNS}
+        recs = {key: run(targets, V, q, args.tool, (key, None if k is None else ("alpha", alphas[key])))
+                for key, k in COLUMNS}
         good = [r for r, _ in recs.values() if r is not None]
         wmax = max(np.abs(r["weights"] - r["weights"].mean()).max() for r in good)
-        bounds = next(m for _, m in recs.values() if "practical bound" in m)
-        table[row] = {"bounds": bounds.split(";")[0]}
+        table[row] = {"bounds": "guaranteed bound %g, practical bound %g" % B[row]}
         for key, _ in COLUMNS:
             rec, msg = recs[key]
             path = "%s-%s-%s%s" % (base, row, key, ext)
@@ -118,6 +132,8 @@ def main():
                 PI.panel(path, [], np.zeros((0, 2)), np.zeros(0), [], args.dpi, points)
                 continue
             s = PA.stats(rec)
+            if key in alphas:                           # passed to the solver, not printed by it
+                s["alpha"] = alphas[key]
             table[row][key] = {k: s[k] for k in ("alpha", "iterations", "seconds", "rms", "max")}
             C = s["centroids"]
 

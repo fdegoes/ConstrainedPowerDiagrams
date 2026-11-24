@@ -87,14 +87,15 @@ As a result, we can write any maximizing generator of the same power diagram as
   \label{eq:flow-gauge}
 \end{equation}
 If the generators are not in general position, we must also include the modes deduced from dual polygons (Appendix~\ref{sec:appendix-nullspace-degenerate}).
-Unlike cut cells, which persist under small motions of the particles, these extra modes disappear under any perturbation, so in practice we discard the facets of negligible measure and let the regularization of our Newton solver absorb the remaining degenerate modes.
+Unlike cut cells, which persist under small motions of the particles, these extra modes disappear under any perturbation, so we jitter the initial particles by a negligible amount to place the generators in general position, which eliminates them.
 
 The Euler--Lagrange equations of \eqref{eq:flow-lagrangian} thus read
 \begin{equation}
   \ddot\qq_i = \qq_i - s\,\dual_i - \translation - \sum\nolimits_{B \in \blockset_i} s_B\,(\dual_i - \dual_{c_B}) ,
   \label{eq:flow-continuous}
 \end{equation}
-where the gauge unknowns $(s, \translation, \{s_B\}_B)$ are real multipliers of the holonomic constraint, with no sign constraint, determined by the requirement that the particles remain realizable.
+where the gauge unknowns $(s, \translation, \{s_B\}_B)$ are the multipliers of the holonomic constraint, determined by the requirement that the particles remain realizable.
+Since this constraint is an equality, these multipliers carry no sign, and the correction can bring a particle back onto the constraint from either side.
 Geometrically, the term $\qq_i$ in \eqref{eq:flow-continuous} pushes the particle outward, while the gauge term picks a normal from the normal cone of $\achievable$ at $\qq$, and thus absorbs the normal component of this push.
 The tangential component of the push vanishes only when $\qq$ is of the form \eqref{eq:flow-gauge}, \ie when the particles are themselves generators of their power diagram.
 Therefore, the configurations at which the net force in \eqref{eq:flow-continuous} vanishes are the centroidal power diagrams with prescribed volumes. %, so the potential acts as a regularization of the cells.

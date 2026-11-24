@@ -32,7 +32,7 @@ Status values:
 
 | figure | source | script | status |
 |---|---|---|---|
-| 2.1 timing and iterations, 3D synthetic (like Figs. 5 and 6) | `benchmarks/synthetic/results3d/ours.csv` (our H, exists), `oursG.csv` (method G) | not written (reuse `plot_scaling.py` layout) | blocked: G 3D run on Linux (`benchmarks/OVERNIGHT_3D_PLAN.md`), and re-timing of our 3D runs on the idle machine |
+| 2.1 timing and iterations, 3D synthetic (like Fig. 5) | `benchmarks/synthetic/results3d-linux-<date>/ours.csv` (our G, `solver H`, idle Linux run); the Mac run in `results3d/ours.csv` ran under load | not written (reuse `plot_scaling.py` layout) | blocked: 3D run of our G on Linux (`benchmarks/LINUX_3D_PROMPT.md`) |
 | 2.2 statistics table, our synthetic set vs Bourne's 2D data | `benchmarks/synthetic/results/ours.csv`, `theirs.csv`, `benchmarks/bourne/results/theirs-realizable/theirs.csv` | not written | not started |
 | 2.3a fluid comparison, 2D (PP, GM, constrained, softened alpha > 0) | `benchmarks/pp2d/run_examples.py` output (`energy.csv`, frames) | not written | blocked: softened and constrained fail at initialization on `yesweights-band2` ("Lloyd iterations did not converge"); PP and GM run. Figure to be redone on Linux |
 | 2.3b four vortices, three volume distributions (2D) | `yesweights/band2_5k_4vort.pp` exists | not written | blocked: uniform and radial four-vortex inputs do not exist; band2 has not been run |

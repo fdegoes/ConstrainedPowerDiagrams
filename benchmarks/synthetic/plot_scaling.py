@@ -106,6 +106,52 @@ def plot(g, index, ylabel, path, reference):
     plt.close(fig)
 
 
+NOISE_STYLE = {"0": ("-", "o", "low"), "1": ("-", "s", "mid"), "2": ("-", "^", "high")}  # line, marker, label
+
+
+def plot_combined(g, path):
+    """One column-wide figure: time (top) and iterations (bottom) against n, all six groups in each
+    panel. Hue is the volume type and the marker the noise level, with one legend above both panels;
+    the medians over the seeds only (the bands of six overlapping groups would blur)."""
+    from matplotlib.lines import Line2D
+    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.3))
+    for ax, index, ylabel, letter in ((axes[0], 0, "time (ms)", "(a) time"), (axes[1], 1, "iterations", "(b) iterations")):
+        for vol, (_, _, _, color) in VOLUMES.items():
+            for noise, (ls, marker, _) in NOISE_STYLE.items():
+                by_n = g[(noise, vol)]
+                ns = np.array(sorted(by_n))
+                med = np.array([band([v[index] for v in by_n[n]])[0] for n in ns])
+                ax.plot(ns, med, ls, color=color, lw=1.2, alpha=0.85, zorder=3)
+                ax.plot(ns, med, marker, color=color, ms=3.6, mec="white", mew=0.4, lw=0, zorder=4)
+        if index == 0:
+            # Linear scaling, through the pooled median at the size nearest to 1000.
+            sizes = sorted({n for key in g for n in g[key]})
+            n0 = min(sizes, key=lambda n: abs(n - 1000))
+            c = statistics.median(v[0] for key in g for v in g[key][n0]) / n0
+            xs = np.array([10, 10000])
+            ax.plot(xs, c * xs, color="#8a8880", lw=0.9, ls=(0, (1, 1.5)), zorder=0)
+            ax.annotate("$\\propto n$", (25, c * 25), xytext=(3, -8), textcoords="offset points",
+                        fontsize=7, color="#8a8880")
+            ax.set_yscale("log")
+        ax.set_xscale("log")
+        ax.set_xlim(8, 14000)
+        ax.set_xlabel("number of sites $n$")
+        ax.set_ylabel(ylabel)
+        ax.grid(True, which="major", color=GRID, lw=0.6)
+        ax.set_axisbelow(True)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    # one legend for both panels, above them: the volume types (hue) and the noise levels (marker)
+    handles = [Line2D([], [], color=c, lw=1.6, label=lab) for _, (_, _, lab, c) in reversed(list(VOLUMES.items()))]
+    handles += [Line2D([], [], color="#6b6a66", ls="none", marker=m, ms=3.8, label=lab)
+                for _, m, lab in NOISE_STYLE.values()]
+    fig.legend(handles=handles, frameon=False, fontsize=7, loc="upper center", ncol=5, handlelength=1.4,
+               columnspacing=1.0, handletextpad=0.4, bbox_to_anchor=(0.55, 1.0))
+    fig.tight_layout(h_pad=1.2, rect=(0, 0, 1, 0.95))
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def slope(g, key, index):
     """Log-log slope of the median against n over the sizes of the group."""
     ns = sorted(g[key])
@@ -172,13 +218,16 @@ def main():
     ap.add_argument("--log", default=os.path.join(ROOT, "benchmarks/overnight/2026-11-20/log-synthetic.csv"))
     ap.add_argument("--out", default=os.path.join(ROOT, "latex/figures/synthetic"))
     ap.add_argument("--md", default=None, help="also write the statistics to this markdown file")
+    ap.add_argument("--panels", action="store_true", help="also write the per-noise-level figures")
     args = ap.parse_args()
 
     rows = load(args.log)
     g = groups(ours(rows))
     os.makedirs(args.out, exist_ok=True)
-    plot(g, 0, "time (ms)", os.path.join(args.out, "scaling-time.pdf"), reference=True)
-    plot(g, 1, "iterations", os.path.join(args.out, "scaling-iterations.pdf"), reference=False)
+    plot_combined(g, os.path.join(args.out, "scaling.pdf"))
+    if args.panels:   # the former two figures, one panel per noise level
+        plot(g, 0, "time (ms)", os.path.join(args.out, "scaling-time.pdf"), reference=True)
+        plot(g, 1, "iterations", os.path.join(args.out, "scaling-iterations.pdf"), reference=False)
 
     lines = ["## Our H on the synthetic benchmark", ""] + summary(rows, g)
     lines += ["## Matched cases (seed 1, n <= 500)", ""] + comparison(rows) + [""]

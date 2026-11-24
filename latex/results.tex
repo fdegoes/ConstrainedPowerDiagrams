@@ -46,18 +46,19 @@ Fig.~\ref{fig:alpha-ablation} shows the role of $\alpha$ on a realizable case an
   \newcommand{\ablstat}[2]{\footnotesize\begin{tabular}[t]{@{}c@{}}#1\\[-1pt]#2\end{tabular}}
   \setlength{\tabcolsep}{1.2pt}
   \begin{tabular}{@{}cccccc@{}}
-    & \footnotesize $\jointdual$ & \footnotesize $\jointdual_\alpha$, bound \eqref{eq:regularized-distinct} & \footnotesize $\jointdual_\alpha$, estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $4\times$ estimate & \footnotesize $\jointdual_\alpha$, $16\times$ estimate \\[1pt]
-    \ablrow{realizable} & \abl{real}{G} & \abl{real}{guaranteed} & \abl{real}{1} & \abl{real}{4} & \abl{real}{16} \\[-5.5pt]
-    & \ablstat{$11$ iters}{residual $10^{-12}$} & \ablstat{$\alpha \!=\! 0.14$, $4$ iters}{residual $0.25$} & \ablstat{$\alpha \!=\! 0.47$, $5$ iters}{residual $0.18$} & \ablstat{$\alpha \!=\! 1.9$, $6$ iters}{residual $0.083$} & \ablstat{$\alpha \!=\! 7.5$, $8$ iters}{residual $0.029$} \\[9pt]
-    \ablrow{perturbed} & \abl{pert}{G} & \abl{pert}{guaranteed} & \abl{pert}{1} & \abl{pert}{4} & \abl{pert}{16} \\[-5.5pt]
-    & \ablstat{no solution}{} & \ablstat{$\alpha \!=\! 0.12$, $4$ iters}{residual $0.29$} & \ablstat{$\alpha \!=\! 0.41$, $5$ iters}{residual $0.21$} & \ablstat{$\alpha \!=\! 1.6$, $6$ iters}{residual $0.12$} & \ablstat{$\alpha \!=\! 6.5 \gg$ bound \eqref{eq:regularized-distinct}}{fails} \\
+    & \footnotesize $\jointdual$ & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 6.5$, $16\times$ estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 1.6$, $4\times$ estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 0.41$, estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 0.12$, bound \eqref{eq:regularized-distinct} \\[1pt]
+    \ablrow{realizable} & \abl{real}{G} & \abl{real}{16} & \abl{real}{4} & \abl{real}{1} & \abl{real}{guaranteed} \\[-5.5pt]
+    & \ablstat{$11$ iters}{residual $3{\times}10^{-12}$} & \ablstat{$8$ iters}{residual $0.053$} & \ablstat{$6$ iters}{residual $0.16$} & \ablstat{$5$ iters}{residual $0.32$} & \ablstat{$4$ iters}{residual $0.51$} \\[9pt]
+    \ablrow{unrealizable} & \abl{pert}{G} & \abl{pert}{16} & \abl{pert}{4} & \abl{pert}{1} & \abl{pert}{guaranteed} \\[-5.5pt]
+    & \ablstat{no solution}{} & \ablstat{fails}{} & \ablstat{$6$ iters}{residual $0.21$} & \ablstat{$5$ iters}{residual $0.39$} & \ablstat{$4$ iters}{residual $0.61$} \\
   \end{tabular}
   \caption{%
     Ablation of the stiffness $\alpha$ on a synthetic case with $n \!=\! 20$ cells of equal area, showing the prescribed centroids $\tcentroid_i$ ($\square$), the centroids of the resulting cells ($\times$), and the residual between them in red.
     Top: realizable targets, the centroids of a power diagram.
-    Bottom: the same targets, each moved by up to $0.2$ cell sizes, which no power diagram realizes.
-    From left to right, we maximize $\jointdual$, and $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the bound \eqref{eq:regularized-distinct} and at $0.99$, $4 \cdot 0.99$ and $16 \cdot 0.99$ times the estimate \eqref{eq:regularized-practical}; below each panel are $\alpha$, the Newton iterations, and the residual, the root mean square of the centroid misses over the cell size, and every solve takes $1$ to $2$\,ms.
-    On realizable data, the solves converge far beyond both bounds and their misses decrease as $\alpha$ grows; on the perturbed data, $\jointdual$ has no maximizer, and $\jointdual_\alpha$ converges up to a few times the estimate, while at $16$ times the estimate, about $50$ times above the conservative bound \eqref{eq:regularized-distinct}, it fails as two generators merge.
+    Bottom: unrealizable targets, the same ones each moved by up to $0.2$ cell sizes, which no power diagram realizes.
+    From left to right, we maximize $\jointdual$, and $\jointdual_\alpha$ with decreasing $\alpha$, at $16 \cdot 0.99$, $4 \cdot 0.99$ and $0.99$ times the estimate \eqref{eq:regularized-practical} and at $0.99$ times the bound \eqref{eq:regularized-distinct}, so that $\jointdual_\alpha$ approaches $\jointdual$ towards the left; above each column is $\alpha$, and below each panel are the Newton iterations and the residual, the largest centroid miss over the cell size as in \eqref{eq:results-termination}, and every solve takes $1$ to $2$\,ms.
+    Since the bounds depend on the targets, each column uses in both rows the smaller of the two values of $\alpha$, so that it lies within the bounds of both rows.
+    On realizable data, the solves converge far beyond both bounds and their misses decrease as $\alpha$ grows; on the unrealizable data, $\jointdual$ has no maximizer, and $\jointdual_\alpha$ converges up to a few times the estimate, while at $16$ times the estimate, about $50$ times above the conservative bound \eqref{eq:regularized-distinct}, it fails as two generators merge.
   }
   \label{fig:alpha-ablation}
 \end{figure*}
@@ -128,32 +129,26 @@ With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1
 \subsection{Timing and Iterations}
 \label{sec:results-timing}
 
-We time our solver on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling-time} shows the time and Fig.~\ref{fig:scaling-iterations} the iterations against $n$. Each line joins the medians over the five seeds, and the shaded band spans the 25th to 75th percentiles.
+We time our solver on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling} shows the time (top) and the iterations (bottom) against $n$, as the medians over the five seeds.
 
 
 \paragraph{Machine.} The timings were measured on one virtual machine: a KVM guest with 15 logical CPUs of an AMD EPYC 7763 host, 111 GB of memory, and AlmaLinux 9.6 (Linux 5.14). Our solver was compiled with GCC 11.5.0 in release mode, with OpenMP enabled, against Eigen 3.3.7 and the CHOLMOD 3.0.14 sparse Cholesky backend of SuiteSparse. The methods of Bourne et al. ran in Python 3.11.13 with NumPy 2.4.6 and SciPy 1.17.1, and their optimal-transport solves used pysdot 0.2.39. We did not fix the number of threads of any method. The overnight run began with a 1-minute load average of 0.4 and ended at 2.8; the load was not recorded for each case. During the rule-3 runs of the Bourne methods the 1-minute load average reached 21 on the 15 CPUs (median 7), so their timings include multithreaded work from their numerical libraries. Our runs of H did not overlap with them.
 
-\begin{figure*}[t]
+% benchmarks/synthetic/plot_scaling.py
+\begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/synthetic/scaling-time.pdf}
+  \includegraphics[width=\columnwidth]{figures/synthetic/scaling.pdf}
   \caption{%
-    Time of our solver to converge against the number of sites $n$, on the synthetic cases, one panel per noise level. Each line joins the medians over the five seeds, and the band spans the 25th to 75th percentiles. Blue squares and dashed lines: uniform volumes; orange circles and solid lines: Voronoi volumes. The dotted grey line is proportional to $n$.%
+    Time (top) and iterations (bottom) of our solver to converge against the number of sites $n$, on the synthetic cases, where each line joins the medians over the five seeds.
+    The colour gives the volume distribution and the marker the noise level.
+    The dotted grey line in the top plot is proportional to $n$, and the runs with up to $59$ iterations lie above the axis of the bottom plot and are discussed in the text.%
   }
-  \label{fig:scaling-time}
-\end{figure*}
+  \label{fig:scaling}
+\end{figure}
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/synthetic/scaling-iterations.pdf}
-  \caption{%
-    Iterations of our solver to converge against the number of sites $n$, with the same panels and encoding as Fig.~\ref{fig:scaling-time}. The runs with up to 59 iterations lie above the axis and are discussed in the text.%
-  }
-  \label{fig:scaling-iterations}
-\end{figure*}
+In the top plot of Fig.~\ref{fig:scaling}, the median time stays between 10 and 17 ms up to about $n = 100$, which is the fixed cost of a solve on a small diagram. Above that it grows with $n$, from 10 ms at $n = 10$ to 1.4--1.5 s at $n = 10000$ for Voronoi volumes and 3.0--4.2 s for uniform volumes. The log-log slope of the median is between $0.76$ and $0.77$ for Voronoi volumes and between $0.87$ and $0.90$ for uniform volumes (about $0.84$ pooled), so the time grows sublinearly in $n$ over this range. The noise level changes the median time at $n = 10000$ by less than a factor of 1.5.
 
-In Fig.~\ref{fig:scaling-time}, the median time stays between 10 and 17 ms up to about $n = 100$, which is the fixed cost of a solve on a small diagram. Above that it grows with $n$, from 10 ms at $n = 10$ to 1.4--1.5 s at $n = 10000$ for Voronoi volumes and 3.0--4.2 s for uniform volumes. The log-log slope of the median is between $0.76$ and $0.77$ for Voronoi volumes and between $0.87$ and $0.90$ for uniform volumes (about $0.84$ pooled), so the time grows sublinearly in $n$ over this range. The noise level changes the median time at $n = 10000$ by less than a factor of 1.5.
-
-Fig.~\ref{fig:scaling-iterations} explains the gap between the two volume distributions. The Voronoi medians stay between 8 and 11 iterations at every size and noise level. The uniform medians match them up to a few hundred sites and then rise, to 23 (low noise), 33 (mid noise) and 36 (high noise) at $n = 10000$. At that size the time per iteration is similar for the two distributions (116--129 ms for uniform, 140--154 ms for Voronoi, from the group medians), so the iteration count accounts for the difference in time. The noise level matters for uniform volumes at large $n$, and hardly for Voronoi volumes.
+The bottom plot of Fig.~\ref{fig:scaling} explains the gap between the two volume distributions. The Voronoi medians stay between 8 and 11 iterations at every size and noise level. The uniform medians match them up to a few hundred sites and then rise, to 23 (low noise), 33 (mid noise) and 36 (high noise) at $n = 10000$. At that size the time per iteration is similar for the two distributions (116--129 ms for uniform, 140--154 ms for Voronoi, from the group medians), so the iteration count accounts for the difference in time. The noise level matters for uniform volumes at large $n$, and hardly for Voronoi volumes.
 
 The two largest iteration counts, 59, occur in two runs: one at $n = 785$ (Voronoi, mid noise), which takes 0.6 s, and one at $n = 6952$ (Voronoi, high noise). The second is the slowest of all 600 runs, at 7.7 s. Its 59 iterations compare with 12 for the other seeds at that size, and its time per iteration, 130 ms, is also above the 88--94 ms of those seeds. The data do not show whether this excess comes from the solver or from other activity on the machine, because the load was not recorded for each case. This run should be repeated on an idle machine before its time is quoted.
 
@@ -176,41 +171,32 @@ On the cross-shaped example, their Frank--Wolfe iterations end at the iteration 
 \end{figure}
 
 
-\begin{table*}[t]
+% Rows from benchmarks/bourne/run_table1.py (table.tex); the rows marked "pending" come from the Linux run
+% (benchmarks/LINUX_TABLE1_PROMPT.md), which also replaces the other timings.
+\begin{table}[t]
   \centering
-  \caption{Realizable cases: our solver against the methods of Bourne et al. Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where the method stopped.}
+  \caption{Realizable benchmarks: our solver against the methods of \citet{Bourne2025Inverting} (SLSQP) and \citet{Bourne2026ConvexOrder} (Frank--Wolfe and subgradient). Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where each method stopped, and a check mark indicates that both are below the tolerance $10^{-8}$.}
   \label{tab:realizable}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrr}
+  \small
+  \setlength{\tabcolsep}{2pt}
+  \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}llrrrr@{\hspace{3pt}}c@{}}
     \hline
-    case & method & stopped by & iterations & time (s) & volume & centroid \\
+    benchmark & method & iters & time & volume & centroid & \\
     \hline
-    2025-invert  & our solver         & \eqref{eq:results-termination} & 7    & 0.0125 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
-    2025-invert  & SLSQP (2025)  & rule 1                         & 190  & 4.51   & $1.7{\times}10^{-14}$ & $3.5{\times}10^{-3}$ \\
-    2026-voronoi & our solver         & \eqref{eq:results-termination} & 7    & 0.0108 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
-    2026-voronoi & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 51.7   & $5.2{\times}10^{-13}$ & $3.5{\times}10^{-3}$ \\
-    2026-aligned & our solver         & \eqref{eq:results-termination} & 27   & 0.243  & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ \\
-    2026-aligned & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 290    & $8.4{\times}10^{-9}$ & $4.7{\times}10^{-1}$ \\
+    Voronoi & our $\jointdual$ & 7 & 0.0108 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ & \cmark \\
+    ($n \!=\! 20$) & Bourne 2025 & 190 & 4.51 & $1.7{\times}10^{-14}$ & $3.5{\times}10^{-3}$ & \xmark \\
+     & Bourne 2026 FW & 5000 & 51.7 & $5.2{\times}10^{-13}$ & $3.5{\times}10^{-3}$ & \xmark \\
+     & Bourne 2026 subgrad. & \multicolumn{5}{c}{pending} \\
     \hline
-  \end{tabular*}
-\end{table*}
-
-On the synthetic cases, Table~\ref{tab:matched} compares the methods on the 66 cases with seed 1 and $n \le 500$, the largest sizes for which their methods were run. Each method runs until it meets \eqref{eq:results-termination} or reaches a 60 s cutoff, which excludes the evaluations of the residuals.
-
-\begin{table*}[t]
-  \centering
-  \caption{Synthetic cases (seed 1, $n \le 500$, 66 cases), each method run on \eqref{eq:results-termination} with a 60 s cutoff: the number of cases where it was met, the median time to meet it, and its residuals at the iterate where it stopped (median, with the maximum in parentheses). The rule-1 stop of SLSQP is in the text.}
-  \label{tab:matched}
-  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lllll}
-    \hline
-    method & met & median time (ms) & volume & centroid \\
-    \hline
-    our solver                & 66/66 & 15     & $3.0{\times}10^{-9}$ ($9.5{\times}10^{-9}$) & $4.7{\times}10^{-10}$ ($8.8{\times}10^{-9}$) \\
-    SLSQP (2025)         & 2/66  & 10\,600 & $5.5{\times}10^{-13}$ ($4.9{\times}10^{-10}$) & $1.5{\times}10^{-4}$ ($1.7{\times}10^{-1}$) \\
-    Frank--Wolfe (2026)  & 0/66  & ---    & $9.1{\times}10^{-13}$ ($5.3{\times}10^{-7}$) & $3.8{\times}10^{-3}$ ($4.1{\times}10^{-1}$) \\
+    cross & our $\jointdual$ & 27 & 0.243 & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ & \cmark \\
+    ($n \!=\! 728$) & Bourne 2025 & \multicolumn{5}{c}{pending} \\
+     & Bourne 2026 FW & 5000 & 290 & $8.4{\times}10^{-9}$ & $4.7{\times}10^{-1}$ & \xmark \\
+     & Bourne 2026 subgrad. & \multicolumn{5}{c}{pending} \\
     \hline
   \end{tabular*}
-\end{table*}
+\end{table}
 
+On the synthetic cases, we compare the methods on the 66 cases with seed 1 and $n \le 500$, the largest sizes for which their methods were run, and run each method until it meets \eqref{eq:results-termination} or reaches a 60 s cutoff, which excludes the evaluations of the residuals.
 Our solver meets \eqref{eq:results-termination} in all 66 cases, in a median of 15 ms. SLSQP meets it in 2 cases, in a median of 10.6 s; in the other 63 it reaches the cutoff, and in one its line search fails. Frank--Wolfe meets it in none of the 66 cases, and all of them reach the cutoff. At the cutoff, the centroid residuals of SLSQP and Frank--Wolfe have medians of $1.5\cdot10^{-4}$ and $3.8\cdot10^{-3}$ of the cell size, and maxima of $0.17$ and $0.41$. Their volume errors are near $10^{-12}$. On its own rule 1, SLSQP stops earlier, in 57 of the 66 cases, with a median of 9.8 s and a centroid residual at that stop of median $3.6\cdot10^{-4}$.
 
 \paragraph{Approximate data}

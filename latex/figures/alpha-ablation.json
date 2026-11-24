@@ -1,67 +1,67 @@
 {
  "real": {
-  "bounds": "guaranteed bound 0.141027, practical bound 0.471667, alpha 0.139617",
+  "bounds": "guaranteed bound 0.141027, practical bound 0.471667",
   "G": {
    "alpha": Infinity,
    "iterations": 11,
-   "seconds": 0.00204725,
+   "seconds": 0.00234471,
    "rms": 1.427556616000787e-12,
    "max": 3.3463415969526296e-12
   },
   "guaranteed": {
-   "alpha": 0.139617,
+   "alpha": 0.12403907999999998,
    "iterations": 4,
-   "seconds": 0.00126892,
-   "rms": 0.2508120343465236,
-   "max": 0.4909178620007702
+   "seconds": 0.00208071,
+   "rms": 0.25609682543435264,
+   "max": 0.5068040438694159
   },
   "1": {
-   "alpha": 0.46695,
+   "alpha": 0.40926996,
    "iterations": 5,
-   "seconds": 0.00130258,
-   "rms": 0.17704539673671477,
-   "max": 0.3027995475150518
+   "seconds": 0.00168267,
+   "rms": 0.18649520137719797,
+   "max": 0.3178491600986817
   },
   "4": {
-   "alpha": 1.8678,
+   "alpha": 1.63707984,
    "iterations": 6,
-   "seconds": 0.00124117,
-   "rms": 0.0826791603876158,
-   "max": 0.14190664455886287
+   "seconds": 0.00247404,
+   "rms": 0.09018498545921025,
+   "max": 0.1551945626040375
   },
   "16": {
-   "alpha": 7.47121,
+   "alpha": 6.54831936,
    "iterations": 8,
-   "seconds": 0.00143563,
-   "rms": 0.029062616499224717,
-   "max": 0.04716202724198661
+   "seconds": 0.00190246,
+   "rms": 0.03239724231642376,
+   "max": 0.05292813330648465
   }
  },
  "pert": {
-  "bounds": "guaranteed bound 0.125292, practical bound 0.413404, alpha 0.12404",
+  "bounds": "guaranteed bound 0.125292, practical bound 0.413404",
   "G": {
    "failed": "max iterations (346 iterations)"
   },
   "guaranteed": {
-   "alpha": 0.12404,
+   "alpha": 0.12403907999999998,
    "iterations": 4,
-   "seconds": 0.00121654,
-   "rms": 0.2884123913528343,
-   "max": 0.6047655930472756
+   "seconds": 0.00179813,
+   "rms": 0.288412558432651,
+   "max": 0.6047661485247262
   },
   "1": {
-   "alpha": 0.40927,
+   "alpha": 0.40926996,
    "iterations": 5,
-   "seconds": 0.00132454,
-   "rms": 0.21374584176706657,
-   "max": 0.39393819541288044
+   "seconds": 0.00172208,
+   "rms": 0.21374589624872156,
+   "max": 0.3939382904643527
   },
   "4": {
-   "alpha": 1.63708,
+   "alpha": 1.63707984,
    "iterations": 6,
-   "seconds": 0.00112117,
-   "rms": 0.11684669265395342,
-   "max": 0.20765649265274877
+   "seconds": 0.00200942,
+   "rms": 0.11684673420434362,
+   "max": 0.20765658071988907
   },
   "16": {
    "failed": "max iterations (100 iterations)"

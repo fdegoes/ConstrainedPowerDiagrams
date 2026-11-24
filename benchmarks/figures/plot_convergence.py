@@ -248,7 +248,8 @@ def histories(args):
             "ours": _cached("voronoi-ours", args.rerun, lambda: run_ours(vor, "H", math.inf)),
             "slsqp": _cached("voronoi-slsqp", args.rerun, lambda: run_slsqp(inv)),
             "fw": _cached("voronoi-fw", args.rerun, lambda: run_fw(vor, vor.t, math.inf, args.fw_iter)),
-            "subgrad": _cached("voronoi-subgrad", args.rerun, lambda: run_subgrad(vor)),
+            # the subgradient only from the Linux runs (--from): its local cache used t = 100,
+            # not the t = 1250 of their paper and of run_table1.py
         }
     out = {
         "voronoi": voronoi,
@@ -286,7 +287,7 @@ def gap_stop(r):
 def plot(runs, alpha, args):
     # One column, the two cases stacked. On EBSD only FW at our alpha is drawn: with their
     # t = 10 (alpha = 9, far above the bound) it does not converge, which the text states.
-    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.0))
+    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.4))
     panels = [("voronoi", "(a) Voronoi, $n = 20$, realizable: $\\mathcal{G}$"),
               ("ebsd", "(b) EBSD, $n = 243$, approximate: $\\mathcal{G}_\\alpha$")]
     for ax, (key, title) in zip(axes, panels):
@@ -312,7 +313,8 @@ def plot(runs, alpha, args):
         ax.set_ylim(1e-15, 1e2)
         ax.set_xlim(0, 1.15 * max(len(r["history"]) for r in runs[key].values()))
         ax.set_xlabel("iteration" if args.x == "iterations" else "OT solves / power diagrams")
-        ax.set_title(title, fontsize=8, color=INK, loc="left")
+        # the panel label under the panel, below the axis label
+        ax.text(0.5, -0.36, title, transform=ax.transAxes, ha="center", va="top", fontsize=8, color=INK)
         ax.grid(True, which="major", color=GRID, lw=0.6)
         ax.set_axisbelow(True)
         for side in ("top", "right"):
@@ -320,7 +322,7 @@ def plot(runs, alpha, args):
         ax.plot([], [], "x", color=INK, ms=4.5, mew=1.0, label="their stopping rule")
         ax.legend(frameon=False, fontsize=7, loc="lower right", handlelength=1.8, borderaxespad=0.2)
         ax.set_ylabel("residual (rule 3)")
-    fig.tight_layout(h_pad=0.8)
+    fig.tight_layout(h_pad=2.2)
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     fig.savefig(args.out)
     fig.savefig(os.path.splitext(args.out)[0] + ".png", dpi=200) if args.png else None
