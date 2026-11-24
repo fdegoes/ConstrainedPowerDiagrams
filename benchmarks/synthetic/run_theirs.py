@@ -19,7 +19,8 @@ the error sequence of their convex_order_projection exactly over 30 iterations o
            objective, ptol = 1e-8) or on rule 3 with --slsqp-stop rule3. Synthetic only, n up to
            --slsqp-max-n (its n(n-1)/2 constraints make it impractical beyond a few hundred cells).
 
-Each run stops on its own rule, at the iteration cap, or at the time cap --max-seconds (not counting
+Each run stops on its own rule, at the iteration cap, or at the time cap (case_cap: max(60 s, our time) on synthetic cases,
+1800 s on realizable; --max-seconds overrides; not counting
 the uncharged evaluations of our residuals). At its last iterate we report its own rule's value
 (theirRuleValue: the FW gap, or the subgradient change) and our residuals of H (volume and shift,
 max-norm per cell), and whether our rule (1e-8 on both) holds there.
@@ -52,14 +53,16 @@ OT_EVAL_TOL = 1e-9  # relative to min(v), the OT of the evaluations (about what 
 DILATION = 100.0  # t of the 2026 methods (the realizable cases and the synthetic benchmark)
 SYNTH_FW_TOL, SYNTH_FW_NITER = 1e-14, 4000  # their 2026-voronoi settings, used for the synthetic cases
 SUBGRAD_TAU, SUBGRAD_TOL, SUBGRAD_NITER = 2.0, 1e-5, 600  # their convex_order_projection defaults
-CAPS = {"synthetic": 120.0, "realizable": 1800.0}  # time caps of a run, in seconds
+CAPS = {"realizable": 1800.0}  # time caps of a run, in seconds
+SYNTH_MIN_CAP = 60.0  # synthetic cases: cap = max(SYNTH_MIN_CAP, our time on the case) (results/ours.csv)
+OURS = os.path.join(HERE, "results", "ours.csv")
 OUT = {"synthetic": os.path.join(HERE, "results"), "realizable": os.path.join(os.path.dirname(HERE), "bourne",
                                                                              "results", "theirs-realizable")}
 RULE = {"fw": "FW gap (Bourne 2026)", "subgrad": "change of the running average (Bourne 2026)",
         "slsqp": "rule 1 (SLSQP ftol, Bourne 2025)"}
 
 FIELDS = ["case", "set", "n", "noise", "volumes", "seed", "method", "stoppingRule", "status", "stopped", "iterations",
-          "seconds", "otSolves", "theirRuleValue", "theirRuleTol", "finalVolumeResidual", "finalShiftResidual",
+          "seconds", "capSeconds", "otSolves", "theirRuleValue", "theirRuleTol", "finalVolumeResidual", "finalShiftResidual",
           "rule3Met", "finalGeneratorError", "load"]
 
 
@@ -80,6 +83,21 @@ def residuals(c, X, alpha=math.inf):
 def subgrad_sites(Z):
     """The generators of the diagram of a subgradient iterate: its rescaling, as in their code."""
     return (Z - np.min(Z) + .02) / (np.max(Z) - np.min(Z) + .02)
+
+
+def our_seconds():
+    """Our time per synthetic case (results/ours.csv)."""
+    return {r["case"]: float(r["seconds"]) for r in csv.DictReader(open(OURS))} if os.path.exists(OURS) else {}
+
+
+def case_cap(c, override, ours):
+    """Time cap of a run on case c: the override of --max-seconds, else for the realizable cases CAPS, and for
+the synthetic cases max(SYNTH_MIN_CAP, our time on the case), so that theirs get as long as ours."""
+    if override is not None:
+        return override
+    if c["set"] == "realizable":
+        return CAPS["realizable"]
+    return max(SYNTH_MIN_CAP, ours.get(c["name"], 0.0))
 
 
 class Clock:
@@ -232,8 +250,8 @@ def main():
     ap.add_argument("--seeds", nargs="+", type=int, default=[1, 2, 3, 4, 5])
     ap.add_argument("--max-n", type=int, default=None, help="only the sizes of --n up to this")
     ap.add_argument("--max-iter", type=int, default=100000, help="iteration cap of SLSQP")
-    ap.add_argument("--max-seconds", type=float, default=None, help="time cap (default: 120 s synthetic, 1800 s "
-                                                                   "realizable)")
+    ap.add_argument("--max-seconds", type=float, default=None,
+                    help="time cap of every run (default: max(60 s, our time) on synthetic cases, 1800 s realizable)")
     ap.add_argument("--slsqp-max-n", type=int, default=500)
     ap.add_argument("--slsqp-stop", choices=["rule1", "rule3"], default="rule1",
                     help="SLSQP stops on its own rule 1 (default) or on rule 3 at 1e-8 (our termination)")
@@ -242,7 +260,7 @@ def main():
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
     args.out = args.out or OUT[args.set]
-    args.max_seconds = args.max_seconds or CAPS[args.set]
+    override, ours = args.max_seconds, our_seconds() if args.set == "synthetic" else {}
     if args.set == "realizable":
         args.method = [m for m in args.method if m != "slsqp"]
     if args.max_n is not None:
@@ -261,6 +279,7 @@ def main():
                 continue
             if (c["name"], method) in done and not args.force:
                 continue
+            args.max_seconds = case_cap(c, override, ours)
             load = os.getloadavg()[0]
             ref.COUNTERS.reset()
             if method == "fw":
@@ -270,10 +289,11 @@ def main():
             else:
                 r = run_slsqp(c, args)
             row = summarize(c, method, r, load)
+            row["capSeconds"] = args.max_seconds
             json.dump(row, open(os.path.join(c["dir"], method + ".json"), "w"))
             rows = [x for x in rows if (x["case"], x["method"]) != (c["name"], method)] + [row]
-            print("%-26s %-8s %-14s %6s it %8.2fs  own rule %s  ours %.1e/%.1e (%s)  load %.1f" % (
-                c["name"], method, r["stopped"], r["k"], row["seconds"],
+            print("%-26s %-8s %-14s %6s it %8.2fs (cap %.0f)  own rule %s  ours %.1e/%.1e (%s)  load %.1f" % (
+                c["name"], method, r["stopped"], r["k"], row["seconds"], args.max_seconds,
                 "-" if r["value"] is None else "%.1e" % r["value"],
                 row.get("finalVolumeResidual", float("nan")), row.get("finalShiftResidual", float("nan")),
                 "met" if row.get("rule3Met") else "not met", load), flush=True)
