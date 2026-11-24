@@ -1,8 +1,17 @@
 # Figures of the paper
 
-Status of every figure, its generating script and its data. "Exists" means
-the PDF is in `latex/figures/` (or `latex/`) and referenced in the paper.
-"Planned" means it is not made yet. Paths are relative to the repository root.
+Status of every figure, its generating script and its data. Paths are
+relative to the repository root.
+
+Status values:
+
+- **exists**: the PDF is in the paper's figures folder and referenced.
+- **stale**: the PDF exists but must be regenerated (new data or code).
+- **script ready**: the generating script exists and runs, but the figure
+  is not made yet.
+- **not started**: nothing written yet.
+- **blocked**: needs an input or a runner that does not exist yet (the
+  blocker is stated).
 
 ## 1. Figures in the paper
 
@@ -11,84 +20,45 @@ the PDF is in `latex/figures/` (or `latex/`) and referenced in the paper.
 | Fig. 1, introduction | `fig:intro` | `latex/figures/intro.pdf` | `benchmarks/figures/plot_intro.py` (`introFigure.cpp`) | generated | exists |
 | alpha ablation | `fig:alpha-ablation` | `latex/figures/alpha-ablation-*.pdf` | `benchmarks/figures/plot_alpha_ablation.py` | `latex/figures/alpha-ablation.json` | exists |
 | synthetic gallery (2D) | `fig:synthetic-gallery` | `latex/figures/synthetic/synthetic-noise*-*.pdf` | `benchmarks/synthetic/gallery.py` | `benchmarks/synthetic/results/` | exists |
-| time vs n (2D) | `fig:scaling-time` | `latex/figures/synthetic/scaling-time.pdf` | `benchmarks/synthetic/plot_scaling.py` | `benchmarks/overnight/2026-11-20/log-synthetic.csv` | exists; regenerate after the Linux run |
-| iterations vs n (2D) | `fig:scaling-iterations` | `latex/figures/synthetic/scaling-iterations.pdf` | `benchmarks/synthetic/plot_scaling.py` | same | exists; regenerate after the Linux run |
-| convergence, Bourne cases | `fig:convergence` | `latex/figures/convergence.pdf` | `benchmarks/figures/plot_convergence.py` | `benchmarks/figures/cache/convergence/` | exists; subgradient curve added, regenerate after the Linux run |
+| time vs n (2D) | `fig:scaling-time` | `latex/figures/synthetic/scaling-time.pdf` | `benchmarks/synthetic/plot_scaling.py` | `benchmarks/overnight/2026-11-20/log-synthetic.csv` | stale: our timings are under load (see the outlier notes); re-time on the idle Linux machine |
+| iterations vs n (2D) | `fig:scaling-iterations` | `latex/figures/synthetic/scaling-iterations.pdf` | `benchmarks/synthetic/plot_scaling.py` | same | exists (iteration counts are not affected by load); regenerate with the new log |
+| convergence, Bourne cases | `fig:convergence` | `latex/figures/convergence.pdf` | `benchmarks/figures/plot_convergence.py` | `benchmarks/figures/cache/convergence/` | stale: subgradient curve added in the script; regenerate on Linux (`--rerun`) |
 | EBSD grain map | `fig:ebsd` | `latex/figures/ebsd-*.pdf` | `benchmarks/figures/plot_ebsd.py` | Bourne EBSD data | exists |
 | foam | `fig:foam` | `latex/figures/foam-*.pdf` | `benchmarks/figures/plot_foam.py` | foam photo | exists |
 | flow blocks | `fig:flow-blocks` | `latex/figures/flow-blocks.tex` | `latex/figures/flow_blocks.py` | generated | exists |
 | nullspace, reducible | `fig:appendix-reducible` and nullspace figures | `latex/figures/nullspace/*.pdf` | `latex/figures/nullspace_*.py` | generated | exists |
 
-## 2. Planned figures
+## 2. Figures planned
 
-### 2.1 Timing and iterations, 3D synthetic (similar to Figs. 5 and 6)
+| figure | source | script | status |
+|---|---|---|---|
+| 2.1 timing and iterations, 3D synthetic (like Figs. 5 and 6) | `benchmarks/synthetic/results3d/ours.csv` (our H, exists), `oursG.csv` (method G) | not written (reuse `plot_scaling.py` layout) | blocked: G 3D run on Linux (`benchmarks/OVERNIGHT_3D_PLAN.md`), and re-timing of our 3D runs on the idle machine |
+| 2.2 statistics table, our synthetic set vs Bourne's 2D data | `benchmarks/synthetic/results/ours.csv`, `theirs.csv`, `benchmarks/bourne/results/theirs-realizable/theirs.csv` | not written | not started |
+| 2.3a fluid comparison, 2D (PP, GM, constrained, softened alpha > 0) | `benchmarks/pp2d/run_examples.py` output (`energy.csv`, frames) | not written | blocked: softened and constrained fail at initialization on `yesweights-band2` ("Lloyd iterations did not converge"); PP and GM run. Figure to be redone on Linux |
+| 2.3b four vortices, three volume distributions (2D) | `yesweights/band2_5k_4vort.pp` exists | not written | blocked: uniform and radial four-vortex inputs do not exist; band2 has not been run |
+| 2.3c splash (2D) | `2D/splash/initial_{low,med,high}.pp`, `rect.line` | needs a case entry in `run_examples.py` | not started (inputs exist) |
+| 2.3d four 3D examples as in the Power Particles paper | `3D/smoke`, `3D/arc`, `3D/blade`, `3D/corridor` (inputs exist) | none | blocked: no 3D fluid runner (`runPP2D` is 2D only); the choice of four is open |
+| 2.3e new 3D jet example | none | none | blocked: no input; geometry, particle count and boundary conditions to be chosen |
 
-- Source: `benchmarks/synthetic/results3d/ours.csv` (our max H) and
-  `benchmarks/synthetic/results3d/oursG.csv` (method G, run by
-  `benchmarks/OVERNIGHT_3D_PLAN.md`).
-- Script: not written yet. It should reuse the layout of `plot_scaling.py`
-  (one panel per noise level, medians over seeds, 25–75 % bands).
-- Blocked on: the G run on the Linux machine, and on the load problem in
-  `ours.csv` (see the notes on the outliers; re-time on the idle machine).
+## 3. Notes on the fluid figures
 
-### 2.2 Statistics table, our synthetic set vs Bourne's data (2D)
+- The runner `benchmarks/pp2d/run_examples.py` already supports the four
+  integrators used in the comparison (`--integrator powerparticles softened
+  gm constrained`). The softened scheme needs `--alpha` different from the GM
+  limit; the default is `0.01`, and a second value (for example `0.1`) is
+  not yet chosen.
+- GM is `gm` with `--stiffness 1`, the alpha -> 0 limit of the softened
+  scheme.
+- The Mac test on `yesweights-band2` (20 frames) gave: PP ok (volume error
+  0.016), GM ok (6.6e-5), softened and constrained failed at initialization.
+  The Lloyd settings (`--lloydtol`, `--lloyditers`) are the first thing to
+  check.
 
-- A table with, for each data set, the number of cases, the sizes, the
-  volume types, the noise levels, the iteration and time statistics, and the
-  outcome of each method (converged, time cap, iteration cap).
-- Sources: `benchmarks/synthetic/results/ours.csv`,
-  `benchmarks/synthetic/results/theirs.csv`, and the realizable cases in
-  `benchmarks/bourne/results/theirs-realizable/theirs.csv`.
-- Not written yet.
-
-### 2.3 Power Particles fluid examples (2D)
-
-Data: the original Power Particles inputs in
-`~/Documents/Projects/Before2015/pp/data/2D/`. The runner is
-`benchmarks/pp2d/run_examples.py` (`runPP2D`, fluid-only cases).
-
-Every fluid example is compared across the same four integrators, all
-run with the same inputs, time step and frame count:
-
-- **PP**: `powerparticles` (Power Particles, with its weight solve).
-- **GM**: `gm` (Gallouët–Mérigot, kappa = 1 with `--stiffness 1`). This
-  is the limit alpha -> 0 of the softened scheme.
-- **Constrained**: `constrained` (SHAKE, or RATTLE with the velocity
-  projection, see `src/core/integrator.h`).
-- **Softened, alpha > 0**: `softened` with `--alpha` set to a value
-  different from the GM limit. The default `--alpha 0.01` is the
-  baseline; a second value (for example 0.1) would show the trend.
-  Open question: which alpha values go in the paper.
-
-The runner already supports all four (`--integrator powerparticles softened
-gm constrained`), so no code change is needed for the comparison. What is
-missing is the figure (energy, momentum and frames per integrator) and the
-choice of alpha values.
-
-- **2D, four vortices, three volume distributions.** Only
-  `yesweights/band2_5k_4vort.pp` exists. The uniform and radial versions
-  of the four-vortex case are not in the data folder, so they would have to
-  be generated. Open question: are the three distributions the ones of the
-  Power Particles paper (uniform, band, radial), and do we generate the
-  missing inputs or drop the uniform and radial cases?
-- **2D splash.** `2D/splash/` has `initial_{low,med,high}.pp` and `rect.line`.
-  Needs a case entry in `run_examples.py` and a runner call.
-- **3D, four examples as in the Power Particles paper.** Candidates in
-  `3D/`: `smoke` (Fig. "Smoke", 20k particles), `arc` (Splash de Triomphe,
-  600k particles), `blade` (moving obstacle), `corridor` (dam break in a
-  U-shaped corridor). Open question: which four.
-- **Gap for 3D fluids:** there is no 3D runner. `runPP2D` is 2D only, and
-  `src/core/integrator.h` is dimension-generic but has no 3D driver,
-  output or renderer. A `runPP3D` target and a 3D renderer are needed
-  before these figures can be made.
-- **New 3D jet example.** No input exists. It needs a new initial state
-  (particles and domain) and a case description. Open question: the jet
-  geometry, the particle count, and the boundary conditions.
-
-## 3. Open decisions
+## 4. Open decisions
 
 1. Which four 3D Power Particles examples go in the paper.
 2. Whether the uniform and radial four-vortex cases are generated.
-3. The geometry and resolution of the new 3D jet.
-4. Whether the 2D statistics table includes the approximate Bourne cases
+3. The geometry, resolution and boundary conditions of the new 3D jet.
+4. Which alpha values for the softened scheme in the fluid comparison.
+5. Whether the 2D statistics table includes the approximate Bourne cases
    (EBSD) or only the synthetic and realizable ones.
