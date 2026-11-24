@@ -16,7 +16,6 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import plot_intro as PI  # noqa: E402  (sets MPLCONFIGDIR and the Agg backend)
-import plot_logo as PL  # noqa: E402
 
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
@@ -24,6 +23,34 @@ from matplotlib.patches import Polygon  # noqa: E402
 
 GL = PI.GL
 OUT = os.path.join(PI.ROOT, "latex", "figures", "intro-maxent.pdf")
+
+
+def dart_throwing(rng, radius, rmax, tries=1500000):
+    """Points of the unit square at least max(radius(y), radius(z)) from each other
+    (Poisson-disk sampling with a varying radius), with a grid of cells of size rmax."""
+    m = int(np.ceil(1.0 / rmax))
+    grid = [[[] for _ in range(m)] for _ in range(m)]
+    Y, R = [], []
+    for _ in range(tries):
+        y = rng.random(2)
+        r = radius(y)
+        gi, gj = min(int(y[0] * m), m - 1), min(int(y[1] * m), m - 1)
+        ok = True
+        for a in range(max(gi - 1, 0), min(gi + 2, m)):
+            for b in range(max(gj - 1, 0), min(gj + 2, m)):
+                for k in grid[a][b]:
+                    if np.hypot(*(y - Y[k])) < max(r, R[k]):
+                        ok = False
+                        break
+                if not ok:
+                    break
+            if not ok:
+                break
+        if ok:
+            grid[gi][gj].append(len(Y))
+            Y.append(y)
+            R.append(r)
+    return np.array(Y), np.array(R)
 
 
 def maxent_volumes(cbar, area, centroid, tol=1e-14, maxiter=100):
@@ -116,7 +143,7 @@ def main():
 
     rng = np.random.default_rng(args.seed)
     m = args.margin * args.r
-    Y, _ = PL.dart_throwing(rng, lambda y: args.r, args.r)    # in the unit square, mapped to the inset one
+    Y, _ = dart_throwing(rng, lambda y: args.r, args.r)    # in the unit square, mapped to the inset one
     cbar = m + (1 - 2 * m) * Y
     cbar = 0.5 + args.shrink * (cbar - 0.5)
     n = len(cbar)
