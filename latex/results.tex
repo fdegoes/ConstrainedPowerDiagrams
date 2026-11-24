@@ -32,10 +32,36 @@ We generate $20$ sizes from $n \!=\! 10$ to $n \!=\! 10^4$, spaced logarithmical
 For data that are not realizable, we use the examples of \citet{Bourne2025Inverting} with perturbed centroids, and the EBSD map of a single-phase steel with $n \!=\! 243$ grains in a $252.25\,\mu\mathrm{m}$ square used in both of their works, which was provided to them by Tata Steel and is distributed with their code \cite{Bourne2025Inverting, Bourne2026ConvexOrder}.
 
 \paragraph{Choice of $\alpha$}
-On data that are not realizable, we maximize $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the bound \eqref{eq:regularized-distinct} and at $0.99$ times the estimate \eqref{eq:regularized-practical}, and at the value $\alpha \!=\! 9$ chosen by \citet{Bourne2026ConvexOrder} for the EBSD map, and we run their Frank--Wolfe iterations at the same values through $t \!=\! 1 + \alpha$.
+On data that are not realizable, we maximize $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the bound \eqref{eq:regularized-distinct} and at $0.99$ times the estimate \eqref{eq:regularized-practical} of Appendix~\ref{sec:appendix-softened-bound}, and at the value $\alpha \!=\! 9$ chosen by \citet{Bourne2026ConvexOrder} for the EBSD map, and we run their Frank--Wolfe iterations at the same values through $t \!=\! 1 + \alpha$.
 To test the estimate \eqref{eq:regularized-practical}, we perturbed the targets of synthetic cases with $n \!=\! 127$ and $n \!=\! 1129$ cells in 2D and 3D, either over all cells or on a single cell, and increased $\alpha$ until the solve failed or two generators met.
 Over these $38$ cases and the $3$ approximate cases of \citet{Bourne2025Inverting}, the generators remained distinct up to at least $1.5$ times the estimate, which exceeded the bound by a factor of about $2$ when the perturbation was on a single cell, of about $5$ to $7$ for all cells with $n \!=\! 127$, and of $13$ to $20$ with $n \!=\! 1129$.
 On the EBSD map, the estimate is $0.94$, $62$ times the bound, while $\alpha \!=\! 9$ exceeds it tenfold.
+Fig.~\ref{fig:alpha-ablation} shows the role of $\alpha$ on a realizable case and on a perturbed copy of it: the softened solution approaches the targets as $\alpha$ grows, the solves converge far beyond both bounds on realizable data, and on the perturbed data they fail only at a multiple of the estimate.
+
+% benchmarks/figures/plot_alpha_ablation.py (timings on a laptop)
+\begin{figure*}[t]
+  \centering
+  \newcommand{\abl}[2]{\includegraphics[width=0.187\textwidth]{figures/alpha-ablation-#1-#2}}
+  \newcommand{\ablrow}[1]{\rotatebox{90}{\parbox{0.187\textwidth}{\centering\small\bfseries #1}}}
+  \newcommand{\ablstat}[2]{\footnotesize\begin{tabular}[t]{@{}c@{}}#1\\[-1pt]#2\end{tabular}}
+  \setlength{\tabcolsep}{1.2pt}
+  \begin{tabular}{@{}cccccc@{}}
+    & \footnotesize $\jointdual$ & \footnotesize $\jointdual_\alpha$, bound \eqref{eq:regularized-distinct} & \footnotesize $\jointdual_\alpha$, estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $4\times$ estimate & \footnotesize $\jointdual_\alpha$, $16\times$ estimate \\[1pt]
+    \ablrow{realizable} & \abl{real}{G} & \abl{real}{guaranteed} & \abl{real}{1} & \abl{real}{4} & \abl{real}{16} \\[-5.5pt]
+    & \ablstat{$11$ iters}{residual $10^{-12}$} & \ablstat{$\alpha \!=\! 0.14$, $4$ iters}{residual $0.25$} & \ablstat{$\alpha \!=\! 0.47$, $5$ iters}{residual $0.18$} & \ablstat{$\alpha \!=\! 1.9$, $6$ iters}{residual $0.083$} & \ablstat{$\alpha \!=\! 7.5$, $8$ iters}{residual $0.029$} \\[9pt]
+    \ablrow{perturbed} & \abl{pert}{G} & \abl{pert}{guaranteed} & \abl{pert}{1} & \abl{pert}{4} & \abl{pert}{16} \\[-5.5pt]
+    & \ablstat{no solution}{} & \ablstat{$\alpha \!=\! 0.12$, $4$ iters}{residual $0.29$} & \ablstat{$\alpha \!=\! 0.41$, $5$ iters}{residual $0.21$} & \ablstat{$\alpha \!=\! 1.6$, $6$ iters}{residual $0.12$} & \ablstat{$\alpha \!=\! 6.5 \gg$ bound \eqref{eq:regularized-distinct}}{fails} \\
+  \end{tabular}
+  \caption{%
+    Ablation of the stiffness $\alpha$ on a synthetic case with $n \!=\! 20$ cells of equal area, showing the prescribed centroids $\tcentroid_i$ ($\square$), the centroids of the resulting cells ($\times$), and the residual between them in red.
+    Top: realizable targets, the centroids of a power diagram.
+    Bottom: the same targets, each moved by up to $0.2$ cell sizes, which no power diagram realizes.
+    From left to right, we maximize $\jointdual$, and $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the bound \eqref{eq:regularized-distinct} and at $0.99$, $4 \cdot 0.99$ and $16 \cdot 0.99$ times the estimate \eqref{eq:regularized-practical}; below each panel are $\alpha$, the Newton iterations, and the residual, the root mean square of the centroid misses over the cell size, and every solve takes $1$ to $2$\,ms.
+    On realizable data, the solves converge far beyond both bounds and their misses decrease as $\alpha$ grows; on the perturbed data, $\jointdual$ has no maximizer, and $\jointdual_\alpha$ converges up to a few times the estimate, while at $16$ times the estimate, about $50$ times above the conservative bound \eqref{eq:regularized-distinct}, it fails as two generators merge.
+  }
+  \label{fig:alpha-ablation}
+\end{figure*}
+
 
 \paragraph{Fixed weights}
 The synthetic benchmark also tests whether the volumes need to be unknowns at all.
@@ -102,15 +128,16 @@ With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1
 \subsection{Timing and Iterations}
 \label{sec:results-timing}
 
-We time our H on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling-time} shows the time and Fig.~\ref{fig:scaling-iterations} the iterations against $n$. Each line joins the medians over the five seeds, and the shaded band spans the 25th to 75th percentiles.
+We time our solver on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five seeds for each size, each noise level and each volume distribution. Every case converges under \eqref{eq:results-termination}, in 5 to 59 iterations (median 10; median 9 for Voronoi volumes and 12 for uniform volumes). Fig.~\ref{fig:scaling-time} shows the time and Fig.~\ref{fig:scaling-iterations} the iterations against $n$. Each line joins the medians over the five seeds, and the shaded band spans the 25th to 75th percentiles.
 
-\paragraph{Machine.} The timings were measured on one virtual machine: a KVM guest with 15 logical CPUs of an AMD EPYC 7763 host, 111 GB of memory, and AlmaLinux 9.6 (Linux 5.14). Our H was compiled with GCC 11.5.0 in release mode, with OpenMP enabled, against Eigen 3.3.7 and the CHOLMOD 3.0.14 sparse Cholesky backend of SuiteSparse. The methods of Bourne et al. ran in Python 3.11.13 with NumPy 2.4.6 and SciPy 1.17.1, and their optimal-transport solves used pysdot 0.2.39. We did not fix the number of threads of any method. The overnight run began with a 1-minute load average of 0.4 and ended at 2.8; the load was not recorded for each case. During the rule-3 runs of the Bourne methods the 1-minute load average reached 21 on the 15 CPUs (median 7), so their timings include multithreaded work from their numerical libraries. Our runs of H did not overlap with them.
+
+\paragraph{Machine.} The timings were measured on one virtual machine: a KVM guest with 15 logical CPUs of an AMD EPYC 7763 host, 111 GB of memory, and AlmaLinux 9.6 (Linux 5.14). Our solver was compiled with GCC 11.5.0 in release mode, with OpenMP enabled, against Eigen 3.3.7 and the CHOLMOD 3.0.14 sparse Cholesky backend of SuiteSparse. The methods of Bourne et al. ran in Python 3.11.13 with NumPy 2.4.6 and SciPy 1.17.1, and their optimal-transport solves used pysdot 0.2.39. We did not fix the number of threads of any method. The overnight run began with a 1-minute load average of 0.4 and ended at 2.8; the load was not recorded for each case. During the rule-3 runs of the Bourne methods the 1-minute load average reached 21 on the 15 CPUs (median 7), so their timings include multithreaded work from their numerical libraries. Our runs of H did not overlap with them.
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/synthetic/scaling-time.pdf}
   \caption{%
-    Time of our H to converge against the number of sites $n$, on the synthetic cases, one panel per noise level. Each line joins the medians over the five seeds, and the band spans the 25th to 75th percentiles. Circles and solid lines: Voronoi volumes; squares and dashed lines: uniform volumes. The dotted grey line is proportional to $n$.%
+    Time of our solver to converge against the number of sites $n$, on the synthetic cases, one panel per noise level. Each line joins the medians over the five seeds, and the band spans the 25th to 75th percentiles. Blue squares and dashed lines: uniform volumes; orange circles and solid lines: Voronoi volumes. The dotted grey line is proportional to $n$.%
   }
   \label{fig:scaling-time}
 \end{figure*}
@@ -119,7 +146,7 @@ We time our H on the 600 synthetic cases: 20 sizes $n \in [10, 10000]$, five see
   \centering
   \includegraphics[width=\textwidth]{figures/synthetic/scaling-iterations.pdf}
   \caption{%
-    Iterations of our H to converge against the number of sites $n$, with the same panels and encoding as Fig.~\ref{fig:scaling-time}. The runs with up to 59 iterations lie above the axis and are discussed in the text.%
+    Iterations of our solver to converge against the number of sites $n$, with the same panels and encoding as Fig.~\ref{fig:scaling-time}. The runs with up to 59 iterations lie above the axis and are discussed in the text.%
   }
   \label{fig:scaling-iterations}
 \end{figure*}
@@ -130,21 +157,38 @@ Fig.~\ref{fig:scaling-iterations} explains the gap between the two volume distri
 
 The two largest iteration counts, 59, occur in two runs: one at $n = 785$ (Voronoi, mid noise), which takes 0.6 s, and one at $n = 6952$ (Voronoi, high noise). The second is the slowest of all 600 runs, at 7.7 s. Its 59 iterations compare with 12 for the other seeds at that size, and its time per iteration, 130 ms, is also above the 88--94 ms of those seeds. The data do not show whether this excess comes from the solver or from other activity on the machine, because the load was not recorded for each case. This run should be repeated on an idle machine before its time is quoted.
 
-Table~\ref{tab:realizable} compares our H with the two methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} on the three realizable cases. Each method stops on its own rule at $10^{-8}$; our H stops on \eqref{eq:results-termination}, and the other rule is evaluated at its solution, as described above. The times are wall-clock seconds on one machine.
+
+Table~\ref{tab:realizable} compares our solver with the two methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} on the three realizable cases. Each method stops on its own rule at $10^{-8}$; our solver stops on \eqref{eq:results-termination}, and the other rule is evaluated at its solution, as described above. The times are wall-clock seconds on one machine.
+Fig.~\ref{fig:convergence}a shows the residual of \eqref{eq:results-termination} at every iterate on the Voronoi case.
+On the cross-shaped example, their Frank--Wolfe iterations end at the iteration limit with centroid errors of up to $0.47$ cell sizes.
+
+% benchmarks/figures/plot_convergence.py
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/convergence}
+  \caption{%
+    Residual of our termination rule \eqref{eq:results-termination} against the iteration, evaluated at every iterate of each method.
+    (a)~Realizable data of \citet{Bourne2025Inverting, Bourne2026ConvexOrder} ($n \!=\! 20$): our Newton solver for $\jointdual$ reaches the tolerance $10^{-8}$ in $7$ iterations, while their SLSQP stops on its own rule at a residual of $3 \cdot 10^{-3}$ after $190$ iterations, and their Frank--Wolfe iterations with $t \!=\! 100$ level off at a residual of the same order, since they solve $\jointdual_\alpha$ with $\alpha \!=\! t - 1$.
+    (b)~Measured grain map ($n \!=\! 243$): our solver for $\jointdual_\alpha$ at $\alpha \!=\! 0.94$ converges in $6$ iterations, while their Frank--Wolfe iterations at the same $\alpha$ stall at $10^{-5}$.
+    Crosses mark where their stopping rules fire.
+  }
+  \label{fig:convergence}
+\end{figure}
+
 
 \begin{table*}[t]
   \centering
-  \caption{Realizable cases: our H against the methods of Bourne et al. Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where the method stopped.}
+  \caption{Realizable cases: our solver against the methods of Bourne et al. Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where the method stopped.}
   \label{tab:realizable}
   \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrr}
     \hline
     case & method & stopped by & iterations & time (s) & volume & centroid \\
     \hline
-    2025-invert  & our H         & \eqref{eq:results-termination} & 7    & 0.0125 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
+    2025-invert  & our solver         & \eqref{eq:results-termination} & 7    & 0.0125 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
     2025-invert  & SLSQP (2025)  & rule 1                         & 190  & 4.51   & $1.7{\times}10^{-14}$ & $3.5{\times}10^{-3}$ \\
-    2026-voronoi & our H         & \eqref{eq:results-termination} & 7    & 0.0108 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
+    2026-voronoi & our solver         & \eqref{eq:results-termination} & 7    & 0.0108 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ \\
     2026-voronoi & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 51.7   & $5.2{\times}10^{-13}$ & $3.5{\times}10^{-3}$ \\
-    2026-aligned & our H         & \eqref{eq:results-termination} & 27   & 0.243  & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ \\
+    2026-aligned & our solver         & \eqref{eq:results-termination} & 27   & 0.243  & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ \\
     2026-aligned & Frank--Wolfe (2026, $t = 100$) & cap           & 5000 & 290    & $8.4{\times}10^{-9}$ & $4.7{\times}10^{-1}$ \\
     \hline
   \end{tabular*}
@@ -160,14 +204,55 @@ On the synthetic cases, Table~\ref{tab:matched} compares the methods on the 66 c
     \hline
     method & met & median time (ms) & volume & centroid \\
     \hline
-    our H                & 66/66 & 15     & $3.0{\times}10^{-9}$ ($9.5{\times}10^{-9}$) & $4.7{\times}10^{-10}$ ($8.8{\times}10^{-9}$) \\
+    our solver                & 66/66 & 15     & $3.0{\times}10^{-9}$ ($9.5{\times}10^{-9}$) & $4.7{\times}10^{-10}$ ($8.8{\times}10^{-9}$) \\
     SLSQP (2025)         & 2/66  & 10\,600 & $5.5{\times}10^{-13}$ ($4.9{\times}10^{-10}$) & $1.5{\times}10^{-4}$ ($1.7{\times}10^{-1}$) \\
     Frank--Wolfe (2026)  & 0/66  & ---    & $9.1{\times}10^{-13}$ ($5.3{\times}10^{-7}$) & $3.8{\times}10^{-3}$ ($4.1{\times}10^{-1}$) \\
     \hline
   \end{tabular*}
 \end{table*}
 
-Our H meets \eqref{eq:results-termination} in all 66 cases, in a median of 15 ms. SLSQP meets it in 2 cases, in a median of 10.6 s; in the other 63 it reaches the cutoff, and in one its line search fails. Frank--Wolfe meets it in none of the 66 cases, and all of them reach the cutoff. At the cutoff, the centroid residuals of SLSQP and Frank--Wolfe have medians of $1.5\cdot10^{-4}$ and $3.8\cdot10^{-3}$ of the cell size, and maxima of $0.17$ and $0.41$. Their volume errors are near $10^{-12}$. On its own rule 1, SLSQP stops earlier, in 57 of the 66 cases, with a median of 9.8 s and a centroid residual at that stop of median $3.6\cdot10^{-4}$.
+Our solver meets \eqref{eq:results-termination} in all 66 cases, in a median of 15 ms. SLSQP meets it in 2 cases, in a median of 10.6 s; in the other 63 it reaches the cutoff, and in one its line search fails. Frank--Wolfe meets it in none of the 66 cases, and all of them reach the cutoff. At the cutoff, the centroid residuals of SLSQP and Frank--Wolfe have medians of $1.5\cdot10^{-4}$ and $3.8\cdot10^{-3}$ of the cell size, and maxima of $0.17$ and $0.41$. Their volume errors are near $10^{-12}$. On its own rule 1, SLSQP stops earlier, in 57 of the 66 cases, with a median of 9.8 s and a centroid residual at that stop of median $3.6\cdot10^{-4}$.
+
+\paragraph{Approximate data}
+On the EBSD map, maximizing $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the estimate \eqref{eq:regularized-practical} converges in $6$ iterations, with exact areas and centroids that move by a median of $0.09$ grain sizes (Fig.~\ref{fig:ebsd}).
+At the same $\alpha$, the Frank--Wolfe iterations of \citet{Bourne2026ConvexOrder} stall at a residual of $10^{-5}$ (Fig.~\ref{fig:convergence}b), and with their setting $\alpha \!=\! 9$ they do not converge.
+
+% benchmarks/figures/plot_ebsd.py
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/ebsd}\\[-19pt]
+  \makebox[0.34\columnwidth]{\sffamily\small\bfseries measured grains}\hfill\makebox[0.34\columnwidth]{\sffamily\small\bfseries our fit}
+  \caption{%
+    Reconstruction of a measured grain map of $243$ grains \cite{Bourne2025Inverting}.
+    No power diagram has the measured areas and centroids exactly, so we maximize our softened objective, with $\alpha$ at $0.99$ times the practical bound \eqref{eq:regularized-practical}, which converges in $6$ Newton iterations.
+    The fitted cells, colored as the measured grains at their centroids, have exactly the measured areas, while their centroids move by a median of $0.09$ grain sizes and at most $1.2$ grain sizes, the largest moves occurring for the smallest grains.
+    The inset magnifies the square outlined in black in both maps, with the measured centroids as black dots and the fitted ones as circles.
+  }
+  \label{fig:ebsd}
+\end{figure}
+
+\paragraph{Foam from an image}
+\citet{Numerow2024DiffVoronoi} fit a power-diagram model of a 2D soap foam to a photo with $75$ annotated cells, by optimizing the target areas of an equilibrium foam energy so that the vertices of the diagram match the annotated ones.
+As reported in their paper, this reduces the sum of the squared distances between the two sets of vertices from $0.28$ to $0.034$, in units of half the image height, in $77$ iterations of L-BFGS and $13$\,s.
+We instead fit the areas and centroids of the annotated cells by maximizing $\jointdual_\alpha$ from sites at the centroids, and measure their objective on our diagrams (Fig.~\ref{fig:foam}), with timings on a laptop.
+The power diagram with the annotated areas alone and sites at the centroids already scores $0.029$.
+At $0.99$ times the estimate \eqref{eq:regularized-practical}, our fit converges in $8$ iterations and $4$\,ms and scores $0.014$, and since the solves converge beyond the estimate, ten times the estimate lowers the score to $0.0079$ in $25$ iterations and $9$\,ms.
+Larger values of $\alpha$ hardly improve it further, since the foam is not exactly a power diagram, and the solves fail beyond about $60$ times the estimate.
+
+% benchmarks/figures/plot_foam.py; data: external/VoronoiCellSim (Apache-2.0), Projects/VoronoiFoam/resource/ronan.{jpg,txt}
+\begin{figure}[t]
+  \centering
+  \setlength{\tabcolsep}{1.5pt}
+  \begin{tabular}{@{}cc@{}}
+    \footnotesize annotation & \footnotesize our fit \\[1pt]
+    \includegraphics[width=0.485\columnwidth]{figures/foam-photo} &
+    \includegraphics[width=0.485\columnwidth]{figures/foam-fit} \\
+  \end{tabular}
+  \caption{%
+    A photo of a 2D soap foam with the annotated cells of \citet{Numerow2024DiffVoronoi} (left, from their code) and our fit (right): the power diagram that maximizes $\jointdual_\alpha$ for the areas and centroids of the annotated cells, with $\alpha$ at ten times the estimate \eqref{eq:regularized-practical}, has exactly the annotated areas, and its centroids miss the annotated ones by a median of $0.017$ cell sizes.
+  }
+  \label{fig:foam}
+\end{figure}
 
 \subsection{Incompressible Flows}
 \label{sec:results-flows}

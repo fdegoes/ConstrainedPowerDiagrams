@@ -5,9 +5,19 @@
 \section{Derivatives of $\jointdual$}
 \label{sec:appendix-joint}
 
-The joint dual $\jointdual(\shift, \weight) = \energy(\dual, \combweight) + \sum_i \weight_i \pvol_i$ defined in \eqref{eq:joint-dual} again depends on $(\shift, \weight)$ only through the shifted sites \eqref{eq:shifted-site}, plus the explicit term $\weight_i \pvol_i$.
-Relative to \S\ref{sec:appendix-centroid}, the only new ingredient is the weight reparametrization $\partial_{\weight_i} \combweight_i = 1$ from \eqref{eq:appendix-jac}.
-The shift gradient of $\jointdual$ is identical to \eqref{eq:appendix-centroid-grad}, while for the weights the chain rule gives
+The joint dual $\jointdual(\shift, \weight) = \energy(\dual, \combweight) + \sum_i \weight_i \pvol_i$ defined in \eqref{eq:joint-dual} depends on $(\shift, \weight)$ only through the shifted sites \eqref{eq:shifted-site}, plus the explicit term $\weight_i \pvol_i$.
+Applying the chain rule with the Jacobian \eqref{eq:appendix-jac} and the energy gradients \eqref{eq:appendix-energy-deriv}, we obtain the shift gradient
+\begin{equation}
+  \begin{aligned}
+    \partial_{\shift_i} \jointdual
+      &= (\partial_{\shift_i} \dual_i) \, (\partial_{\dual_i} \energy)
+         + (\partial_{\shift_i} \combweight_i) \, (\partial_{\combweight_i} \energy) \\
+      &= (\partial_{\dual_i} \energy) + 2\,(\dual_i - \tcentroid_i)\, (\partial_{\combweight_i} \energy)
+       = 2 \int_{\cell_i} (\tcentroid_i - \xx) \, d\xx ,
+  \end{aligned}
+  \label{eq:appendix-centroid-grad}
+\end{equation}
+and the weight gradient
 \begin{equation}
   \partial_{\weight_i} \jointdual
     = (\partial_{\weight_i} \combweight_i) \, (\partial_{\combweight_i} \energy) + \pvol_i
@@ -16,8 +26,18 @@ The shift gradient of $\jointdual$ is identical to \eqref{eq:appendix-centroid-g
   \label{eq:appendix-joint-grad}
 \end{equation}
 so that stacking the two gradients recovers the joint gradient \eqref{eq:joint-gradient}.
+%
+For the Hessian, we differentiate once more via the chain rule.
+Letting $a, b$ range over the multipliers $\{\shift, \weight\}$ and $k, l$ over the shifted-site variables $\{\dual, \combweight\}$, this yields
+\begin{equation}
+  \partial^2_{a_i b_j} \jointdual
+    = \sum_{k, l} (\partial_{a_i} k_i)\,(\partial^2_{k_i l_j} \energy)\,(\partial_{b_j} l_j)
+      + \delta_{ij}\,(\partial^2_{a_i b_i} \combweight_i)\,(\partial_{\combweight_i} \energy) ,
+  \label{eq:appendix-centroid-hess-chain}
+\end{equation}
+where $\delta_{ij}$ is the Kronecker delta, and the only nonzero second derivative of the reparametrization is $\smash{\partial^2_{\shift_i} \combweight_i = 2\,\Id}$.
 % 
-Applying \eqref{eq:appendix-centroid-hess-chain} a second time, now with $\smash{\partial_{\weight_i} \combweight_i = 1}$, and substituting the energy Hessian \eqref{eq:appendix-energy-hess-off}--\eqref{eq:appendix-energy-hess-diag} gives the off-diagonal blocks
+Substituting the Jacobian \eqref{eq:appendix-jac} and the energy Hessian \eqref{eq:appendix-energy-hess-off}--\eqref{eq:appendix-energy-hess-diag} gives the off-diagonal blocks
 \begin{subequations}
   \label{eq:appendix-blocks-off}
   \begin{empheq}[left={\empheqlbrace\,}]{align}

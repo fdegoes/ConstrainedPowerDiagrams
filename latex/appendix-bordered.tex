@@ -7,8 +7,9 @@
 
 We detail next the Newton step of Algorithm~\ref{alg:flow-constrained-newton}, which solves \eqref{eq:flow-line-constraint} by maximizing $\jointdual$ subject to the linear constraints \subeqrange{eq:flow-line-constraint-trans}{d}.
 % 
-We use the multipliers $\mathbf{z}$, the gradient $\mathbf{g}$, and the regularized negated Hessian $\Nmat$ of $\jointdual$ from \S\ref{sec:implementation}, and stack the constraint multipliers into $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d, \{s_B\}_B) \in \R^{d+b}}$.
-We also write the dilation constraint \eqref{eq:flow-line-constraint-dil} as the row $\smash{\mathbf{a} = (\{\pvol_i\,\dual^k_i\}_i, 0)}$ and the translation constraint \eqref{eq:flow-line-constraint-trans} along each axis $\mathbf{e}_j$ as the row $\smash{\mathbf{b}_j = (\{\pvol_i\,\mathbf{e}_j\}_i, 0)}$, and the constraint \eqref{eq:flow-line-constraint-arm} of each branch as the row $\smash{\mathbf{c}_B}$ with entries $\smash{\pvol_i\,(\dual^k_i - \dual^k_{c_B})}$ on the shifts of the cells $\cell_i \!\in\! \branch_B$ of its branch, all with zero entries on the other shifts and on the weights.
+We use the multipliers $\mathbf{z}$, the gradient $\gvec$, and the regularized negated Hessian $\Nmat$ of $\jointdual$ from \S\ref{sec:implementation}, and stack the constraint multipliers into $\smash{\boldsymbol{\nu} = 2\,(s, t_1, \dots, t_d, \{s_B\}_B) \in \R^{d+b}}$.
+We also write 
+the translation constraint \eqref{eq:flow-line-constraint-trans} along each axis $\mathbf{e}_j$ as the row $\smash{\mathbf{b}_j = (\{\pvol_i\,\mathbf{e}_j\}_i, 0)}$, the dilation constraint \eqref{eq:flow-line-constraint-dil} as the row $\smash{\mathbf{a} = (\{\pvol_i\,\dual^k_i\}_i, 0)}$, and the constraint \eqref{eq:flow-line-constraint-arm} of each branch as the row $\smash{\mathbf{c}_B}$ with entries $\smash{\pvol_i\,(\dual^k_i - \dual^k_{c_B})}$ on the shifts of the cells $\cell_i \!\in\! \branch_B$ of its branch, all with zero entries on the other shifts and on the weights.
 We then collect these $d \!+\! b$ rows into the auxiliary matrix
 \begin{equation}
   \Cmat = \begin{bmatrix} \mathbf{a} & \mathbf{b}_1 & \cdots & \mathbf{b}_d & \cdots & \mathbf{c}_B & \cdots \end{bmatrix}\tr ,
@@ -23,25 +24,28 @@ Rather than reparametrizing the unknowns to satisfy the constraints, which would
   \begin{bmatrix} \Nmat & \Cmat\tr \\ \Cmat & 0 \end{bmatrix}
   \begin{bmatrix} \delta\mathbf{z} \\ \boldsymbol{\nu} \end{bmatrix}
   =
-  \begin{bmatrix} \mathbf{g} \\ 0 \end{bmatrix}.
+  \begin{bmatrix} \gvec \\ 0 \end{bmatrix}.
   \label{eq:flow-constrained-newton}
 \end{equation}
 %
-Eliminating $\delta\mathbf{z}$ from the first row of \eqref{eq:flow-constrained-newton} gives $\smash{\delta\mathbf{z} = \Nmat^{-1} \bigl( \mathbf{g} - \Cmat\tr \boldsymbol{\nu} \bigr)}$, which we compute from the $d \!+\! b \!+\! 1$ sparse solves
-\begin{equation}
-  \Nmat\,\mathbf{z}_0 = \mathbf{g} , \qquad \Nmat\,\mathbf{Z} = 2\,\Cmat\tr ,
+Eliminating $\delta\mathbf{z}$ from the first row of \eqref{eq:flow-constrained-newton} gives $\smash{\delta\mathbf{z} = \Nmat^{-1} \bigl( \gvec - \Cmat\tr \boldsymbol{\nu} \bigr)}$, which we compute from the $d \!+\! b \!+\! 1$ sparse solves
+\begin{subequations}
   \label{eq:flow-constrained-elimination-solve}
-\end{equation}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    & \Nmat\,\mathbf{z}_0 = \gvec , \label{eq:flow-constrained-elimination-solve-g} \\
+    & \Nmat\,\mathbf{Z} = \Cmat\tr , \label{eq:flow-constrained-elimination-solve-c}
+  \end{empheq}
+\end{subequations}
 where $\mathbf{Z}$ has one column per row of $\Cmat$, sharing a single factorization of $\Nmat$, so that the bordering only adds $d \!+\! b$ back-substitutions to an unconstrained Newton step.
 Substituting them into $\Cmat\,\delta\mathbf{z} = 0$ yields the dense $(d \!+\! b) \times (d \!+\! b)$ system
 \begin{equation}
-  \bigl( \Cmat\,\mathbf{Z} \bigr)\, \tfrac{1}{2}\boldsymbol{\nu} = \Cmat\,\mathbf{z}_0
+  \bigl( \Cmat\,\mathbf{Z} \bigr)\, \boldsymbol{\nu} = \Cmat\,\mathbf{z}_0
   \label{eq:flow-constrained-elimination-gauge}
 \end{equation}
-for the gauge $\smash{\tfrac{1}{2}\boldsymbol{\nu} = (s, \translation, \{s_B\}_B)}$, which is symmetric positive definite.
+for the multipliers $\smash{\boldsymbol{\nu} = 2\,(s, \translation, \{s_B\}_B)}$, i.e. twice the gauge, which is symmetric positive definite.
 The Newton step follows as
 \begin{equation}
-  \delta\mathbf{z} = \mathbf{z}_0 - \tfrac{1}{2}\,\mathbf{Z}\,\boldsymbol{\nu} .
+  \delta\mathbf{z} = \mathbf{z}_0 - \mathbf{Z}\,\boldsymbol{\nu} .
   \label{eq:flow-constrained-elimination-update}
 \end{equation}
 

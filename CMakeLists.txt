@@ -260,6 +260,9 @@ if(PP_BUILD_TESTS)
 
     add_executable(runPP2D benchmarks/pp2d/runPP2D.cpp)
     target_link_libraries(runPP2D PRIVATE pp_core)
+
+    add_executable(introFigure benchmarks/figures/introFigure.cpp)
+    target_link_libraries(introFigure PRIVATE pp_core)
 endif()
 
 ###########

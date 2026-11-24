@@ -7,6 +7,8 @@
 
 % Power-diagram primitives
 \newcommand{\xx}{\mathbf{x}}                 % point / integration variable
+\newcommand{\gvec}{\mathbf{g}}               % gradient vector of the objective, (\gvec^\shift_i, g^\weight_i)_i
+\newcommand{\tol}{\tau}                    % tolerance of the termination test eq:results-termination
 \newcommand{\yy}{\mathbf{y}}                 % dual multiplier of the max-entropy feasibility program
 \newcommand{\qq}{\mathbf{q}}                 % site
 \newcommand{\dual}{\mathbf{p}}               % shifted / dual site
@@ -33,8 +35,10 @@
 % Potentials
 \newcommand{\energy}{\mathcal{E}}            % power-diagram energy (inner min), \energy(\qq,\weight)
 \newcommand{\dualenergy}{\mathcal{F}}        % dual objective of the volume-constrained problem, \dualenergy(\weight)
-\newcommand{\centroiddual}{\mathcal{G}}      % dual objective of the centroid-constrained problem, \centroiddual(\shift)
-\newcommand{\jointdual}{\mathcal{H}}         % dual objective of the joint volume+centroid problem, \jointdual(\shift,\weight)
+\newcommand{\jointdual}{\mathcal{G}}         % dual objective of the joint volume+centroid problem, \jointdual(\shift,\weight)
+% The centroid-only dual is \jointdual with fixed weights (a remark of \S4.1); the appendices still use
+% this macro, which shows it as \jointdual with the weights as a subscript until they are rewritten.
+\newcommand{\centroiddual}{\mathcal{G}_{\weight}}  % \jointdual(\cdot, \weight) for fixed weights
 \newcommand{\distortion}{\mathcal{D}}         % distortion energy of the centroid slacks, \distortion(\slack) (appendix sec:appendix-distortion)
 \newcommand{\Id}{\mathrm{I}}                 % identity matrix (\Id_d for d x d)
 
@@ -72,7 +76,7 @@
 % Hand-drawn brace spanning the constraint rows of an alignat: \constraintbrace{half-height}{lowering}
 \newcommand{\constraintbrace}[2]{\smash{\raisebox{-#2}{$\left\{\vrule height #1 depth #1 width 0pt\right.$}}\,}
 \newcommand{\Cmat}{\mathrm{C}}               % constraint rows of the constrained integrator, \Cmat\,\shift = (\sum_i \pvol_i \shift_i\tr \dual^k_i, \sum_i \pvol_i \shift_i)
-\newcommand{\Nmat}{\mathrm{N}}               % regularized negated Hessian of \jointdual (Newton matrix, Alg. alg:hessian-reg), with site blocks \Nmat_{ii}
+\newcommand{\Nmat}{\mathrm{H}}               % regularized negated Hessian of \jointdual (Newton matrix, Alg. alg:hessian-reg), with site blocks \Nmat_{ii}
 
 % Cage deformations of power diagrams (appendix sec:appendix-distortion)
 \newcommand{\rest}[1]{\widehat{#1}}           % rest-state decoration, \rest{\centroid}_i, \rest{\domain}

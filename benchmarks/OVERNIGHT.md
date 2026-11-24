@@ -1,5 +1,8 @@
 # Overnight comparison: our H vs. Bourne et al.
 
+> Naming: the code, scripts and these notes call the joint dual **H** (and the
+> softened one **H_α**); the paper now writes them **𝒢** and **𝒢_α**.
+
 `run_overnight.sh` runs our solver and the methods of Bourne et al. on all
 the realizable data, and writes the tables and timing plots for the paper.
 It also runs, as a separate set of results, the approximate examples of

@@ -75,7 +75,7 @@ def plot(g, index, ylabel, path, reference):
             stats = np.array([band([v[index] for v in by_n[n]]) for n in ns])
             med, lo, hi = stats[:, 0], stats[:, 1], stats[:, 2]
             c = color
-            ax.fill_between(ns, lo, hi, color=c, alpha=0.32, lw=0, zorder=1)
+            ax.fill_between(ns, lo, hi, color=c, alpha=0.2, lw=0, zorder=1)
             ax.plot(ns, med, ls, color=c, lw=1.4, zorder=3)
             ax.plot(ns, med, marker, color=c, ms=3.5, mec="white", mew=0.4, lw=0, zorder=4)
             ax.annotate(label, (ns[-1], med[-1]), xytext=(4, 0), textcoords="offset points",

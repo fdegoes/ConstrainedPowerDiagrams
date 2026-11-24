@@ -242,7 +242,9 @@ Integrator::_MakeCentroidal(ParticleState& state, Result& res) const
     cp._tolerance = _params._lloydTolerance;
     cp._maxIterations = _params._lloydMaxIterations;
     std::vector<double> sites = state._positions;
-    std::vector<double> weights;
+    // Warm start from the weights of the state: for inputs that are already centroidal, the
+    // diagram of (sites, weights) is the start, and the Lloyd iterations need not move.
+    std::vector<double> weights = state._weights;
     const CentroidalDiagram::Result cr = CentroidalDiagram(cp).Solve(_domain, _volumes, sites, weights);
     res._iterations = cr._iterations;
     if (not cr._converged) {

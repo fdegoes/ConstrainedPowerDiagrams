@@ -39,6 +39,14 @@ The histories are cached as JSON in benchmarks/figures/cache/convergence/
 (--rerun to recompute them). Needs build/benchBourne and the pysdot Python:
   MPLCONFIGDIR=/tmp/mplcfg external/bourne/.venv/bin/python benchmarks/figures/plot_convergence.py
       [--rerun] [--fw-iter 500] [--x iterations|solves] [--out latex/figures/convergence.pdf]
+      [--from DIR]
+
+--from DIR takes panel (a) from the output directory of
+benchmarks/bourne/run_table1.py (voronoi__{ours,slsqp,fw,subgrad}.json): every method
+there runs on rule 3 at 1e-8 or to its time cap, with the settings of that script (SLSQP
+with its rule 1 disabled, the subgradient at t = 1250 from the random start of 2025-invert);
+a cross marks the iterate where each method's own rule (SLSQP rule 1, FW gap, change of
+the running average) would have stopped it. Panel (b) still comes from the cache.
 """
 
 import argparse
@@ -207,18 +215,43 @@ def _cached(name, rerun, fn):
     return r
 
 
+def load_table1(d, benchmark="voronoi"):
+    """The runs of benchmarks/bourne/run_table1.py in directory d, in the form of the cached histories (volume and
+    shift residuals per iterate; ownRuleIndex: the iterate where the method's own rule would stop it)."""
+    out = {}
+    for m in ("ours", "slsqp", "fw", "subgrad"):
+        path = os.path.join(d, "%s__%s.json" % (benchmark, m))
+        if not os.path.exists(path):
+            print("missing %s: %s not drawn" % (path, m))
+            continue
+        with open(path) as f:
+            r = json.load(f)
+        h = r["history"]
+        own = r.get("ownRule") or {}
+        out[m] = dict(method=m, status="%s (%s)" % (r["stop"], r["status"]), iterations=r.get("iterations"),
+                      ownRuleIndex=own.get("index"),
+                      history=[dict(iteration=k, solves=s, volume=v, shift=c, gap=g)
+                               for k, s, v, c, g in zip(h["iteration"], h["solves"], h["volume"], h["centroid"],
+                                                        h["own"])])
+    return out
+
+
 def histories(args):
     cases = _cases()
     inv, vor, ebsd = cases["2025-invert"], cases["2026-voronoi"], cases["ebsd"]
     ebsd26 = [v for v in ebsd.variants if v.paper == "2026"][0]
     a = 0.99 * bc.practical_alpha(ebsd)
-    out = {
-        "voronoi": {
+    if args.from_dir:
+        voronoi = load_table1(args.from_dir)
+    else:
+        voronoi = {
             "ours": _cached("voronoi-ours", args.rerun, lambda: run_ours(vor, "H", math.inf)),
             "slsqp": _cached("voronoi-slsqp", args.rerun, lambda: run_slsqp(inv)),
             "fw": _cached("voronoi-fw", args.rerun, lambda: run_fw(vor, vor.t, math.inf, args.fw_iter)),
             "subgrad": _cached("voronoi-subgrad", args.rerun, lambda: run_subgrad(vor)),
-        },
+        }
+    out = {
+        "voronoi": voronoi,
         "ebsd": {
             "ours": _cached("ebsd-ours", args.rerun, lambda: run_ours(ebsd, "Halpha", a)),
             "fw": _cached("ebsd-fw", args.rerun, lambda: run_fw(ebsd26, ebsd26.t, ebsd26.t - 1, args.fw_iter)),
@@ -241,6 +274,8 @@ def _series(r, x):
 
 def gap_stop(r):
     """Index of the iterate where their gap rule stops FW (None: not reached)."""
+    if "ownRuleIndex" in r:  # run_table1.py (--from): the method's own rule, read off its history
+        return r["ownRuleIndex"]
     if r["method"] == "slsqp":
         return len(r["history"]) - 1  # it stops on its own rule (rule 1)
     if r["method"] not in ("fw", "subgrad"):
@@ -301,7 +336,7 @@ def report(runs, alpha):
             first = next((e for e, x in zip(h, res) if x <= TOL), None)
             k = gap_stop(r)
             if k is not None:
-                print("%-8s %-8s their gap rule stops at iteration %d, residual %.2e" % (key, m, k, res[k]))
+                print("%-8s %-8s their own rule stops at iteration %d, residual %.2e" % (key, m, k, res[k]))
             print("%-8s %-8s %-26s %4d it, %5d solves, final %.2e (vol %.1e, shift %.1e), min %.2e, to 1e-8: %s" % (
                 key, m, r["status"][:26], h[-1]["iteration"], h[-1]["solves"], res[-1], h[-1]["volume"],
                 h[-1]["shift"], min(res), "-" if first is None else "%d it / %d solves" % (
@@ -315,6 +350,8 @@ def main():
     ap.add_argument("--x", choices=["iterations", "solves"], default="iterations")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--png", action="store_true", help="also write a PNG next to the PDF")
+    ap.add_argument("--from", dest="from_dir", default=None,
+                    help="panel (a) from this output directory of benchmarks/bourne/run_table1.py")
     args = ap.parse_args()
     runs, alpha = histories(args)
     report(runs, alpha)

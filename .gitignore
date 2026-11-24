@@ -37,6 +37,8 @@ external/bourne/src/
 external/bourne/runs/
 external/cgal-6.0.1/
 external/install/
+# Numerow et al. (2024), cloned for the foam data of benchmarks/figures/plot_foam.py
+external/VoronoiCellSim/
 
 # Compiled pp2d baseline (built by benchmarks/pp2d/pp2/build_pp2.sh)
 benchmarks/pp2d/pp2/bin/

@@ -2,7 +2,7 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
-\section{Choosing $\alpha$ for $\jointdual_\alpha$}
+\section{Bounds on $\alpha$ for $\jointdual_\alpha$}
 \label{sec:appendix-softened-bound}
 
 We derive next a sufficient condition on the stiffness $\alpha$ under which the maximizer of $\jointdual_\alpha$ in \eqref{eq:regularized-dual} has pairwise distinct generators $\dual$, and thus realizes a power diagram.
@@ -10,7 +10,7 @@ We derive next a sufficient condition on the stiffness $\alpha$ under which the 
 Let $\smash{\cell^0}$ denote the power diagram of the sites $\qq$ that maximizes $\dualenergy$ in \eqref{eq:volume-dual}, \ie the solution of the volume-constrained problem \eqref{eq:volume-constrained}.
 Then let $\smash{\centroid^0}$ denote the centroids of this volume-constrained power diagram and $\smash{\resid = \sum_i \pvol_i \norm{\centroid^0_i - \tcentroid_i}^2}$ be its volume-weighted centroid residual with respect to the targets $\tcentroid$.
 % 
-The partition $\smash{\cell^0}$ satisfies the volume constraints \eqref{eq:regularized-primal-vol}, and is thus feasible for \eqref{eq:regularized-primal} with slacks $\smash{\centroid^0 \!-\! \tcentroid}$, while it minimizes the first term of \eqref{eq:regularized-primal-obj} among all partitions with volumes $\pvol$.
+The partition $\smash{\cell^0}$ satisfies the volume constraints \eqref{eq:regularized-primal-vol}, and is thus feasible for \eqref{eq:regularized-primal} with slacks $\smash{\slack \!=\! \centroid^0 \!-\! \tcentroid}$, while it minimizes the first term of \eqref{eq:regularized-primal-obj} among all partitions with volumes $\pvol$.
 Since both $\smash{\cell^0}$ and the softened partition $\cell$ have volumes $\pvol$, their objectives decompose as in \eqref{eq:regularized-decomposition}, whose first two sums recover the first term of \eqref{eq:regularized-primal-obj} and whose last sum is the penalty, equal to $\alpha\,\resid$ for $\smash{\cell^0}$.
 The softened partition minimizes the whole objective, so its value of \eqref{eq:regularized-decomposition} is at most that of $\smash{\cell^0}$, while $\smash{\cell^0}$ minimizes the first two sums, so their value is at least as large for $\cell$.
 % 
@@ -36,5 +36,13 @@ By the triangle inequality, the generators then verify
 \end{equation}
 so $\dual_i \!\neq\! \dual_j$ whenever the right-hand side is positive.
 Requiring this for every pair $i \!\neq\! j$ yields the bound \eqref{eq:regularized-distinct}.
+
+This bound is conservative, since it bounds the residual of each cell by the residual $\resid$ of all cells.
+In our experiments, however, the volume constraints rarely let the residual of one cell move distant cells, so replacing $\resid$ by the residuals of the two cells of each pair yields the practical estimate
+\begin{equation}
+  \alpha < \min_{i \neq j} \frac{\norm{\qq_i - \qq_j}}{\norm{\centroid^0_i - \tcentroid_i} + \norm{\centroid^0_j - \tcentroid_j}} ,
+  \label{eq:regularized-practical}
+\end{equation}
+which is not guaranteed, but for which every solve of our experiments converged, while a larger $\alpha$ often converged as well and brought the centroids closer to their targets.
 
 \end{document}

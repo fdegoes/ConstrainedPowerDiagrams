@@ -17,8 +17,19 @@ Lloyd-type iterations \cite{Lloyd1982Quantization, Liu2009CVT, Xin2016Centroidal
 For arbitrary targets, \citet{Bourne2025Inverting} minimize a non-convex centroid residual over the sites, which only finds local solutions, while \citet{Bourne2026ConvexOrder} solve a convex projection of dilated targets by first-order iterations, which only reach the targets up to an error that decreases with the dilation factor.
 Both require a full volume solve at every iteration, and neither handles centroid constraints without volume constraints.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/intro}
+  \caption{%
+    A power diagram of a rectangle with eight cells of prescribed equal areas and prescribed centroids $\tcentroid_i$ ($\square$).
+    We compute this diagram by maximizing a new concave objective $\jointdual$ over one weight $\weight_i$ and one shift $\shift_i$ per cell, which enforce the area and the centroid constraints, respectively.
+    Each shift ($\rightarrow$) moves the site $\qq_i$ ($\circ$) to the generator $\dual_i$ ($\bullet$) of cell $i$, and a schematic disk illustrates the shifted weight $\combweight_i$ of each generator.
+  }
+  \label{fig:intro}
+\end{figure}
+
 In this paper, we show that prescribing centroids is as tractable as prescribing volumes.
-We enforce the centroid constraints with Lagrange multipliers that shift the sites, so that the partition minimizing the Lagrangian is again a power diagram, now of shifted sites.
+We enforce the centroid constraints with Lagrange multipliers that shift the sites, so that the partition minimizing the Lagrangian is again a power diagram, now of shifted sites (Fig.~\ref{fig:intro}).
 The constrained problem thus becomes the unconstrained maximization of a concave function of the shifts, whose gradient is the centroid residual and whose maximizer yields a unique power diagram whenever one exists.
 Treating the weights as additional multipliers extends this centroid-only formulation to volume and centroid constraints jointly, and softening the centroid constraints with a quadratic penalty keeps the problem concave with a unique maximizer for any targets.
 We completely characterize the Hessian null-spaces of these objectives from the dual graph of the power diagram, whose cut cells add localized homotheties to the global ones, and which, for convex domains, decide whether the diagram is reducible in the sense of \citet{Bourne2026ConvexOrder}.

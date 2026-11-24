@@ -2,11 +2,10 @@
 \documentclass[main.tex]{subfiles}
 \begin{document}
 
-\section{Concavity of $\jointdual$ and $\centroiddual$}
+\section{Concavity of $\jointdual$}
 \label{sec:appendix-concavity}
 
-We now show that both objectives $\centroiddual$ and $\jointdual$ are concave.
-Since their Hessians derived in Appendices~\ref{sec:appendix-centroid} and~\ref{sec:appendix-joint}, respectively, share the same facet-based structure, we treat $\jointdual$ first and then $\centroiddual$, which corresponds to the special case of fixed weights.
+We now show that our objective $\jointdual$ is concave, using the facet-based structure of its Hessian derived in Appendix~\ref{sec:appendix-joint}.
 
 For conciseness, we stack the two multipliers of a site into $\mult_i = [\shift_i, \weight_i] \in \R^{d+1}$.
 We then define the affine field
@@ -22,7 +21,6 @@ Given that $\psi_i$ is linear in $\mult_i$, a perturbation $\delta\mult_i \!=\! 
   \delta\psi_i(\xx) = \delta\mult_i\tr \phi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i) + \delta\weight_i.
   \label{eq:appendix-dpsi}
 \end{equation}
-For $\centroiddual$, the weights are fixed, so $\delta\weight_i = 0$ and $\delta\psi_i(\xx) = 2\,\delta\shift_i\tr (\xx - \tcentroid_i)$.
 
 With this notation, the Hessian blocks \eqref{eq:appendix-blocks-off}--\eqref{eq:appendix-blocks-diag} of $\jointdual$ are the entries of the facet-based Laplacian assembled from $\phi_i$:
 \begin{subequations}
@@ -37,17 +35,18 @@ With this notation, the Hessian blocks \eqref{eq:appendix-blocks-off}--\eqref{eq
     \label{eq:appendix-block-diag}
   \end{empheq}
 \end{subequations}
-whose shift--shift part is also the Hessian \eqref{eq:centroid-hessian} of $\centroiddual$.
+whose shift--shift part is the block \eqref{eq:centroid-hessian}.
 
 Contracting the Hessian with a perturbation $\smash{\delta\mult = \{\delta\mult_i\}_{i=1}^n}$ and pairing the terms of each facet gives
 \begin{equation}
   \delta\mult\tr \nabla^2 \jointdual \, \delta\mult
     =
-    -\sum_{\{i,j\}}\!\! \frac{1}{2\,\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\!\! \bigl( \delta\psi_i(\xx) \!-\! \delta\psi_j(\xx) \bigr)^2 dA
+    -\sum_{\{i,j\}}\!\! \frac{1}{2} \frac{1}{\norm{\dual_i \!-\! \dual_j}} \int_{\face_{ij}}\!\! \bigl( \delta\psi_i(\xx) \!-\! \delta\psi_j(\xx) \bigr)^2 dA
     \le 0 ,
   \label{eq:appendix-nsd}
 \end{equation}
 where the sum runs over pairs of neighbors.
-Hence, $\nabla^2 \jointdual \preceq 0$, and restricting \eqref{eq:appendix-nsd} to $\delta\weight = 0$ gives $\nabla^2 \centroiddual \preceq 0$, so both duals are concave.
+Hence, $\nabla^2 \jointdual \preceq 0$, and $\jointdual$ is concave.
+Note that restricting \eqref{eq:appendix-nsd} to $\delta\weight \!=\! 0$, for which $\delta\psi_i(\xx) \!=\! 2\,\delta\shift_i\tr (\xx - \tcentroid_i)$, shows that, with the weights fixed, $\jointdual$ remains concave with respect to the shifts.
 
 \end{document}

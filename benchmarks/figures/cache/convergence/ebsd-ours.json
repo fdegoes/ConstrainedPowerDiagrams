@@ -1,0 +1,54 @@
+{
+ "method": "ours",
+ "solver": "Halpha",
+ "alpha": 0.9380755360181862,
+ "status": "converged",
+ "iterations": 6,
+ "attempts": 1,
+ "builds": 14,
+ "history": [
+  {
+   "iteration": 0,
+   "solves": 8,
+   "volume": 2.717940340946428e-10,
+   "shift": 1.5582299931887458
+  },
+  {
+   "iteration": 1,
+   "solves": 9,
+   "volume": 0.33958070204037616,
+   "shift": 0.7564492729148165
+  },
+  {
+   "iteration": 2,
+   "solves": 10,
+   "volume": 0.16568768870710143,
+   "shift": 0.1865898005879728
+  },
+  {
+   "iteration": 3,
+   "solves": 11,
+   "volume": 0.011761905049029965,
+   "shift": 0.010757121673969907
+  },
+  {
+   "iteration": 4,
+   "solves": 12,
+   "volume": 0.00014533242230596122,
+   "shift": 0.0001671701937721304
+  },
+  {
+   "iteration": 5,
+   "solves": 13,
+   "volume": 3.549958070116957e-08,
+   "shift": 3.946623296210569e-08
+  },
+  {
+   "iteration": 6,
+   "solves": 14,
+   "volume": 2.2240962876578828e-13,
+   "shift": 1.923454386468166e-13
+  }
+ ],
+ "wallSeconds": 0.03862905502319336
+}

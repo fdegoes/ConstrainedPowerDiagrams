@@ -13,14 +13,14 @@ For a convex domain, it generates the same cells as long as the factor $s + \sum
 Relative to the global homothety, a branch $\branch_B$ attached to the root thus undergoes the localized homothety \eqref{eq:appendix-localized-homothety} with branch dilation $s_B/s$.
 Each gauge unknown multiplies one direction of the generators, namely $\dual_i$ for the dilation $s$, the coordinate axes for the translation $\translation$, and $\dual_i - \dual_{c_B}$ for $\cell_i \!\in\! \branch_B$, zero elsewhere, for the branch dilation $s_B$.
 Fixing the gauge thus amounts to one linear constraint per direction, which requires the shifts $\shift$ to have no volume-weighted component along it, \ie
-\begin{equation}
-  \begin{gathered}
-    \sum\nolimits_i \pvol_i\,\shift_i\tr \dual_i = 0 , \qquad
-    \sum\nolimits_i \pvol_i\,\shift_i = 0 , \\
-    \sum\nolimits_{\cell_i \in \branch_B} \pvol_i\,\shift_i\tr (\dual_i - \dual_{c_B}) = 0 \ \ \forall B ,
-  \end{gathered}
+\begin{subequations}
   \label{eq:flow-gauge-constraints}
-\end{equation}
+  \begin{empheq}[left={\empheqlbrace\,}]{align}
+    & \sum\nolimits_i \pvol_i\,\shift_i\tr \dual_i = 0 , \label{eq:flow-gauge-constraints-dil} \\
+    & \sum\nolimits_i \pvol_i\,\shift_i = 0 , \label{eq:flow-gauge-constraints-trans} \\
+    & \sum\nolimits_{\cell_i \in \branch_B} \pvol_i\,\shift_i\tr (\dual_i - \dual_{c_B}) = 0 \ \ \forall B , \label{eq:flow-gauge-constraints-arm}
+  \end{empheq}
+\end{subequations}
 for the dilation, the translations and the branch dilations, respectively.
 These are the constraints of the correction step \eqref{eq:flow-line-constraint}, evaluated at the current generators $\smash{\dual^k}$.
 

@@ -38,7 +38,7 @@ where $\domainVol$ and $\centroid_\domain$ are the volume and the centroid of $\
 
 \paragraph{Power diagram.}
 We associate each cell $\cell_i$ with a \emph{weighted site} encoded by a site position $\smash{\qq_i \!\in\! \R^d}$ and a scalar weight $\smash{\weight_i \!\in\! \R}$, which we collect as $\qq \!=\! \{\qq_i\}_{i=1}^n$ and $\weight \!=\! \{\weight_i\}_{i=1}^n$.
-Computing the \emph{power distance} from a point $\xx$ to a weighted site $i$ as $\smash{\pdist{\xx}{i}}$, we define the \emph{power diagram} of $(\qq,\weight)$ as the partition of $\domain$ that assigns each point $\smash{\xx \!\in\! \domain}$ to the weighted site of smallest power distance.
+Denoting the \emph{power distance} from a point $\xx$ to a weighted site $i$ as $\smash{\pdist{\xx}{i}}$, we define the \emph{power diagram} of $(\qq,\weight)$ as the partition of $\domain$ that assigns each point $\smash{\xx \!\in\! \domain}$ to the weighted site of smallest power distance.
 The cell $\cell_i$ of the resulting power diagram is thus expressed as
 \begin{equation}
   \cell_i = \bigl\{ \xx \in \domain : \pdist{\xx}{i} \le \pdist{\xx}{j} \ \ \forall j \neq i \bigr\} .
@@ -59,10 +59,8 @@ Based on \eqref{eq:power-cell}, the power diagram for given weighted sites $(\qq
 \end{equation}
 % We refer to $\energy$ as the \emph{energy} of the power diagram.
 For zero weights, $\energy$ is often referred to as the \emph{quantization error} between the cells and their respective sites \cite{Lloyd1982Quantization}. %, and we use this term more generally for the objective of \eqref{eq:power-diagram} with zero weights at any partition.
-Note that, for any fixed partition, the objective in \eqref{eq:power-diagram} is affine in the weights, so $\energy$ is a minimum of affine functions and is thus concave in $\weight$.
-Moreover, 
-% by Reynolds' transport theorem, the boundary terms cancel across shared facets, where neighboring power distances are equal, so 
-the first derivatives of $\energy$ reduce to those of the integrand (see \eg \cite[\S2.4--2.5]{deGoes2014Thesis}):
+Note that, for any fixed partition, the objective in \eqref{eq:power-diagram} is affine in the weights, so $\energy$ is concave in $\weight$.
+Moreover, the first derivatives of $\energy$ reduce to derivatives of the integrand (Appendix~\ref{sec:appendix-prelim}):
 \begin{subequations}
   \label{eq:energy-gradient}
   \begin{empheq}[left={\empheqlbrace\,}]{align}
@@ -133,7 +131,7 @@ This redundancy is best seen by reparametrizing each weighted site $(\qq_i, \wei
 \end{wrapfigure}%
 In terms of lifted points, the power distance is rewritten as $\smash{\norm{\xx}^2 \!-\! ( 2\,\qq_i\tr\xx \!-\! \height_i )}$, so each cell $\cell_i$ in \eqref{eq:power-cell} collects the points from $\domain$ where the affine function $\smash{2\,\qq_i\tr\xx \!-\! \height_i}$ is maximal (see inset).
 % 
-Importantly, these cells remain unchanged when all affine functions are scaled by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx - c}$.
+Importantly, these cells remain unchanged when all affine functions are dilated by a common factor $s \!>\! 0$ and offset by a common affine function $\smash{2\,\translation\tr\xx - c}$.
 % We refer to the positions of the weighted sites that generate a power diagram as its \emph{generators}; they coincide with the sites $\qq$ here, but will differ from them once we introduce shifted sites in \S\ref{sec:contributions}.
 Therefore, the weighted sites that generate the same power diagram as $(\qq, \weight)$ correspond to homotheties of the lifted points \cite{Aurenhammer1987Recognising}, which we indicate by the set
 \begin{equation}
@@ -151,7 +149,7 @@ $\smash{s\,\qq_i + \translation}$
 and weights 
 $\smash{s\,\weight_i + (s^2 \!-\! s)\norm{\qq_i}^2 + 2s\,\translation\tr\qq_i + \norm{\translation}^2 - c}$, 
 whose quadra\-tic dependence on the sites makes the lifted form \eqref{eq:lifted-homothety} more convenient.
-This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ span the Hessian null-space of our formulations.
+This redundancy will be crucial to our analysis in \S\ref{sec:contributions}, where the $(d\!+\!2)$ infinitesimal homotheties generating $\homotheties$ span the Hessian null-space of our new formulation.
 
 \begin{wrapfigure}[5]{r}{0.36\columnwidth}
   \centering
@@ -163,7 +161,7 @@ The connectivity of the power diagram defines a \emph{dual graph} with edges con
 Since the facet $\face_{ij}$ lies on the hyperplane of equal power distance to the sites $i$ and $j$, the dual edge between $\qq_j$ and $\qq_i$ is orthogonal to $\face_{ij}$, thus forming an orthogonal primal-dual complex \cite{Memari2012PrimalDual}.
 If the domain were all of $\smash{\R^d}$, the cells of the outermost sites would be unbounded and the dual graph would be the regular triangulation of the sites \cite{Aurenhammer1987PowerDiagrams}.
 Since we consider the domain $\domain$ to be bounded, the cells along its boundary are clipped, so some dual edges are pruned and the dual graph may no longer be a triangulation (see dashed edges in the inset).
-We use this dual graph to complete the characterization of the Hessian null-spaces of our formulations. % beyond the homotheties.
+We use this dual graph to complete the characterization of the Hessian null-spaces of our formulation. % beyond the homotheties.
 
 \paragraph{Achievable centroids.}
 Finally, we summarize results by \citet{Bourne2025Inverting, Bourne2026ConvexOrder} that describe the set of centroids achievable by all partitions of $\domain$ with prescribed volumes.

@@ -1,0 +1,60 @@
+{
+ "method": "ours",
+ "solver": "H",
+ "alpha": null,
+ "status": "converged",
+ "iterations": 7,
+ "attempts": 1,
+ "builds": 13,
+ "history": [
+  {
+   "iteration": 0,
+   "solves": 6,
+   "volume": 1.1062689308000743e-09,
+   "shift": 0.22684296939927573
+  },
+  {
+   "iteration": 1,
+   "solves": 7,
+   "volume": 0.041928580124738546,
+   "shift": 0.09779488531154541
+  },
+  {
+   "iteration": 2,
+   "solves": 8,
+   "volume": 0.018705084223872757,
+   "shift": 0.01714521133300696
+  },
+  {
+   "iteration": 3,
+   "solves": 9,
+   "volume": 0.0032994064852582138,
+   "shift": 0.005369799270031791
+  },
+  {
+   "iteration": 4,
+   "solves": 10,
+   "volume": 0.0004040374225940761,
+   "shift": 0.0004530541001970516
+  },
+  {
+   "iteration": 5,
+   "solves": 11,
+   "volume": 4.5773483190320895e-05,
+   "shift": 3.7213623146450074e-05
+  },
+  {
+   "iteration": 6,
+   "solves": 12,
+   "volume": 8.626365631459342e-07,
+   "shift": 5.386810691896578e-07
+  },
+  {
+   "iteration": 7,
+   "solves": 13,
+   "volume": 9.662660640209886e-09,
+   "shift": 4.71644461307631e-09
+  }
+ ],
+ "wallSeconds": 0.02519989013671875
+}

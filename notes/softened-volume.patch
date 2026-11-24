@@ -1,0 +1,146 @@
+diff --git a/src/core/dualSolver.cpp b/src/core/dualSolver.cpp
+index 5e6324f..e35f15a 100644
+--- a/src/core/dualSolver.cpp
++++ b/src/core/dualSolver.cpp
+@@ -522,6 +522,36 @@ SoftenedSolver::Solve(
+     return res;
+ }
+ 
++DualSolver::Result
++SoftenedSolver::Solve(
++    const Domain& domain,
++    const std::vector<double>& sites,
++    const std::vector<double>& targets,
++    const std::vector<double>& volumes,
++    double alpha,
++    double beta,
++    const std::vector<double>& referenceWeights,
++    std::vector<double>& shifts,
++    std::vector<double>& weights)
++{
++    std::string err;
++    if (not _CheckDualInputs(domain, sites, targets, volumes, err)) {
++        return _MakeInputError(err);
++    }
++    if (not (alpha > 0.0) or not (beta > 0.0) or (not std::isfinite(alpha) and not std::isfinite(beta))) {
++        return _MakeInputError("The stiffnesses alpha and beta must be positive, and not both infinite.");
++    }
++    if (referenceWeights.size() != volumes.size() or not AreAllFinite(referenceWeights)) {
++        return _MakeInputError("The reference weights must be one finite value per site.");
++    }
++    JointDual dual(domain, sites, targets, volumes, alpha, JointDual::Unknowns::ShiftsAndWeights);
++    dual.SetVolumeSoftening(beta, referenceWeights);
++    Vector z = _PackInitial(dual, shifts, weights);
++    Result res = _Solve(dual, z);
++    dual.Unpack(z, shifts, weights);
++    return res;
++}
++
+ DualSolver::Result
+ CentroidSolver::Solve(
+     const Domain& domain,
+diff --git a/src/core/dualSolver.h b/src/core/dualSolver.h
+index a8b303f..2502441 100644
+--- a/src/core/dualSolver.h
++++ b/src/core/dualSolver.h
+@@ -299,6 +299,21 @@ public:
+         double alpha,
+         std::vector<double>& shifts,
+         std::vector<double>& weights);
++
++    // H_alpha,beta (latex/appendix-softened-volume.tex): also softens the
++    // volume constraints with stiffness beta > 0 about the reference weights
++    // wbar (one per site). alpha or beta may be HUGE_VAL (exact centroids or
++    // exact volumes), not both (that is H, JointSolver).
++    Result Solve(
++        const Domain& domain,
++        const std::vector<double>& sites,
++        const std::vector<double>& targets,
++        const std::vector<double>& volumes,
++        double alpha,
++        double beta,
++        const std::vector<double>& referenceWeights,
++        std::vector<double>& shifts,
++        std::vector<double>& weights);
+ };
+ 
+ // Maximizes the centroid dual G (latex/contributions.tex, eq:centroid-dual)
+diff --git a/src/core/jointDual.cpp b/src/core/jointDual.cpp
+index f1f54fd..1bb02ad 100644
+--- a/src/core/jointDual.cpp
++++ b/src/core/jointDual.cpp
+@@ -89,6 +89,12 @@ JointDual::GetValue(const Vector& z, const ShiftedDiagram& diagram) const
+             h -= _volumes[i] * u2 / _alpha;
+         }
+     }
++    if (HasSoftVolumes()) {
++        for (int i = 0; i < GetNumSites(); ++i) {
++            const double dw = z[_GetWeightIndex(i)] - _referenceWeights[i];
++            h -= _volumes[i] * dw * dw / (4.0 * _beta);
++        }
++    }
+     return h;
+ }
+ 
+@@ -100,6 +106,10 @@ JointDual::GetGradient(const Vector& z, const ShiftedDiagram& diagram, Vector& g
+         const double V = diagram.GetVolume(i);
+         if (HasWeights()) {
+             g[_GetWeightIndex(i)] = _volumes[i] - V;
++            if (HasSoftVolumes()) {
++                // eq:softened-volume-gradient
++                g[_GetWeightIndex(i)] -= _volumes[i] * (z[_GetWeightIndex(i)] - _referenceWeights[i]) / (2.0 * _beta);
++            }
+         }
+         if (not HasShifts()) {
+             continue;
+@@ -463,6 +473,9 @@ JointDual::GetNegatedHessian(const ShiftedDiagram& diagram, double eta, SparseMa
+             if (soft and k < _dim) {
+                 d += 2.0 / _alpha * _volumes[i];
+             }
++            if (k == _dim and HasSoftVolumes()) {
++                d += _volumes[i] / (2.0 * _beta);
++            }
+             A.Diagonal(i, k, k) += d;
+         }
+     }
+diff --git a/src/core/jointDual.h b/src/core/jointDual.h
+index d8a2885..d701747 100644
+--- a/src/core/jointDual.h
++++ b/src/core/jointDual.h
+@@ -21,6 +21,9 @@ class Domain;
+ //  - Joint:   H_alpha(u, w) = H(u, w) - 1/alpha sum_i Vbar_i |u_i|^2
+ //             (eq:regularized-dual), with H = E(p, lambda) + sum_i w_i Vbar_i
+ //             (eq:joint-dual). alpha = infinity gives H itself.
++//             SetVolumeSoftening() adds - 1/(4 beta) sum_i Vbar_i (w_i - wbar_i)^2
++//             (H_alpha,beta of latex/appendix-softened-volume.tex,
++//             eq:softened-volume-dual; alpha may then be infinity).
+ //             z_i = (u_i, w_i) in R^{d+1}, stored per site:
+ //             z[(d+1) i + c] = u_i[c], z[(d+1) i + d] = w_i.
+ //  - Shifts:  G(u) = E(p, lambda) (eq:centroid-dual), i.e. H with the
+@@ -67,6 +70,17 @@ public:
+     bool HasShifts() const { return _unknowns != Unknowns::Weights; }
+     bool HasWeights() const { return _unknowns != Unknowns::Shifts; }
+ 
++    // Softened volume constraints of H_alpha,beta (Unknowns::ShiftsAndWeights):
++    // stiffness beta > 0 (HUGE_VAL: exact volumes) and reference weights
++    // wbar, one per site.
++    void SetVolumeSoftening(double beta, const std::vector<double>& referenceWeights)
++    {
++        _beta = beta;
++        _referenceWeights = referenceWeights;
++    }
++    double GetBeta() const { return _beta; }
++    bool HasSoftVolumes() const { return HasWeights() and HasShifts() and std::isfinite(_beta); }
++
+     // Weights of G (Unknowns::Shifts), one per site. Must be set before
+     // Build().
+     void SetFixedWeights(const std::vector<double>& weights) { _fixedWeights = weights; }
+@@ -198,6 +212,8 @@ private:
+     const std::vector<double>& _targets;
+     const std::vector<double>& _volumes;
+     double                     _alpha;
++    double                     _beta = HUGE_VAL;
++    std::vector<double>        _referenceWeights;
+     Unknowns                   _unknowns;
+     int                        _dim;
+     double                     _volumeTolerance = 1e-8;

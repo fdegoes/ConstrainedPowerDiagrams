@@ -44,14 +44,14 @@ With the first expression of $\rest{\flux}_i$, this identity is a Neumann proble
 With the second, and since $\smash{\rest{\dual} = \rest{\centroid}}$, it states that the stiffnesses are generalized barycentric coordinates of each centroid with respect to its neighbors and its feet, with linear precision.
 
 \paragraph{Dirichlet energy.}
-Given boundary values $\smash{\mathbf{g} = \{\mathbf{g}_{if}\}}$ at the feet, we define the discrete Dirichlet energy of centroids $\smash{\centroid = \{\centroid_i\}_{i=1}^n}$ as
+Given boundary values $\smash{\gvec = \{\gvec_{if}\}}$ at the feet, we define the discrete Dirichlet energy of centroids $\smash{\centroid = \{\centroid_i\}_{i=1}^n}$ as
 \begin{equation}
-  \mathcal{W}_{\mathbf{g}}(\centroid) = \frac{1}{2} \sum\nolimits_{\{i,j\}} \kappa_{ij} \norm{\centroid_i - \centroid_j}^2 + \frac{1}{2} \sum\nolimits_{i,f} \kappa_{if} \norm{\centroid_i - \mathbf{g}_{if}}^2 ,
+  \mathcal{W}_{\gvec}(\centroid) = \frac{1}{2} \sum\nolimits_{\{i,j\}} \kappa_{ij} \norm{\centroid_i - \centroid_j}^2 + \frac{1}{2} \sum\nolimits_{i,f} \kappa_{if} \norm{\centroid_i - \gvec_{if}}^2 ,
   \label{eq:distortion-dirichlet-energy}
 \end{equation}
 where the first sum runs over pairs of neighbors in the rest state.
 This energy is a strictly convex quadratic whose Hessian is $\mathrm{K}$ on each coordinate, so its minimizer solves $d$ sparse linear systems with the matrix $\mathrm{K}$.
-By the second form of \eqref{eq:distortion-closure}, the rest centroids minimize $\smash{\mathcal{W}_{\mathbf{g}}}$ for the feet as boundary values, $\smash{\mathbf{g}_{if} = \foot_{if}}$.
+By the second form of \eqref{eq:distortion-closure}, the rest centroids minimize $\smash{\mathcal{W}_{\gvec}}$ for the feet as boundary values, $\smash{\gvec_{if} = \foot_{if}}$.
 
 \subsection{Affine Deformations}
 \label{sec:appendix-distortion-affine}
@@ -75,7 +75,7 @@ In particular, the generators of the deformed diagram are no longer its centroid
 Each line of \eqref{eq:distortion-affine} can be predicted from the boundary deformation alone, with the Laplacians of the rest state, in a way that applies to any cage map $\deform$:
 \begin{itemize}
   \item \emph{Volumes.} We set $\smash{\pvol_i = \rest{\cellvol}_i\,\volume(\domain) / \volume(\rest{\domain})}$, which keeps the fraction of the domain occupied by each cell and recovers \eqref{eq:distortion-affine-volume}, since affine maps scale all volumes by $\det\Fmat$.
-  \item \emph{Centroids.} We define the target centroids $\tcentroid$ as the minimizer of the Dirichlet energy \eqref{eq:distortion-dirichlet-energy} with boundary values $\smash{\mathbf{g}_{if} = \deform(\foot_{if})}$, where we extend $\deform$ affinely from each face to its plane, since a foot may lie outside its face.
+  \item \emph{Centroids.} We define the target centroids $\tcentroid$ as the minimizer of the Dirichlet energy \eqref{eq:distortion-dirichlet-energy} with boundary values $\smash{\gvec_{if} = \deform(\foot_{if})}$, where we extend $\deform$ affinely from each face to its plane, since a foot may lie outside its face.
   For an affine $\deform$, applying $\deform$ to the second form of \eqref{eq:distortion-closure} shows that $\smash{\tcentroid_i = \deform(\rest{\centroid}_i)}$, which recovers \eqref{eq:distortion-affine-centroid}.
   \item \emph{Sites.} We predict the generators of the deformed diagram, and use them as the sites $\qq$ of the optimization on $\domain$, defined as the solution of the Neumann problem
   \begin{equation}
@@ -233,7 +233,7 @@ As distortion, we take the increase of the Dirichlet energy \eqref{eq:distortion
   \end{aligned}
   \label{eq:distortion-dirichlet}
 \end{equation}
-where $\smash{\mathcal{W}_\deform}$ denotes \eqref{eq:distortion-dirichlet-energy} with boundary values $\smash{\mathbf{g}_{if} = \deform(\foot_{if})}$, and $\alpha \!>\! 0$ is a stiffness.
+where $\smash{\mathcal{W}_\deform}$ denotes \eqref{eq:distortion-dirichlet-energy} with boundary values $\smash{\gvec_{if} = \deform(\foot_{if})}$, and $\alpha \!>\! 0$ is a stiffness.
 The second equality is the exact second-order expansion of the quadratic $\smash{\mathcal{W}_\deform}$ around its minimizer $\tcentroid$: its linear term vanishes, and its quadratic term does not depend on the boundary values.
 The distortion is thus the Dirichlet energy of the slacks with zero boundary data, with Hessian $\smash{\mathrm{M} = \alpha\,\mathrm{K} \otimes \Id_d}$, and by \eqref{eq:distortion-conjugate} its conjugate is
 \begin{equation}
@@ -271,7 +271,7 @@ With \emph{softened centroids}, the dual \eqref{eq:distortion-dual} reduces to
   \centroiddual_{\distortion}(\dual) = \jointdual(\dual, \bweight) - \conj{\distortion}\bigl( \mathbf{z}(\dual) \bigr) ,
   \label{eq:distortion-centroid-soft}
 \end{equation}
-which softens the centroid dual \eqref{eq:centroid-dual} with fixed weights $\bweight$, is strongly concave, and admits a unique maximizer for any targets, whose centroids differ from $\tcentroid$ by slacks that vanish as $\alpha \!\to\! \infty$.
+which softens the centroid dual \eqref{eq:joint-dual} with fixed weights $\bweight$, is strongly concave, and admits a unique maximizer for any targets, whose centroids differ from $\tcentroid$ by slacks that vanish as $\alpha \!\to\! \infty$.
 With \emph{exact centroids}, \ie in the limit $\alpha \!\to\! \infty$, we recover the centroid-constrained problem of \S\ref{sec:centroid-constraints}, \ie the maximization of $\smash{\jointdual(\dual, \bweight)}$ over the generators with targets $\tcentroid$, whose maximizer, when it exists, is the unique power diagram with centroids exactly $\tcentroid$.
 In both cases, the maximizer is the affine image of the rest state for affine maps.
 

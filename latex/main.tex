@@ -100,16 +100,18 @@
 
 %% --- Appendix -------------------------------------------------------------
 \appendix
+% Let the columns of the appendices end short rather than spreading their
+% slack between the [H] algorithms and the displays (acmart's \flushbottom).
+\raggedbottom
 \subfile{appendix-prelim}
-\subfile{appendix-centroid}
 \subfile{appendix-joint}
 \subfile{appendix-concavity}
 \subfile{appendix-nullspace}
 \subfile{appendix-reducible}
 \subfile{appendix-softened-bound}
 % \subfile{appendix-softened-volume}  % softened volumes, currently unused
-\subfile{appendix-maxent}
-\subfile{appendix-arms}
+% \subfile{appendix-maxent}  % feasible volumes for prescribed centroids; only for the centroid-only problem
+% \subfile{appendix-arms}  % branch gauges: the constraints (eq:flow-gauge-constraints) are those of eq:flow-line-constraint
 \subfile{appendix-bordered}
 % \subfile{appendix-distortion}
 \subfile{appendix-algorithms}

@@ -1,0 +1,70 @@
+{
+ "real": {
+  "bounds": "guaranteed bound 0.141027, practical bound 0.471667, alpha 0.139617",
+  "G": {
+   "alpha": Infinity,
+   "iterations": 11,
+   "seconds": 0.00204725,
+   "rms": 1.427556616000787e-12,
+   "max": 3.3463415969526296e-12
+  },
+  "guaranteed": {
+   "alpha": 0.139617,
+   "iterations": 4,
+   "seconds": 0.00126892,
+   "rms": 0.2508120343465236,
+   "max": 0.4909178620007702
+  },
+  "1": {
+   "alpha": 0.46695,
+   "iterations": 5,
+   "seconds": 0.00130258,
+   "rms": 0.17704539673671477,
+   "max": 0.3027995475150518
+  },
+  "4": {
+   "alpha": 1.8678,
+   "iterations": 6,
+   "seconds": 0.00124117,
+   "rms": 0.0826791603876158,
+   "max": 0.14190664455886287
+  },
+  "16": {
+   "alpha": 7.47121,
+   "iterations": 8,
+   "seconds": 0.00143563,
+   "rms": 0.029062616499224717,
+   "max": 0.04716202724198661
+  }
+ },
+ "pert": {
+  "bounds": "guaranteed bound 0.125292, practical bound 0.413404, alpha 0.12404",
+  "G": {
+   "failed": "max iterations (346 iterations)"
+  },
+  "guaranteed": {
+   "alpha": 0.12404,
+   "iterations": 4,
+   "seconds": 0.00121654,
+   "rms": 0.2884123913528343,
+   "max": 0.6047655930472756
+  },
+  "1": {
+   "alpha": 0.40927,
+   "iterations": 5,
+   "seconds": 0.00132454,
+   "rms": 0.21374584176706657,
+   "max": 0.39393819541288044
+  },
+  "4": {
+   "alpha": 1.63708,
+   "iterations": 6,
+   "seconds": 0.00112117,
+   "rms": 0.11684669265395342,
+   "max": 0.20765649265274877
+  },
+  "16": {
+   "failed": "max iterations (100 iterations)"
+  }
+ }
+}
