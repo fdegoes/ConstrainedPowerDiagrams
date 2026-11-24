@@ -6,14 +6,14 @@ integrator and our relaxed (softened) integrator.
 Inputs: experiments/pp2d/yesweights/<case>_centroidal.pp with the parameters of param.txt (dt 0.01,
 cap_tol 1e-6, cap_max_iters 5); all four integrators start from the same centroidal particles.
 
-Stiffness of the relaxed integrator: alpha = 1 (--alpha). It is checked against the two bounds of
-the paper at the start:
-  - time step (eq:softened-time-step): dt < 2 / sqrt(1 + alpha);
-  - distinct generators: dt (|v_i| + |v_j|) must stay below |q_i - q_j| for every pair of nearest
-    neighbours (the residual of a step is dt |v| / alpha, so the bound does not depend on alpha).
-alpha = 1/dt^2 - 1 (the full Lloyd step of the paper, (1 + alpha) dt^2 = 1) was tried first: the
-Newton solve of the relaxed step fails at the cap of 100 iterations within 2 frames. alpha = 1 runs
-20 frames without failure; alpha = 10 fails at frame 18, alpha = 30 at frame 10.
+Stiffness of the relaxed integrator: alpha = 0.028 (--alpha). It is the rule of the paper, 0.99 times
+the practical distinctness bound (eq:regularized-practical),
+    alpha < min_{i != j} |q_i - q_j| / (|c_i - q_i| + |c_j - q_j|),
+evaluated along the run: the bound falls from about 2 at frame 20 to 0.029 at frame 100 on the uniform
+case (the centroid gap grows with the flow, for GM as well). Fixed values tried on the uniform case:
+alpha = 0.01 runs (bound stays above 0.029), 0.1 fails at frame 100, 0.5 at frame 70, 1 at frame 55,
+and the Lloyd-step value 1/dt^2 - 1 = 9999 fails within 2 frames. The time-step bound
+(eq:softened-time-step), dt < 2 / sqrt(1 + alpha), holds with a margin of about 200.
 GM is the limit alpha -> 0 of the relaxed scheme, with kappa = 1 (--stiffness 1).
 
 Each run writes <out>/<case>/<integrator>/ (frame_NNNN.csv, energy.csv, run.txt), as runPP2D does.
@@ -55,23 +55,9 @@ def dt_of_param(path):
     raise ValueError("no dt in " + path)
 
 
-def check_bounds(path, dt, alpha):
-    """Time-step bound and the distinctness check of the first step."""
-    text = open(path).read()
-    q = np.array(POS.findall(text), float)
-    v = np.array(VEL.findall(text), float)
-    stable = dt < 2.0 / np.sqrt(1.0 + alpha)
-    speed = np.linalg.norm(v, axis=1)
-    # Pairwise distance over the speeds of the pair, only the nearest neighbours matter for the check:
-    # for each particle, its 8 nearest others.
-    worst = np.inf
-    from scipy.spatial import cKDTree
-    tree = cKDTree(q)
-    dist, idx = tree.query(q, k=9)
-    for i in range(len(q)):
-        for d, j in zip(dist[i, 1:], idx[i, 1:]):
-            worst = min(worst, d / (dt * (speed[i] + speed[j]) + 1e-300))
-    return stable, worst
+def time_step_ok(dt, alpha):
+    """The time-step bound of the relaxed scheme (eq:softened-time-step)."""
+    return dt < 2.0 / np.sqrt(1.0 + alpha)
 
 
 def main():
@@ -81,7 +67,7 @@ def main():
     ap.add_argument("--frames", type=int, default=100)
     ap.add_argument("--out", default=os.path.join(HERE, "runs"))
     ap.add_argument("--no-csv", action="store_true")
-    ap.add_argument("--alpha", type=float, default=1.0, help="stiffness of the relaxed integrator")
+    ap.add_argument("--alpha", type=float, default=0.028, help="stiffness of the relaxed integrator")
     args = ap.parse_args()
 
     param = os.path.join(DATA, "param.txt")
@@ -95,10 +81,8 @@ def main():
     failed = []
     for case, integrator in itertools.product(args.case, args.integrator):
         particles = os.path.join(DATA, CASES[case])
-        if integrator == "softened":
-            stable, worst = check_bounds(particles, dt, args.alpha)
-            print("%-8s softened: time step %s the bound; distinctness ratio (>1 is safe) %.3g"
-                  % (case, "within" if stable else "OUTSIDE", worst), flush=True)
+        if integrator == "softened" and not time_step_ok(dt, args.alpha):
+            sys.exit("time step %g outside the bound 2/sqrt(1+alpha) for alpha %g" % (dt, args.alpha))
         cmd = [BIN, os.path.join(DATA, "square.line"), particles, param,
                os.path.join(args.out, case, integrator), "--integrator", integrator,
                "--frames", str(args.frames)]

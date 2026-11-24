@@ -39,10 +39,10 @@ nohup external/bourne/.venv/bin/python experiments/pp2d/run_experiments.py \
 ```
 
 The script runs, for each case: `powerparticles`, `gm` (stiffness 1),
-`constrained`, and `softened` with alpha = 1. It starts all of them from the
+`constrained`, and `softened` with alpha = 0.028 (the rule explained in
+`run_experiments.py`). It starts all of them from the
 same centroidal particles, with the start tolerance `--lloydtol 1e-6`. It
-checks the time-step bound and the distinctness check before the relaxed
-runs and prints both. Outputs: `experiments/pp2d/runs/<case>/<integrator>/`
+checks the time-step bound before the relaxed runs. Outputs: `experiments/pp2d/runs/<case>/<integrator>/`
 (frame CSVs, `energy.csv`, `run.txt`). `runs/` is not committed.
 
 Expected from the Mac run (for comparison, not a requirement):
@@ -52,7 +52,7 @@ Expected from the Mac run (for comparison, not a requirement):
 | powerparticles | 100 frames, max volume error 3.9e-3 | 100 frames, 2.5e-2 | 100 frames, 2.2e-2 |
 | gm | 100 frames, 6.4e-7 | 100 frames, 4.2e-7 | 100 frames, 2.6e-6 |
 | constrained | fails at frame 1 (max iterations) | same | same |
-| softened, alpha = 1 | fails at frame 58 (damping failed) | frame 62 | frame 55 |
+| softened, alpha = 0.028 | 100 frames, 3.3e-7 | 100 frames, 4.8e-6 | 100 frames, 2.0e-5 |
 
 Send me the log, and report any difference from this table.
 
