@@ -56,6 +56,10 @@ RUNS = ("pp", "gm", "softened", "constrained")
 DTS = (0.01, 0.005)
 ALPHAS = (0.028, 0.003)
 GM_EPS_PER_DT = 3.0
+# Volume and shift tolerance of the Newton solve of every step (GM, relaxed, constrained; PP uses
+# cap_tol and cap_max_iters). The integrators' default, 1e-4, leaves the relaxed volume errors near
+# 1e-4; 1e-8 makes them comparable with GM's for about 45 % more Newton iterations.
+STEP_TOL = 1e-8
 
 
 def write_param(dt, path):
@@ -105,7 +109,8 @@ def main():
                 if name.split("-")[0] not in args.run:
                     continue
                 cmd = [BIN, os.path.join(DATA, "square.line"), os.path.join(DATA, CASES[case]), param,
-                       os.path.join(root, case, name), "--frames", str(steps), "--lloydtol", "1e-6"] + opts
+                       os.path.join(root, case, name), "--frames", str(steps), "--lloydtol", "1e-6",
+                       "--volumetol", repr(STEP_TOL)] + opts
                 if args.no_csv:
                     cmd.append("--no-csv")
                 t0 = time.perf_counter()
