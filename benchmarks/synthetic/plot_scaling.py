@@ -114,8 +114,8 @@ def plot_combined(g, path):
     panel. Hue is the volume type and the marker the noise level, with one legend above both panels;
     the medians over the seeds only (the bands of six overlapping groups would blur)."""
     from matplotlib.lines import Line2D
-    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.3))
-    for ax, index, ylabel, letter in ((axes[0], 0, "time (ms)", "(a) time"), (axes[1], 1, "iterations", "(b) iterations")):
+    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.0), sharex=True)
+    for ax, index, ylabel in ((axes[0], 0, "time (ms)"), (axes[1], 1, "iterations")):
         for vol, (_, _, _, color) in VOLUMES.items():
             for noise, (ls, marker, _) in NOISE_STYLE.items():
                 by_n = g[(noise, vol)]
@@ -135,7 +135,8 @@ def plot_combined(g, path):
             ax.set_yscale("log")
         ax.set_xscale("log")
         ax.set_xlim(8, 14000)
-        ax.set_xlabel("number of sites $n$")
+        if index == 1:                                  # the shared n axis, labelled under the bottom panel only
+            ax.set_xlabel("number of sites $n$")
         ax.set_ylabel(ylabel)
         ax.grid(True, which="major", color=GRID, lw=0.6)
         ax.set_axisbelow(True)
@@ -145,10 +146,13 @@ def plot_combined(g, path):
     handles = [Line2D([], [], color=c, lw=1.6, label=lab) for _, (_, _, lab, c) in reversed(list(VOLUMES.items()))]
     handles += [Line2D([], [], color="#6b6a66", ls="none", marker=m, ms=3.8, label=lab)
                 for _, m, lab in NOISE_STYLE.values()]
+    fig.tight_layout(h_pad=0.6, rect=(0, 0, 1, 0.95))
+    # the legend centred over the plot boxes (not the figure, whose left part holds the y labels),
+    # and the saved figure cropped to its content, so that the paper centres the plots
+    box = axes[0].get_position()
     fig.legend(handles=handles, frameon=False, fontsize=7, loc="upper center", ncol=5, handlelength=1.4,
-               columnspacing=1.0, handletextpad=0.4, bbox_to_anchor=(0.55, 1.0))
-    fig.tight_layout(h_pad=1.2, rect=(0, 0, 1, 0.95))
-    fig.savefig(path)
+               columnspacing=1.0, handletextpad=0.4, bbox_to_anchor=(0.5 * (box.x0 + box.x1), 1.0))
+    fig.savefig(path, bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)
 
 

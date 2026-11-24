@@ -48,15 +48,15 @@ Fig.~\ref{fig:alpha-ablation} shows the role of $\alpha$ on a realizable case an
   \begin{tabular}{@{}cccccc@{}}
     & \footnotesize $\jointdual$ & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 6.5$, $16\times$ estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 1.6$, $4\times$ estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 0.41$, estimate \eqref{eq:regularized-practical} & \footnotesize $\jointdual_\alpha$, $\alpha \!=\! 0.12$, bound \eqref{eq:regularized-distinct} \\[1pt]
     \ablrow{realizable} & \abl{real}{G} & \abl{real}{16} & \abl{real}{4} & \abl{real}{1} & \abl{real}{guaranteed} \\[-5.5pt]
-    & \ablstat{$11$ iters}{residual $3{\times}10^{-12}$} & \ablstat{$8$ iters}{residual $0.053$} & \ablstat{$6$ iters}{residual $0.16$} & \ablstat{$5$ iters}{residual $0.32$} & \ablstat{$4$ iters}{residual $0.51$} \\[9pt]
+    & \ablstat{$11$ iters}{$\varepsilon_\shift \!=\! 3{\times}10^{-12}$} & \ablstat{$8$ iters}{$\varepsilon_\shift \!=\! 0.053$} & \ablstat{$6$ iters}{$\varepsilon_\shift \!=\! 0.16$} & \ablstat{$5$ iters}{$\varepsilon_\shift \!=\! 0.32$} & \ablstat{$4$ iters}{$\varepsilon_\shift \!=\! 0.51$} \\[9pt]
     \ablrow{unrealizable} & \abl{pert}{G} & \abl{pert}{16} & \abl{pert}{4} & \abl{pert}{1} & \abl{pert}{guaranteed} \\[-5.5pt]
-    & \ablstat{no solution}{} & \ablstat{fails}{} & \ablstat{$6$ iters}{residual $0.21$} & \ablstat{$5$ iters}{residual $0.39$} & \ablstat{$4$ iters}{residual $0.61$} \\
+    & \ablstat{no solution}{} & \ablstat{fails}{} & \ablstat{$6$ iters}{$\varepsilon_\shift \!=\! 0.21$} & \ablstat{$5$ iters}{$\varepsilon_\shift \!=\! 0.39$} & \ablstat{$4$ iters}{$\varepsilon_\shift \!=\! 0.61$} \\
   \end{tabular}
   \caption{%
     Ablation of the stiffness $\alpha$ on a synthetic case with $n \!=\! 20$ cells of equal area, showing the prescribed centroids $\tcentroid_i$ ($\square$), the centroids of the resulting cells ($\times$), and the residual between them in red.
     Top: realizable targets, the centroids of a power diagram.
     Bottom: unrealizable targets, the same ones each moved by up to $0.2$ cell sizes, which no power diagram realizes.
-    From left to right, we maximize $\jointdual$, and $\jointdual_\alpha$ with decreasing $\alpha$, at $16 \cdot 0.99$, $4 \cdot 0.99$ and $0.99$ times the estimate \eqref{eq:regularized-practical} and at $0.99$ times the bound \eqref{eq:regularized-distinct}, so that $\jointdual_\alpha$ approaches $\jointdual$ towards the left; above each column is $\alpha$, and below each panel are the Newton iterations and the residual, the largest centroid miss over the cell size as in \eqref{eq:results-termination}, and every solve takes $1$ to $2$\,ms.
+    From left to right, we maximize $\jointdual$, and $\jointdual_\alpha$ with decreasing $\alpha$, at $16 \cdot 0.99$, $4 \cdot 0.99$ and $0.99$ times the estimate \eqref{eq:regularized-practical} and at $0.99$ times the bound \eqref{eq:regularized-distinct}, so that $\jointdual_\alpha$ approaches $\jointdual$ towards the left; above each column is $\alpha$, and below each panel are the Newton iterations and the largest centroid error $\varepsilon_\shift$ of the constraints of $\jointdual$, as in \eqref{eq:results-termination}, and every solve takes $1$ to $2$\,ms.
     Since the bounds depend on the targets, each column uses in both rows the smaller of the two values of $\alpha$, so that it lies within the bounds of both rows.
     On realizable data, the solves converge far beyond both bounds and their misses decrease as $\alpha$ grows; on the unrealizable data, $\jointdual$ has no maximizer, and $\jointdual_\alpha$ converges up to a few times the estimate, while at $16$ times the estimate, about $50$ times above the conservative bound \eqref{eq:regularized-distinct}, it fails as two generators merge.
   }
@@ -78,14 +78,12 @@ When it converges, maximizing $\centroiddual$ takes about $9$ iterations at ever
 Knowing the weights thus does not help a solver that only moves the shifts: with the weights as unknowns, the initial diagram is a volume solve whose cells are never empty, and every iterate can restore a shrinking cell by raising its weight.
 
 \paragraph{Termination of the comparison}
-Each method stops on its own rule with tolerance $10^{-8}$, and we measure the rule of the other at its solution.
-Ours stops on \eqref{eq:results-termination}, and at its solution we evaluate the rule of the sequential quadratic programming of \citet{Bourne2025Inverting}, a relative change of their objective between iterations below $10^{-8}$ (their code uses $10^{-10}$), which detects stagnation rather than accuracy.
-Conversely, their method stops on this rule, and we evaluate \eqref{eq:results-termination} at its solution.
+Each method stops on its own rule, with the settings of its paper and code, and we evaluate our rule \eqref{eq:results-termination} at every iterate.
+Ours stops on \eqref{eq:results-termination}.
+The sequential quadratic programming of \citet{Bourne2025Inverting} stops when the relative change of its objective between iterations falls below $10^{-10}$, which detects stagnation rather than accuracy, and solves its inner transport problems to $10^{-3}$ of the smallest volume, as in their code.
+The Frank--Wolfe iterations of \citet{Bourne2026ConvexOrder} stop on their gap at the tolerances of their code ($10^{-14}$ to $10^{-16}$), and their subgradient method stops when the running average of its iterates changes by less than $10^{-5}$, each within the iteration limits of their code.
 The data of these comparisons are realizable, so \eqref{eq:results-termination} always uses the gradient of $\jointdual$.
-We do not use the Frank--Wolfe gap of \citet{Bourne2026ConvexOrder} as a termination.
-Its paper sets no tolerance, the tolerances of its code ($10^{-14}$ to $10^{-16}$) are at the level of round-off for a gap that is quadratic in the error, and on the cross-shaped example its iterations end at their limit without meeting it, so the gap is better read as a convergence measure than as a stopping rule.
-Their Frank--Wolfe iterations have no other rule, so they stop on \eqref{eq:results-termination}, or at a time limit.
-With dilation $t$, they project onto $\achievable$ the targets pushed by $t/(t-1)$, which is the maximization of $\jointdual_\alpha$ with $\alpha \!=\! t - 1$, so their residual of $\jointdual$ cannot fall much below $1/t$.
+With dilation $t$, both methods of \citet{Bourne2026ConvexOrder} project onto $\achievable$ the targets pushed by $t/(t-1)$, which is the maximization of $\jointdual_\alpha$ with $\alpha \!=\! t - 1$, so their residual of $\jointdual$ cannot fall much below $1/t$.
 
 % TODO (once the runs are done): timing and comparisons of the methods under the different terminations.
 % - Realizable cases (benchmarks/bourne/run_realizable.py, benchmarks/synthetic/run_synthetic.py): our max H vs.
@@ -154,28 +152,30 @@ The two largest iteration counts, 59, occur in two runs: one at $n = 785$ (Voron
 
 
 Table~\ref{tab:realizable} compares our solver with the two methods of \citet{Bourne2025Inverting} and \citet{Bourne2026ConvexOrder} on the three realizable cases. Each method stops on its own rule at $10^{-8}$; our solver stops on \eqref{eq:results-termination}, and the other rule is evaluated at its solution, as described above. The times are wall-clock seconds on one machine.
-Fig.~\ref{fig:convergence}a shows the residual of \eqref{eq:results-termination} at every iterate on the Voronoi case.
-On the cross-shaped example, their Frank--Wolfe iterations end at the iteration limit with centroid errors of up to $0.47$ cell sizes.
+Fig.~\ref{fig:convergence} shows the centroid residual of \eqref{eq:results-termination} against the time at every iterate of each method on both cases, with their methods stopped by their own rules.
+On the cross-shaped example, their Frank--Wolfe and subgradient iterations end at their iteration limits with centroid errors of $0.48$ and $0.49$ cell sizes.
 
-% benchmarks/figures/plot_convergence.py
+% benchmarks/figures/plot_convergence.py --from <Table 1 run> (prints the largest eps_w / eps_u of ours, quoted in the caption); the current PDF is from the 3 s smoke test,
+% replace it with the Linux run (benchmarks/LINUX_TABLE1_PROMPT.md)
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{figures/convergence}
   \caption{%
-    Residual of our termination rule \eqref{eq:results-termination} against the iteration, evaluated at every iterate of each method.
-    (a)~Realizable data of \citet{Bourne2025Inverting, Bourne2026ConvexOrder} ($n \!=\! 20$): our Newton solver for $\jointdual$ reaches the tolerance $10^{-8}$ in $7$ iterations, while their SLSQP stops on its own rule at a residual of $3 \cdot 10^{-3}$ after $190$ iterations, and their Frank--Wolfe iterations with $t \!=\! 100$ level off at a residual of the same order, since they solve $\jointdual_\alpha$ with $\alpha \!=\! t - 1$.
-    (b)~Measured grain map ($n \!=\! 243$): our solver for $\jointdual_\alpha$ at $\alpha \!=\! 0.94$ converges in $6$ iterations, while their Frank--Wolfe iterations at the same $\alpha$ stall at $10^{-5}$.
-    Crosses mark where their stopping rules fire.
+    Centroid residual $\varepsilon_\shift$ of our termination rule \eqref{eq:results-termination} against the time, at every iterate of each method on the realizable cases of Table~\ref{tab:realizable}: the Voronoi data of \citet{Bourne2025Inverting, Bourne2026ConvexOrder} (top) and the cross-shaped example of \citet{Bourne2026ConvexOrder} (bottom).
+    Each of their methods runs until its own stopping rule fires or until the time cap of $30$ minutes.
+    The time axis is linear up to $1$\,ms and logarithmic above, so that every method starts at time $0$, on the Voronoi data from the start used in its own paper and on the cross-shaped example from the targets.
+    Every iterate of their methods has the prescribed volumes, and ours has a volume error $\varepsilon_\weight$ of at most about twice $\varepsilon_\shift$.
   }
   \label{fig:convergence}
 \end{figure}
 
 
-% Rows from benchmarks/bourne/run_table1.py (table.tex); the rows marked "pending" come from the Linux run
-% (benchmarks/LINUX_TABLE1_PROMPT.md), which also replaces the other timings.
+% Rows: to be replaced by table.tex of benchmarks/bourne/run_table1.py --own-rules (benchmarks/LINUX_TABLE1_OWN_PROMPT.md).
+% Until then: ours and Bourne 2025 from an older run_table1.py run; Bourne 2026 from
+% benchmarks/bourne/results/theirs-realizable/theirs.csv (subgradient at t = 100 from the true seeds on Voronoi); cross SLSQP pending.
 \begin{table}[t]
   \centering
-  \caption{Realizable benchmarks: our solver against the methods of \citet{Bourne2025Inverting} (SLSQP) and \citet{Bourne2026ConvexOrder} (Frank--Wolfe and subgradient). Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where each method stopped, and a check mark indicates that both are below the tolerance $10^{-8}$.}
+  \caption{Realizable benchmarks: our solver against the methods of \citet{Bourne2025Inverting} (SLSQP) and \citet{Bourne2026ConvexOrder} (Frank--Wolfe and subgradient). Times in seconds. The residuals are those of \eqref{eq:results-termination} (volume error, centroid error relative to the cell size) at the iterate where each method stopped, and a check mark indicates that both are below the tolerance $10^{-8}$. Their methods stop on their own rules, except on the cross-shaped example, where both methods of \citet{Bourne2026ConvexOrder} stop at their iteration limits. Both use the dilation $t \!=\! 100$, except the subgradient method on the Voronoi data, which uses $t \!=\! 1250$ from a random start, as in their paper.}
   \label{tab:realizable}
   \small
   \setlength{\tabcolsep}{2pt}
@@ -185,23 +185,27 @@ On the cross-shaped example, their Frank--Wolfe iterations end at the iteration 
     \hline
     Voronoi & our $\jointdual$ & 7 & 0.0108 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ & \cmark \\
     ($n \!=\! 20$) & Bourne 2025 & 190 & 4.51 & $1.7{\times}10^{-14}$ & $3.5{\times}10^{-3}$ & \xmark \\
-     & Bourne 2026 FW & 5000 & 51.7 & $5.2{\times}10^{-13}$ & $3.5{\times}10^{-3}$ & \xmark \\
-     & Bourne 2026 subgrad. & \multicolumn{5}{c}{pending} \\
+     & Bourne 2026 FW & 558 & 6.12 & $5.1{\times}10^{-13}$ & $3.5{\times}10^{-3}$ & \xmark \\
+     & Bourne 2026 subgrad. & 441 & 4.68 & $5.5{\times}10^{-13}$ & $3.5{\times}10^{-3}$ & \xmark \\
     \hline
     cross & our $\jointdual$ & 27 & 0.243 & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ & \cmark \\
     ($n \!=\! 728$) & Bourne 2025 & \multicolumn{5}{c}{pending} \\
-     & Bourne 2026 FW & 5000 & 290 & $8.4{\times}10^{-9}$ & $4.7{\times}10^{-1}$ & \xmark \\
-     & Bourne 2026 subgrad. & \multicolumn{5}{c}{pending} \\
+     & Bourne 2026 FW & 1000 & 56.4 & $1.5{\times}10^{-8}$ & $4.8{\times}10^{-1}$ & \xmark \\
+     & Bourne 2026 subgrad. & 600 & 27.4 & $2.5{\times}10^{-12}$ & $4.9{\times}10^{-1}$ & \xmark \\
     \hline
   \end{tabular*}
 \end{table}
 
-On the synthetic cases, we compare the methods on the 66 cases with seed 1 and $n \le 500$, the largest sizes for which their methods were run, and run each method until it meets \eqref{eq:results-termination} or reaches a 60 s cutoff, which excludes the evaluations of the residuals.
-Our solver meets \eqref{eq:results-termination} in all 66 cases, in a median of 15 ms. SLSQP meets it in 2 cases, in a median of 10.6 s; in the other 63 it reaches the cutoff, and in one its line search fails. Frank--Wolfe meets it in none of the 66 cases, and all of them reach the cutoff. At the cutoff, the centroid residuals of SLSQP and Frank--Wolfe have medians of $1.5\cdot10^{-4}$ and $3.8\cdot10^{-3}$ of the cell size, and maxima of $0.17$ and $0.41$. Their volume errors are near $10^{-12}$. On its own rule 1, SLSQP stops earlier, in 57 of the 66 cases, with a median of 9.8 s and a centroid residual at that stop of median $3.6\cdot10^{-4}$.
+% benchmarks/synthetic/results/theirs.csv (run_theirs.py, seed 1, Linux); ours from benchmarks/overnight/2026-11-20/log-synthetic.csv
+On the synthetic cases with seed 1, we run each of their methods with its own stopping rule, as in Fig.~\ref{fig:convergence}: SLSQP on its rule 1 on the 66 cases with $n \le 500$, and Frank--Wolfe and the subgradient method on all 120 cases, each with a cap of 60 s that excludes the evaluations of the residuals.
+None of their 306 runs meets \eqref{eq:results-termination}, while our solver meets it in all 120 cases, in a median of 48 ms (15 ms for $n \le 500$).
+SLSQP stops on its rule in 52 of its 66 cases, in a median of 8.9 s, with a centroid residual $\varepsilon_\shift$ of median $3.5\cdot10^{-4}$ and at most $0.025$, and the other 14 reach the cap.
+Frank--Wolfe stops on its gap in 80 of the 120 cases, in a median of 5.9 s, with $\varepsilon_\shift$ between $1.8\cdot10^{-3}$ and $7.7\cdot10^{-3}$, the level set by the dilation $t \!=\! 100$, and the other 40, all with $n \ge 127$, reach the cap with a median $\varepsilon_\shift$ of $0.24$.
+The subgradient method stops on its rule in 49 cases, in a median of 6.1 s and with a median $\varepsilon_\shift$ of $3.5\cdot10^{-3}$, while 35 reach its limit of 600 iterations and 36, all with $n \ge 1624$, reach the cap with a median $\varepsilon_\shift$ of $0.49$.
 
 \paragraph{Approximate data}
 On the EBSD map, maximizing $\jointdual_\alpha$ with $\alpha$ at $0.99$ times the estimate \eqref{eq:regularized-practical} converges in $6$ iterations, with exact areas and centroids that move by a median of $0.09$ grain sizes (Fig.~\ref{fig:ebsd}).
-At the same $\alpha$, the Frank--Wolfe iterations of \citet{Bourne2026ConvexOrder} stall at a residual of $10^{-5}$ (Fig.~\ref{fig:convergence}b), and with their setting $\alpha \!=\! 9$ they do not converge.
+At the same $\alpha$, the Frank--Wolfe iterations of \citet{Bourne2026ConvexOrder} stall at a residual of $10^{-5}$, and with their setting $\alpha \!=\! 9$ they do not converge.
 
 % benchmarks/figures/plot_ebsd.py
 \begin{figure}[t]
@@ -242,6 +246,19 @@ Larger values of $\alpha$ hardly improve it further, since the foam is not exact
 
 \subsection{Incompressible Flows}
 \label{sec:results-flows}
+
+\paragraph{Choice of $\alpha$.}
+The penalty-based integrator keeps one stiffness $\alpha$ for the whole run.
+Two conditions bound it.
+The time step must satisfy \eqref{eq:softened-time-step}, which for $\tstep \!=\! 0.01$ allows $\alpha$ up to about $4 \cdot 10^4$, so it is not the binding one.
+The binding condition is the distinctness of the generators, estimated by \eqref{eq:regularized-practical} with the current centroid gaps $|\centroid_i \!-\! \qq_i|$.
+These gaps grow as the flow moves the particles away from their centroids, and the estimate falls with them: on the uniform four-vortex case it drops from about $2$ at step $20$ to $0.03$ at step $100$.
+A stiffness above the estimate stalls the Newton solve, as two generators approach each other.
+We therefore take $\alpha$ at $0.99$ times the estimate at the end of the run, $\alpha \!=\! 0.028$.
+With this value all three four-vortex examples run for $100$ steps, while the fixed values $0.1$, $0.5$ and $1$ fail at steps $100$, $70$ and $55$ on the uniform case.
+The estimate is not guaranteed, but it held in all of these runs.
+For longer runs it decreases further, so $\alpha$ has to be chosen for the final time; lowering $\alpha$ during a run would change the dynamics being integrated rather than its discretization.
+As $\alpha \!\to\! 0$ the scheme tends to the one of \citet{Gallouet2018Lagrangian}, so this choice keeps the comparison with it close to its limit.
 
 % TODO: compare the constrained (Sec. 5.2) and penalty-based (Sec. 5.3) integrators against Power Particles [deGoes2015PowerParticles] and the scheme of [Gallouet2018Lagrangian].
 % Metrics to report: energy drift over time, centroid--particle gap, volume error, divergence, Newton iterations per step, maximum stable time step, and sensitivity to alpha and epsilon.

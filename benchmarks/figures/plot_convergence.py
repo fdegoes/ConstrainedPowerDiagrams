@@ -1,52 +1,35 @@
 #!/usr/bin/env python3
-"""Convergence curves: the residual of rule 3 (latex/implementation.tex,
-eq. results-termination) against the iteration, for our Newton solver and the
-methods of Bourne et al., on two cases of benchmarks/bourne/bourne_cases.py.
+"""Convergence curves (fig:convergence): the residual of rule 3 (latex/implementation.tex,
+eq. results-termination) against the charged time, for our Newton solver and the three
+methods of Bourne et al., on the two benchmarks of Table 1 (benchmarks/bourne/run_table1.py):
 
-  (a) Voronoi, n = 20 (realizable): the data of 2025-invert and 2026-voronoi.
-      our H            benchBourne, sites at the targets, tolerance 1e-8;
-      SLSQP (2025)     their max_H_solver from their random start (2025-invert:
-                       inner OT 1e-3 min V, ptol 1e-8, maxiter 1000), stopped on
-                       their own rule;
-      FW (2026)        t = 100 from the true seeds (2026-voronoi), capped at
-                       --fw-iter iterations; a cross marks where their gap rule
-                       (1e-14) stops;
-      subgradient [2026] t = 100 from the same start, their step tau/(i+1)
-                       with tau = 2, capped at 600 iterations; a cross marks
-                       where their rule (change of the running average
-                       below 1e-5) stops.
-      Every curve is the residual of H.
-  (b) EBSD map, n = 243 (approximate), unit square.
-      our H_alpha      alpha = 0.99 x the practical estimate
-                       (bourne_cases.practical_alpha), tolerance 1e-8;
-      FW (2026)        t = 10 from 0.5 (their settings), capped at --fw-iter
-                       iterations: residual of H_alpha, alpha = t - 1 = 9;
-      FW at our alpha  t = 1 + alpha, same start: residual of the same
-                       H_alpha as ours.
-      FW runs to the cap with their gap rule disabled; a cross marks the
-      iterate where their rule (gap < 1e-9) stops.
-      Their 2025 least-squares SLSQP solves neither H nor H_alpha, so it has
-      no rule-3 residual and is not drawn.
+  (top)    voronoi, n = 20, the data of 2025-invert and 2026-voronoi;
+  (bottom) cross, n = 728, the data of 2026-aligned.
 
-The residual of an iterate is max(volume, shift) of bourne_cases.common_residuals:
-max_i |V_i - Vbar_i| / Vbar_i and max_i |g_u,i| / (2 Vbar_i^{3/2}); rule 3 holds
-when it is <= 1e-8. For their methods it is evaluated at every iterate on the
-power diagram of the iterate's generators with the prescribed volumes (a tight
-OT solve, not charged); for ours it is that of the solver's own iterate (the
-trajectory of benchBourne). Iteration 0 is the start.
+Methods and settings are those of run_table1.py: ours (max H, rule 3 at 1e-8), SLSQP
+(Bourne 2025), Frank-Wolfe at t = 100 and the subgradient method (Bourne 2026, t = 1250 on
+voronoi, 100 on cross). run_table1.py runs their methods on rule 3 or to its time cap,
+with their own rules disabled and read off the history; here each of their curves ends
+at the iterate where its own rule (SLSQP rule 1, FW gap, change of the running average)
+stops it, which is the run with their termination (the iterates do not depend on the rule).
+A curve that reaches the time cap first ends there; the stops are not marked.
 
-The histories are cached as JSON in benchmarks/figures/cache/convergence/
-(--rerun to recompute them). Needs build/benchBourne and the pysdot Python:
-  MPLCONFIGDIR=/tmp/mplcfg external/bourne/.venv/bin/python benchmarks/figures/plot_convergence.py
-      [--rerun] [--fw-iter 500] [--x iterations|solves] [--out latex/figures/convergence.pdf]
-      [--from DIR]
+The residual drawn is the centroid residual eps_u of the equation, max_i |c_i - cbar_i| /
+Vbar_i^{1/d} (bourne_cases.common_residuals); --y max draws max(eps_w, eps_u), with the
+volume residual eps_w = max_i |V_i - Vbar_i| / Vbar_i. report() prints the largest ratio
+eps_w / eps_u over our iterates. Their iterates are diagrams solved for the
+prescribed volumes (eps_w ~ 1e-10 at every iterate), ours move shifts and weights together
+(eps_w falls below the tolerance only at convergence). Every curve starts at t = 0 with
+iteration 0, the start generators on the diagram with the prescribed volumes (uncharged for
+their methods; for ours, the initial volume solve, whose time is charged to iteration 1). The
+time axis is linear on [0, 1 ms] and logarithmic above.
 
---from DIR takes panel (a) from the output directory of
-benchmarks/bourne/run_table1.py (voronoi__{ours,slsqp,fw,subgrad}.json): every method
-there runs on rule 3 at 1e-8 or to its time cap, with the settings of that script (SLSQP
-with its rule 1 disabled, the subgradient at t = 1250 from the random start of 2025-invert);
-a cross marks the iterate where each method's own rule (SLSQP rule 1, FW gap, change of
-the running average) would have stopped it. Panel (b) still comes from the cache.
+  MPLCONFIGDIR=/tmp/mplcfg external/bourne/.venv/bin/python benchmarks/figures/plot_convergence.py \
+      --from benchmarks/bourne/results/table1-<date> [--y max|centroid] [--out latex/figures/convergence.pdf]
+
+--ebsd prints (no figure) the former EBSD comparison from the cache in
+benchmarks/figures/cache/convergence/ (--rerun to recompute): our H_alpha at 0.99 x the
+practical estimate, and their FW at t = 10 and at t = 1 + alpha.
 """
 
 import argparse
@@ -74,6 +57,7 @@ import bourne_ref as ref  # noqa: E402
 CACHE = os.path.join(HERE, "cache", "convergence")
 OUT = os.path.join(ROOT, "latex", "figures", "convergence.pdf")
 TOL = 1e-8
+LINTHRESH = 1e-3  # s: the time axis is linear below
 EVAL_TOL = bc.OT_MIN_REL_TOL  # OT tolerance of the evaluations (relative to min V)
 
 INK = "#2b2a27"
@@ -83,7 +67,7 @@ STYLE = {  # label, colour, line style, marker
     "slsqp": ("SLSQP [2025]", "#eb6834", "-", None),
     "fw": ("FW [2026]", "#1a9e77", "-", None),
     "fw-same": ("FW [2026], our $\\alpha$", "#1a9e77", "--", None),
-    "subgrad": ("subgradient [2026]", "#7570b3", "-.", None),
+    "subgrad": ("subgradient [2026]", "#7570b3", "-", None),
 }
 
 plt.rcParams.update({"font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 7, "ytick.labelsize": 7})
@@ -215,9 +199,10 @@ def _cached(name, rerun, fn):
     return r
 
 
-def load_table1(d, benchmark="voronoi"):
-    """The runs of benchmarks/bourne/run_table1.py in directory d, in the form of the cached histories (volume and
-    shift residuals per iterate; ownRuleIndex: the iterate where the method's own rule would stop it)."""
+def load_table1(d, benchmark):
+    """The runs of benchmarks/bourne/run_table1.py in directory d: per method the history (charged seconds,
+    volume and centroid residuals per iterate), the stop, and ownRuleIndex (the iterate where the method's own
+    rule would stop it; None for ours, or when it never does)."""
     out = {}
     for m in ("ours", "slsqp", "fw", "subgrad"):
         path = os.path.join(d, "%s__%s.json" % (benchmark, m))
@@ -228,136 +213,130 @@ def load_table1(d, benchmark="voronoi"):
             r = json.load(f)
         h = r["history"]
         own = r.get("ownRule") or {}
-        out[m] = dict(method=m, status="%s (%s)" % (r["stop"], r["status"]), iterations=r.get("iterations"),
-                      ownRuleIndex=own.get("index"),
-                      history=[dict(iteration=k, solves=s, volume=v, shift=c, gap=g)
-                               for k, s, v, c, g in zip(h["iteration"], h["solves"], h["volume"], h["centroid"],
-                                                        h["own"])])
+        out[m] = dict(method=m, stop=r["stop"], status="%s (%s)" % (r["stop"], r["status"]),
+                      iterations=r.get("iterations"), ownRuleIndex=own.get("index"),
+                      history=[dict(iteration=k, solves=n, seconds=t, volume=v, shift=c, gap=g)
+                               for k, n, t, v, c, g in zip(h["iteration"], h["solves"], h["seconds"], h["volume"],
+                                                           h["centroid"], h["own"])])
     return out
 
 
-def histories(args):
+def ebsd_histories(args):
+    """The former EBSD comparison (cached): our H_alpha and their FW at t = 10 and at our alpha."""
     cases = _cases()
-    inv, vor, ebsd = cases["2025-invert"], cases["2026-voronoi"], cases["ebsd"]
+    ebsd = cases["ebsd"]
     ebsd26 = [v for v in ebsd.variants if v.paper == "2026"][0]
     a = 0.99 * bc.practical_alpha(ebsd)
-    if args.from_dir:
-        voronoi = load_table1(args.from_dir)
-    else:
-        voronoi = {
-            "ours": _cached("voronoi-ours", args.rerun, lambda: run_ours(vor, "H", math.inf)),
-            "slsqp": _cached("voronoi-slsqp", args.rerun, lambda: run_slsqp(inv)),
-            "fw": _cached("voronoi-fw", args.rerun, lambda: run_fw(vor, vor.t, math.inf, args.fw_iter)),
-            # the subgradient only from the Linux runs (--from): its local cache used t = 100,
-            # not the t = 1250 of their paper and of run_table1.py
-        }
-    out = {
-        "voronoi": voronoi,
-        "ebsd": {
-            "ours": _cached("ebsd-ours", args.rerun, lambda: run_ours(ebsd, "Halpha", a)),
-            "fw": _cached("ebsd-fw", args.rerun, lambda: run_fw(ebsd26, ebsd26.t, ebsd26.t - 1, args.fw_iter)),
-            "fw-same": _cached("ebsd-fw-same", args.rerun, lambda: run_fw(ebsd26, 1 + a, a, args.fw_iter)),
-        },
-    }
-    return out, a
+    return {"ebsd": {
+        "ours": _cached("ebsd-ours", args.rerun, lambda: run_ours(ebsd, "Halpha", a)),
+        "fw": _cached("ebsd-fw", args.rerun, lambda: run_fw(ebsd26, ebsd26.t, ebsd26.t - 1, args.fw_iter)),
+        "fw-same": _cached("ebsd-fw-same", args.rerun, lambda: run_fw(ebsd26, 1 + a, a, args.fw_iter)),
+    }}, a
 
 
 # --------------------------------------------------------------------------
 # Figure
 # --------------------------------------------------------------------------
 
-def _series(r, x):
-    h = r["history"]
-    xs = np.array([e["iteration" if x == "iterations" else "solves"] for e in h], dtype=float)
-    ys = np.array([max(e["volume"], e["shift"]) for e in h])
-    return xs, np.maximum(ys, 1e-16)
+def residual(e, y):
+    return e["shift"] if y == "centroid" else max(e["volume"], e["shift"])
 
 
-def gap_stop(r):
-    """Index of the iterate where their gap rule stops FW (None: not reached)."""
-    if "ownRuleIndex" in r:  # run_table1.py (--from): the method's own rule, read off its history
-        return r["ownRuleIndex"]
-    if r["method"] == "slsqp":
-        return len(r["history"]) - 1  # it stops on its own rule (rule 1)
-    if r["method"] not in ("fw", "subgrad"):
-        return None
-    return next((k for k, e in enumerate(r["history"]) if e["gap"] < r["gapTol"]), None)
+def own_stop(r):
+    """Index of the last drawn iterate: where the method's own rule stops it (ours: rule 3, its last iterate)."""
+    if r["method"] == "ours" or r.get("ownRuleIndex") is None:
+        return len(r["history"]) - 1
+    return r["ownRuleIndex"]
 
 
-def plot(runs, alpha, args):
-    # One column, the two cases stacked. On EBSD only FW at our alpha is drawn: with their
-    # t = 10 (alpha = 9, far above the bound) it does not converge, which the text states.
-    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.4))
-    panels = [("voronoi", "(a) Voronoi, $n = 20$, realizable: $\\mathcal{G}$"),
-              ("ebsd", "(b) EBSD, $n = 243$, approximate: $\\mathcal{G}_\\alpha$")]
+def plot(runs, args):
+    # One column, the two benchmarks stacked, sharing the time axis; one legend above both.
+    fig, axes = plt.subplots(2, 1, figsize=(3.3, 4.0), sharex=True)
+    panels = [("voronoi", "Voronoi, $n = 20$"), ("cross", "cross, $n = 728$")]
+    tmax = 0.0
     for ax, (key, title) in zip(axes, panels):
         for m, r in runs[key].items():
-            if key == "ebsd" and m == "fw":
-                continue
             label, color, ls, marker = STYLE[m]
-            if m == "fw-same":
-                label, ls = "FW [2026], same $\\alpha$", "-"
-            xs, ys = _series(r, args.x)
-            ax.plot(xs, ys, ls, color=color, lw=1.3 if m == "ours" else 1.0, label=label,
-                    zorder=3 if m == "ours" else 2)
-            if marker:
-                ax.plot(xs, ys, marker, color=color, ms=3.2, mec="white", mew=0.4, lw=0, zorder=4)
-            k = gap_stop(r)
-            if k is not None:
-                ax.plot([xs[k]], [ys[k]], "x", color=INK, ms=4.5, mew=1.0, zorder=5)
+            k = own_stop(r)
+            h = r["history"][:k + 1]
+            if not h:
+                continue
+            xs = np.array([0.0 if e["iteration"] == 0 else e["seconds"] for e in h])   # every start at t = 0
+            ys = np.maximum([residual(e, args.y) for e in h], 1e-16)
+            tmax = max(tmax, xs[-1])
+            ax.plot(xs, ys, "-", color=color, lw=1.3 if m == "ours" else 1.0, zorder=3 if m == "ours" else 2)
+            if m == "ours":
+                ax.plot(xs, ys, "o", color=color, ms=3.0, mec="white", mew=0.4, lw=0, zorder=4)
         ax.axhline(TOL, color="#8a8880", lw=0.9, ls=(0, (1, 1.5)), zorder=1)
-        ax.annotate("tolerance $10^{-8}$", (0.62, TOL), xycoords=("axes fraction", "data"), xytext=(-2, 3),
+        ax.annotate("tolerance $10^{-8}$", (0.98, TOL), xycoords=("axes fraction", "data"), xytext=(0, 3),
                     textcoords="offset points", ha="right", va="bottom", fontsize=7, color="#8a8880")
-        ax.set_xscale("symlog", linthresh=10, linscale=0.6)
+        ax.text(0.03, 0.04, title, transform=ax.transAxes, ha="left", va="bottom", fontsize=8, color=INK)
+        ax.set_xscale("symlog", linthresh=LINTHRESH, linscale=0.4)   # linear on [0, 1 ms], log above
         ax.set_yscale("log")
-        ax.set_ylim(1e-15, 1e2)
-        ax.set_xlim(0, 1.15 * max(len(r["history"]) for r in runs[key].values()))
-        ax.set_xlabel("iteration" if args.x == "iterations" else "OT solves / power diagrams")
-        # the panel label under the panel, below the axis label
-        ax.text(0.5, -0.36, title, transform=ax.transAxes, ha="center", va="top", fontsize=8, color=INK)
+        ax.set_ylim(1e-12, 1e2)
+        ax.set_ylabel("$\\varepsilon_{\\mathbf{u}}$" if args.y == "centroid" else
+                      "$\\max(\\varepsilon_w, \\varepsilon_{\\mathbf{u}})$")
         ax.grid(True, which="major", color=GRID, lw=0.6)
         ax.set_axisbelow(True)
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
-        ax.plot([], [], "x", color=INK, ms=4.5, mew=1.0, label="their stopping rule")
-        ax.legend(frameon=False, fontsize=7, loc="lower right", handlelength=1.8, borderaxespad=0.2)
-        ax.set_ylabel("residual (rule 3)")
-    fig.tight_layout(h_pad=2.2)
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    fig.savefig(args.out)
-    fig.savefig(os.path.splitext(args.out)[0] + ".png", dpi=200) if args.png else None
+    axes[1].set_xlim(0, 1.6 * tmax)
+    axes[1].set_xlabel("time (s)")
+    from matplotlib.lines import Line2D
+    handles = [Line2D([], [], color=STYLE[m][1], lw=1.3, marker="o" if m == "ours" else None, ms=3.0, mec="white",
+                      label=STYLE[m][0]) for m in ("ours", "slsqp", "fw", "subgrad")]
+    fig.tight_layout(h_pad=0.6, rect=(0, 0, 1, 0.9))
+    # the legend centred over the plot boxes (not the figure, whose left part holds the y labels),
+    # and the saved figure cropped to its content, so that the paper centres the plots
+    box = axes[0].get_position()
+    fig.legend(handles=handles, frameon=False, fontsize=7, loc="upper center", ncol=2, handlelength=1.4,
+               columnspacing=1.0, handletextpad=0.4, bbox_to_anchor=(0.5 * (box.x0 + box.x1), 1.0))
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    fig.savefig(args.out, bbox_inches="tight", pad_inches=0.02)
+    if args.png:
+        fig.savefig(os.path.splitext(args.out)[0] + ".png", dpi=200, bbox_inches="tight", pad_inches=0.02)
     plt.close(fig)
 
 
-def report(runs, alpha):
-    print("alpha (EBSD, 0.99 x practical) = %.4g" % alpha)
+def report(runs, y="centroid"):
     for key, rs in runs.items():
+        if "ours" in rs:
+            h = rs["ours"]["history"]
+            print("%-8s ours: largest eps_w / eps_u over its iterates %.2f" % (
+                key, max(e["volume"] / max(e["shift"], 1e-300) for e in h)))
         for m, r in rs.items():
             h = r["history"]
-            res = [max(e["volume"], e["shift"]) for e in h]
+            res = [residual(e, y) for e in h]
+            k = own_stop(r) if "seconds" in h[0] else len(h) - 1
             first = next((e for e, x in zip(h, res) if x <= TOL), None)
-            k = gap_stop(r)
-            if k is not None:
-                print("%-8s %-8s their own rule stops at iteration %d, residual %.2e" % (key, m, k, res[k]))
-            print("%-8s %-8s %-26s %4d it, %5d solves, final %.2e (vol %.1e, shift %.1e), min %.2e, to 1e-8: %s" % (
-                key, m, r["status"][:26], h[-1]["iteration"], h[-1]["solves"], res[-1], h[-1]["volume"],
-                h[-1]["shift"], min(res), "-" if first is None else "%d it / %d solves" % (
-                    first["iteration"], first["solves"])))
+            print("%-8s %-8s %-30s drawn to iteration %d (%s s): residual %.2e (vol %.1e, centroid %.1e); "
+                  "rule 3 first met: %s" % (
+                      key, m, r["status"][:30], h[k]["iteration"], "%.3g" % h[k]["seconds"] if "seconds" in h[k]
+                      else "-", res[k], h[k]["volume"], h[k]["shift"],
+                      "-" if first is None else "iteration %d" % first["iteration"]))
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--rerun", action="store_true", help="recompute the cached histories")
-    ap.add_argument("--fw-iter", type=int, default=500, help="iteration cap of FW")
-    ap.add_argument("--x", choices=["iterations", "solves"], default="iterations")
+    ap.add_argument("--from", dest="from_dir", default=None, help="output directory of benchmarks/bourne/run_table1.py")
+    ap.add_argument("--y", choices=["max", "centroid"], default="centroid",
+                    help="max(eps_w, eps_u) of rule 3, or the centroid residual eps_u alone")
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--png", action="store_true", help="also write a PNG next to the PDF")
-    ap.add_argument("--from", dest="from_dir", default=None,
-                    help="panel (a) from this output directory of benchmarks/bourne/run_table1.py")
+    ap.add_argument("--ebsd", action="store_true", help="print the former EBSD comparison (cache), no figure")
+    ap.add_argument("--rerun", action="store_true", help="with --ebsd: recompute the cached histories")
+    ap.add_argument("--fw-iter", type=int, default=500, help="with --ebsd: iteration cap of FW")
     args = ap.parse_args()
-    runs, alpha = histories(args)
-    report(runs, alpha)
-    plot(runs, alpha, args)
+    if args.ebsd:
+        runs, alpha = ebsd_histories(args)
+        print("alpha (EBSD, 0.99 x practical) = %.4g" % alpha)
+        report(runs)
+        return
+    if not args.from_dir:
+        ap.error("--from DIR (the output of benchmarks/bourne/run_table1.py) is required")
+    runs = {b: load_table1(args.from_dir, b) for b in ("voronoi", "cross")}
+    report(runs, args.y)
+    plot(runs, args)
     print("wrote", args.out)
 
 

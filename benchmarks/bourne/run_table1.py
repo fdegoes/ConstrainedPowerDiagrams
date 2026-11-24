@@ -58,6 +58,14 @@ builds of ours, cumulative), seconds (charged, cumulative), volume and centroid
 residuals of rule 3, and own (the value of the method's own rule: SLSQP |dH|/|H0|, FW
 gap, subgradient change).
 
+--own-rules: their methods stop as in their papers and code instead: SLSQP on rule 1 with
+their notebook's ptol = 1e-10 and inner OT 1e-3 min V, at most case.maxiter = 1000
+iterations; FW on its gap (1e-14 on voronoi, 1e-16 on cross) within its iteration limit
+(4000, 1000: their notebook); the subgradient on the change of the running average
+(< 1e-5) within 600 iterations (their code's default). The setups (dilations, starts) are
+unchanged, and the time cap still applies. Rule 3 is still evaluated at every iterate
+(uncharged) but stops nothing. Our solver runs as without the option.
+
 Output (--out DIR): <benchmark>__<method>.json per run (summary and history),
 <benchmark>__<method>.log (the child's output), results.csv, table.tex (rows of
 tab:realizable in latex/results.tex). Re-running a subset updates its runs only;
@@ -94,6 +102,9 @@ METHODS = ["ours", "slsqp", "fw", "subgrad"]
 LABEL = {"voronoi": "Voronoi", "cross": "cross"}
 SUBGRAD = {"voronoi": dict(t=1250.0, start="2025-invert"), "cross": dict(t=100.0, start="2026-aligned")}
 SUBGRAD_TAU, SUBGRAD_RULE_TOL = 2.0, 1e-5
+# --own-rules: their settings (their 2025 notebook for SLSQP, their 2026 notebook and code for FW and the subgradient)
+SLSQP_THEIR_PTOL, SLSQP_THEIR_OT, SLSQP_THEIR_MAXITER = 1e-10, 1e-3, 1000  # 2025-invert (their notebook)
+SUBGRAD_NITER = 600
 FIELDS = ["benchmark", "method", "n", "stop", "status", "iterations", "solves", "seconds", "volumeResidual",
           "centroidResidual", "rule3Met", "ownRule", "ownRuleIteration", "ownRuleSeconds", "ownRuleVolumeResidual",
           "ownRuleCentroidResidual", "wallSeconds", "evalSeconds", "load"]
@@ -127,7 +138,8 @@ class Run:
     killed run keeps it), with the charged clock and the uncharged evaluations.
     own_test(k, own): whether the method's own rule holds at iterate k."""
 
-    def __init__(self, path, meta, max_seconds, grace, own_test=None):
+    def __init__(self, path, meta, max_seconds, grace, own_test=None, own_rules=False):
+        self.own_rules = own_rules  # their own rules stop the run; rule 3 is only evaluated
         self.f = open(path, "w", buffering=1)
         self.f.write(json.dumps(dict(meta=meta)) + "\n")
         self.t0 = time.perf_counter()
@@ -154,7 +166,7 @@ class Run:
     def add(self, k, solves, seconds, vol, cen, own=None):
         row = dict(iteration=int(k), solves=int(solves), seconds=float(seconds), volume=float(vol),
                    centroid=float(cen), own=None if own is None else float(own))
-        self.met = vol <= TOL and cen <= TOL
+        self.met = vol <= TOL and cen <= TOL and not self.own_rules
         first_own = (not self.own_met and own is not None and self.own_test is not None
                      and self.own_test(k, own))
         self.own_met = self.own_met or first_own
@@ -212,7 +224,8 @@ def run_ours(case, args, run):
 
 
 def run_slsqp(case, start, args, run):
-    ref.OT_REL_TOL["value"] = EVAL_TOL
+    # inner OT of their solve (the evaluations of rule 3 use EVAL_TOL in any case)
+    ref.OT_REL_TOL["value"] = SLSQP_THEIR_OT if args.own_rules else EVAL_TOL
     H = []
 
     def record(X):
@@ -225,10 +238,16 @@ def run_slsqp(case, start, args, run):
     if run.met:
         return dict(stop="rule 3", status="met at the start")
     R0 = math.sqrt(case.n)
-    res, _ = ref.max_H_solver(start, case.b, case.v, case.om, R0=R0, d=1e-3, max_iter=args.max_iter_slsqp, ptol=0.0,
+    if args.own_rules:
+        max_iter, ptol = SLSQP_THEIR_MAXITER, SLSQP_THEIR_PTOL
+    else:
+        max_iter, ptol = args.max_iter_slsqp, 0.0
+    res, _ = ref.max_H_solver(start, case.b, case.v, case.om, R0=R0, d=1e-3, max_iter=max_iter, ptol=ptol,
                               callback=lambda X: record(X) or run.out_of_time())
     msg = str(res.message)
-    if run.met:
+    if args.own_rules and res.success:
+        stop = "own rule"
+    elif run.met:
         stop = "rule 3"
     elif run.out_of_time():
         stop = "time cap"
@@ -247,9 +266,10 @@ def run_fw(case, args, run):
         # The LMO of this iterate is solved when the callback is called.
         return run.add(it, ref.COUNTERS.otSolves, run.elapsed(), vol, cen, gap) or run.out_of_time()
 
+    niter, tol = (case.niter, case.gap) if args.own_rules else (args.max_iter, -1.0)
     _, _, status = ref.convex_order_projection_frank_wolfe(case.om, y, case.start.copy(), R0=case.R0, masses=case.v,
-                                                           niter=args.max_iter, tol=-1.0, callback=cb)
-    stop = "rule 3" if run.met else ("time cap" if status == "stopped" else
+                                                           niter=niter, tol=tol, callback=cb)
+    stop = "own rule" if status == "converged" else "rule 3" if run.met else ("time cap" if status == "stopped" else
                                      "iteration cap" if status == "max iterations" else status)
     return dict(stop=stop, status=status)
 
@@ -269,14 +289,15 @@ def run_subgrad(case, start, t, args, run):
         vol, cen, _, _ = run.evaluate(case, subgrad_sites(Z))
         return run.add(i + 1, ref.COUNTERS.otSolves, run.elapsed(), vol, cen, error) or run.out_of_time()
 
+    niter, tol = (SUBGRAD_NITER, SUBGRAD_RULE_TOL) if args.own_rules else (args.max_iter, -1.0)
     _, _, status, _ = ref.convex_order_subgradient(case.om, np.array(start, dtype=float), y, case.v,
-                                                   niter=args.max_iter, tau=SUBGRAD_TAU, tol=-1.0, callback=cb)
-    stop = "rule 3" if run.met else ("time cap" if status == "stopped" else
+                                                   niter=niter, tau=SUBGRAD_TAU, tol=tol, callback=cb)
+    stop = "own rule" if status == "converged" else "rule 3" if run.met else ("time cap" if status == "stopped" else
                                      "iteration cap" if status == "max iterations" else "error: %s" % status)
     return dict(stop=stop, status=status)
 
 
-def settings(benchmark, method, C):
+def settings(benchmark, method, C, own_rules=False):
     """(case of the data, start case, settings) of a run."""
     if method == "ours":
         case = C["2026-voronoi"] if benchmark == "voronoi" else C["2026-aligned"]
@@ -284,19 +305,23 @@ def settings(benchmark, method, C):
     if method == "slsqp":
         case = C["2025-invert"] if benchmark == "voronoi" else C["2026-aligned"]
         start = "2025-invert random start" if benchmark == "voronoi" else "targets"
+        if own_rules:
+            return case, dict(d=1e-3, R0="sqrt(n)", ptol=SLSQP_THEIR_PTOL, rule1Ptol=SLSQP_THEIR_PTOL,
+                              innerOTRelTol=SLSQP_THEIR_OT, maxiter=SLSQP_THEIR_MAXITER, start=start, ownRules=True)
         return case, dict(d=1e-3, R0="sqrt(n)", ptol=0.0, rule1Ptol=bc.SLSQP_PTOL, innerOTRelTol=EVAL_TOL, start=start)
     if method == "fw":
         case = C["2026-voronoi"] if benchmark == "voronoi" else C["2026-aligned"]
         start = "true seeds (B0)" if benchmark == "voronoi" else "targets (B0)"
-        return case, dict(t=case.t, R0=case.R0, gapRuleTol=case.gap, start=start)
+        return case, dict(t=case.t, R0=case.R0, gapRuleTol=case.gap, start=start, ownRules=own_rules,
+                          **({"niter": case.niter} if own_rules else {}))
     case = C["2026-voronoi"] if benchmark == "voronoi" else C["2026-aligned"]
     s = SUBGRAD[benchmark]
     start = "2025-invert random generators" if benchmark == "voronoi" else "targets (Y1)"
     return case, dict(t=s["t"], tau=SUBGRAD_TAU, lengthscale=1.0, tolcluster=1e-6, ruleTol=SUBGRAD_RULE_TOL,
-                      start=start)
+                      start=start, ownRules=own_rules, **({"niter": SUBGRAD_NITER} if own_rules else {}))
 
 
-OWN_RULE = {"slsqp": "rule 1 (SLSQP ftol, ptol 1e-8)", "fw": "FW gap", "subgrad": "change of the running average"}
+OWN_RULE = {"slsqp": "rule 1 (SLSQP ftol)", "fw": "FW gap", "subgrad": "change of the running average"}
 
 
 def own_rule_index(method, cols, s):
@@ -326,6 +351,11 @@ def finish(benchmark, method, n, s, cols, summary, wall, evals):
         out.update(volumeResidual=cols["volume"][last], centroidResidual=cols["centroid"][last],
                    rule3Met=cols["volume"][last] <= TOL and cols["centroid"][last] <= TOL)
     k = own_rule_index(method, cols, s)
+    if s.get("ownRules") and last >= 0:
+        # The run stopped as their method does: its own rule holds at the last iterate if that is what
+        # stopped it (SLSQP's ftol is on its own objective, so the history's |dH| / |H0| may differ),
+        # and the curve of fig:convergence is the whole run.
+        k = last if out.get("stop") == "own rule" else None
     out["ownRule"] = None if method == "ours" else dict(
         rule=OWN_RULE[method], index=k, met=k is not None,
         **({} if k is None else dict(iteration=cols["iteration"][k], solves=cols["solves"][k],
@@ -338,7 +368,7 @@ def finish(benchmark, method, n, s, cols, summary, wall, evals):
 def worker(args):
     C = cases()
     b, m = args.benchmark[0], args.method[0]
-    case, s = settings(b, m, C)
+    case, s = settings(b, m, C, args.own_rules)
     if m == "ours":
         s["maxiterPerAttempt"] = args.max_iter_ours
     tag = os.path.join(args.out, "%s__%s" % (b, m))
@@ -346,7 +376,7 @@ def worker(args):
     own_test = {"slsqp": lambda k, x: k > 0 and x <= s["rule1Ptol"], "fw": lambda k, x: x < s["gapRuleTol"],
                 "subgrad": lambda k, x: x < s["ruleTol"]}.get(m)
     run = Run(tag + ".history.jsonl", dict(benchmark=b, method=m, n=case.n, settings=s), args.max_seconds, args.grace,
-              own_test)
+              own_test, own_rules=args.own_rules and m != "ours")
     t0 = time.time()
     try:
         if m == "ours":
@@ -417,6 +447,8 @@ def spawn(b, m, args):
     cmd = [sys.executable, os.path.abspath(__file__), "--worker", "--benchmark", b, "--method", m,
            "--out", args.out, "--max-seconds", repr(args.max_seconds), "--max-iter", str(args.max_iter),
            "--max-iter-slsqp", str(args.max_iter_slsqp), "--max-iter-ours", str(args.max_iter_ours), "--grace", repr(args.grace)]
+    if args.own_rules:
+        cmd.append("--own-rules")
     for p in (tag + ".json", tag + ".history.jsonl"):
         if os.path.exists(p):
             os.remove(p)
@@ -447,7 +479,7 @@ def spawn(b, m, args):
                              else (None, {k: [] for k in ("iteration", "solves", "seconds", "volume", "centroid",
                                                           "own")}, 0.0))
         C = cases()
-        case, s = settings(b, m, C)
+        case, s = settings(b, m, C, args.own_rules)
         wall = time.time() - t0
         if killed:
             summary = dict(stop="time cap", status="killed inside an iteration at %.0f s (cap %.0f s + grace %.0f s)" % (
@@ -551,9 +583,13 @@ def write_reports(d):
         if r["stop"].startswith("error"):
             lines.append("    %% %s %s: failure (%s)" % (LABEL[r["benchmark"]], r["method"], r["stop"]))
             continue
+        if r["stop"] in ("iteration cap", "time cap"):   # stated in the caption, not marked in the table
+            lines.append("    %% %s %s: stopped by its %s" % (LABEL[r["benchmark"]], r["method"], r["stop"]))
         row(r, tex_method(r), r.get("iterations", "---"), r.get("seconds"), r.get("volumeResidual"),
             r.get("centroidResidual"))
         own = r.get("ownRule")
+        if (r.get("settings") or {}).get("ownRules"):
+            continue
         if r["method"] == "slsqp" and own and own["met"]:
             row(r, tex_method(r) + " (own rule)", own["iteration"], own["seconds"], own["volumeResidual"],
                 own["centroidResidual"])
@@ -587,6 +623,8 @@ def main():
     ap.add_argument("--out", default=None, help="output directory (default %s, or /tmp/table1-quick)" % OUT)
     ap.add_argument("--quick", action="store_true", help="smoke test: 3 s caps, 2000 iterations, /tmp/table1-quick")
     ap.add_argument("--report", action="store_true", help="only rewrite results.csv and table.tex from --out")
+    ap.add_argument("--own-rules", action="store_true",
+                    help="their methods stop on their own rules and iteration limits (their settings), not on rule 3")
     ap.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
     if args.quick:

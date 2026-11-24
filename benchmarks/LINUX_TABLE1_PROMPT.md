@@ -1,3 +1,5 @@
+> **Superseded** by `benchmarks/LINUX_TABLE1_OWN_PROMPT.md` (their methods on their own stopping rules). Do not run this one.
+
 # Prompt: Table 1 runs (realizable comparison) on the Linux machine
 
 For the user, before pasting: `benchmarks/bourne/run_table1.py` and the
@@ -100,8 +102,7 @@ Also check that the figure renders:
 $PY benchmarks/figures/plot_convergence.py --from /tmp/table1-quick --out /tmp/table1-quick/convergence.pdf
 ```
 
-If it fails only because `benchmarks/figures/cache/convergence/` is missing
-(panel b), note it and go on. The figure is made on the user's Mac.
+The figure is made on the user's Mac; here it only checks that the JSON files load.
 
 ## 5. The full run (about 4 hours)
 
@@ -186,10 +187,8 @@ $PY benchmarks/bourne/run_table1.py --report --out $DIR      # rewrites $DIR/res
 $PY benchmarks/figures/plot_convergence.py --from $DIR --out latex/figures/convergence.pdf
 ```
 
-`table.tex` has the rows of `tab:realizable` (`latex/results.tex`): case,
-method, stopped by, iterations, time (s), and the volume and centroid
-residuals at the last iterate. For SLSQP there is an extra row at the
-iterate where its own rule 1 would have stopped it. For FW and the
-subgradient, a comment line gives where their own rules would have stopped
-them. Panel (b) of the figure (EBSD) still comes from
-`benchmarks/figures/cache/convergence/`.
+`table.tex` has the rows of `tab:realizable` (`latex/results.tex`). The figure
+(`fig:convergence`) shows both benchmarks and all four methods against the
+charged time, each of their methods cut at the iterate where its own rule
+stops it (SLSQP rule 1, FW gap, change of the running average), or at the
+time cap if that comes first.
