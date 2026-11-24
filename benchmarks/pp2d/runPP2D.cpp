@@ -6,7 +6,7 @@
 //   runPP2D <domain.line> <particles.pp|.dat> <param.txt> <out_dir>
 //           [--integrator powerparticles|constrained|softened|gm]
 //           [--frames N] [--every K] [--alpha A] [--stiffness k]
-//           [--maxiter N] [--volumetol T] [--lloydtol T] [--lloyditers N]
+//           [--maxiter N] [--volumetol T] [--lloydtol T] [--lloyditers N] [--log]
 //           [--no-csv] [--no-energy]
 //
 // Inputs (the formats of the 2015 code, pp2/SimIO.cpp, ParticlesIO.cpp,
@@ -280,7 +280,7 @@ _Usage()
     std::cerr << "usage: runPP2D <domain.line> <particles.pp|.dat> <param.txt> <out_dir> "
                  "[--integrator powerparticles|constrained|softened|gm] [--frames N] [--every K] "
                  "[--alpha A] [--stiffness k] [--maxiter N] [--volumetol T] [--lloydtol T] [--lloyditers N] "
-                 "[--no-csv] [--no-energy]"
+                 "[--velocity-projection none|initial|every] [--no-csv] [--no-energy] [--log]"
               << std::endl;
     return 2;
 }
@@ -309,6 +309,10 @@ main(int argc, char** argv)
             writeEnergy = false;
             continue;
         }
+        if (a == "--log") {
+            params._solver._log = &std::cerr;  // Newton iterations of every solve
+            continue;
+        }
         if (k + 1 >= argc) {
             return _Usage();
         }
@@ -329,6 +333,17 @@ main(int argc, char** argv)
             params._lloydTolerance = std::stod(v);
         } else if (a == "--lloyditers") {
             params._lloydMaxIterations = std::stoi(v);
+        } else if (a == "--velocity-projection") {
+            // Constrained: none (SHAKE), initial (the initial velocities only), every (RATTLE).
+            const std::map<std::string, PP::IntegratorOptions::VelocityProjection> modes = {
+                {"none", PP::IntegratorOptions::VelocityProjection::None},
+                {"initial", PP::IntegratorOptions::VelocityProjection::Initial},
+                {"every", PP::IntegratorOptions::VelocityProjection::EveryStep},
+            };
+            if (not modes.count(v)) {
+                return _Usage();
+            }
+            options._velocityProjection = modes.at(v);
         } else if (a == "--volumetol") {
             params._solver._volumeTolerance = params._solver._shiftTolerance = std::stod(v);
         } else {
