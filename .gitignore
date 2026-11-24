@@ -45,3 +45,6 @@ benchmarks/pp2d/pp2/bin/
 
 # Per-case trajectories of the overnight synthetic run (2.4 GB); the summaries are in log-synthetic.csv
 benchmarks/overnight/*/synthetic/
+
+# Power Particles experiment outputs (frames, tens of MB per run)
+experiments/pp2d/runs/

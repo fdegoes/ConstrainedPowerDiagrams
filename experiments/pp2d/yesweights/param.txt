@@ -1,0 +1,4 @@
+dt: 0.01
+cap_tol: 1e-6
+cap_max_iters: 5
+library: CGAL
