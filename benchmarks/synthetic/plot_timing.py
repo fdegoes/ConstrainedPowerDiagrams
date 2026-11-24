@@ -6,8 +6,10 @@ seed), and a line joins the medians over the seeds at each n. Line styles
 tell the methods apart:
   solid   our H (results/ours.csv, run_synthetic.py), time to converge
   dashed  their SLSQP on H, time to stop on rule 1 (its own)
-  dotted  their FW (t = 100), time to stop on rule 3 at 1e-8 (it has no
-          rule 1; it stalls at about 1/t, so it is usually not drawn)
+  dotted  their FW (t = 100), time to stop on their FW gap (their tolerance);
+          it stalls at about 1/t in our residual, so it is usually not drawn
+  dash-dot their subgradient method, time to stop on their rule (change of the
+          running average below 1e-5)
 Their methods come from <results>/theirs.csv (run_theirs.py) and are drawn
 with --theirs. A (method, pair) curve is drawn only where at least
 --min-converged of its cases met the rule; the cases that did not are
@@ -36,14 +38,24 @@ from matplotlib.ticker import NullFormatter  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 
-# Categorical slots 1-6 of the dataviz reference palette (validated for CVD
-# separation on a light surface); markers give a second encoding.
+def shade(color, amount):
+    """The colour mixed with white by amount > 0 (lighter), or with black by -amount (darker)."""
+    target = 255 if amount > 0 else 0
+    rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join("%02x" % round(c + (target - c) * abs(amount)) for c in rgb)
+
+# Two hues for the volumes (blue uniform, orange Voronoi: the two most
+# separable hues for colour-vision deficiencies), and within each hue three
+# lightness steps for the noise level (dark low, base mid, light high). Markers
+# give a second encoding of the volumes.
 PAIRS = [("uniform", 0), ("uniform", 1), ("uniform", 2), ("voronoi", 0), ("voronoi", 1), ("voronoi", 2)]
-COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"]
+VOLUME_HUE = {"uniform": "#2a78d6", "voronoi": "#eb6834"}
+NOISE_SHADE = {0: -0.3, 1: 0.0, 2: 0.4}
+COLORS = [shade(VOLUME_HUE[vol], NOISE_SHADE[noise]) for vol, noise in PAIRS]
 MARKERS = ["o", "s", "^", "D", "v", "P"]
 NOISE_NAME = {0: "low", 1: "mid", 2: "high"}
 METHODS = [("ours", "H (ours)", "-"), ("slsqp", "SLSQP (Bourne 2025)", "--"),
-           ("fw", "Frank–Wolfe (Bourne 2026)", ":")]
+           ("fw", "Frank–Wolfe (Bourne 2026)", ":"), ("subgrad", "Subgradient (Bourne 2026)", "-.")]
 
 
 def read(path):
@@ -52,10 +64,10 @@ def read(path):
 
 def seconds(r, method, tol):
     """Seconds to stop on the method's own rule, or None if it did not:
-    ours on rule 3; SLSQP on rule 1; FW on rule 3 (it has no rule 1)."""
+    ours on rule 3; SLSQP on rule 1; FW and the subgradient on their own rules (their gap, their change)."""
     if method == "ours":
         return float(r["seconds"]) if r["converged"] == "True" else None
-    rule = "rule 1" if method == "slsqp" else "rule 3"
+    rule = "rule 1" if method == "slsqp" else "their rule"
     return float(r["seconds"]) if r.get("stopped") == rule else None
 
 

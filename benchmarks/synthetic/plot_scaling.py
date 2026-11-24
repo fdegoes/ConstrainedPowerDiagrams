@@ -32,11 +32,12 @@ import numpy as np  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 
-# Categorical slots 1-3 of the dataviz reference palette (validated; see the
-# skill's references/palette.md), one per noise level.
-NOISE = {"0": ("low", "#2a78d6"), "1": ("mid", "#eb6834"), "2": ("high", "#1baf7a")}
-VOLUMES = {"voronoi": ("o", "-", "Voronoi"), "uniform": ("s", "--", "uniform")}  # marker, line style, label
+# Colour is the volume: blue for uniform, orange for Voronoi (two hues, separable
+# for colour-vision deficiencies). Each panel is one noise level.
+NOISE = {"0": ("low", None), "1": ("mid", None), "2": ("high", None)}  # panel titles
+VOLUMES = {"voronoi": ("o", "-", "Voronoi", "#eb6834"), "uniform": ("s", "--", "uniform", "#2a78d6")}  # marker, line style, label, colour
 INK = "#2b2a27"  # text ink, not a series color
+
 GRID = "#e4e2dc"
 TOL = 1e-8
 
@@ -67,15 +68,16 @@ def band(values):
 
 def plot(g, index, ylabel, path, reference):
     fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.5), sharey=True)
-    for ax, (noise, (name, color)) in zip(axes, NOISE.items()):
-        for vol, (marker, ls, label) in VOLUMES.items():
+    for ax, (noise, (name, _)) in zip(axes, NOISE.items()):
+        for vol, (marker, ls, label, color) in VOLUMES.items():
             by_n = g[(noise, vol)]
             ns = np.array(sorted(by_n))
             stats = np.array([band([v[index] for v in by_n[n]]) for n in ns])
             med, lo, hi = stats[:, 0], stats[:, 1], stats[:, 2]
-            ax.fill_between(ns, lo, hi, color=color, alpha=0.32, lw=0, zorder=1)
-            ax.plot(ns, med, ls, color=color, lw=1.4, zorder=3)
-            ax.plot(ns, med, marker, color=color, ms=3.5, mec="white", mew=0.4, lw=0, zorder=4)
+            c = color
+            ax.fill_between(ns, lo, hi, color=c, alpha=0.32, lw=0, zorder=1)
+            ax.plot(ns, med, ls, color=c, lw=1.4, zorder=3)
+            ax.plot(ns, med, marker, color=c, ms=3.5, mec="white", mew=0.4, lw=0, zorder=4)
             ax.annotate(label, (ns[-1], med[-1]), xytext=(4, 0), textcoords="offset points",
                         va="center", ha="left", fontsize=7, color=INK)
         if reference and index == 0:
@@ -143,13 +145,13 @@ def summary(rows, g):
 
 
 def comparison(rows):
-    """Matched cases of Bourne et al. (seed 1, n <= 500), with our H on the same
-    cases. Their times are to their own stop; the rule-3 check is at their solution."""
-    out = ["| method | stopped by | converged | median time (ms) | rule 3 met at its solution |",
+    """Our H and their methods on the synthetic cases they ran: FW and the subgradient on all cases, SLSQP on
+    seed 1 and n <= 500. Their times are to their own stop; our residual is checked at their solution."""
+    out = ["| method | stopped by | converged | median time (ms) | our residual met at its solution |",
            "|---|---|---|---|---|"]
-    matched = [r for r in rows if r["seed"] == "1" and int(r["n"]) <= 500]
-    for method in ["our H", "their SLSQP", "their FW (t = 100)"]:
-        s = [r for r in matched if r["method"] == method]
+    for method in ["our H", "their SLSQP", "their FW (t = 100)", "their subgradient (t = 100)"]:
+        s = [r for r in rows if r["method"] == method
+             and (method != "their SLSQP" or (r["seed"] == "1" and int(r["n"]) <= 500))]
         if not s:
             continue
         stops = collections.Counter(r["stoppedBy"] for r in s)

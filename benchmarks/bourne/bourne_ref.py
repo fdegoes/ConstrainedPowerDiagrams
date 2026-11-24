@@ -18,6 +18,7 @@ from pysdot import OptimalTransport, PowerDiagram
 from pysdot.domain_types import ConvexPolyhedraAssembly
 from scipy.optimize import minimize
 from scipy.spatial.distance import cdist
+from scipy.sparse import csr_matrix, triu
 
 
 class Counters:
@@ -259,3 +260,52 @@ def convex_order_projection_frank_wolfe(domain, Y, X0, R0=1., masses=None, niter
     dot_product = lambda A, B: np.sum(A * B * masses.reshape((N, 1)))
     lmo = lambda X: get_centroids(domain, -X, masses, R0=R0)[0]
     return frank_wolfe(Y, X0, lmo, dot_product, tol, t_max=niter, callback=callback)
+
+
+def cluster(X, masses, tol=1e-6):
+    """Their cluster (ConvexOrderProjectionUtils.py): merges the points closer than tol."""
+    distance = cdist(X, X, "euclidean")
+    mask = distance < tol
+    upper_distance_sparse0 = csr_matrix(triu(mask, k=0).astype(int))
+    upper_distance_sparse = csr_matrix(triu(mask, k=1).astype(int))
+    indices = np.asarray(upper_distance_sparse.sum(axis=0)).flatten() == 0
+    cluster_map_sparse = csr_matrix(upper_distance_sparse0)[indices, :]
+    cluster_map_norm = csr_matrix(cluster_map_sparse.T / cluster_map_sparse.sum(axis=1).flatten()).T
+    Xcluster = np.array([cluster_map_norm @ X[:, 0].copy(), cluster_map_norm @ X[:, 1].copy()]).T
+    return Xcluster, cluster_map_sparse @ masses, cluster_map_sparse + 0.0
+
+
+def convex_order_subgradient(domain, Z, Y, masses0, niter=600, tau=2., tol=1e-5, tolcluster=1e-6,
+                             lengthscale=1., callback=None):
+    """Their convex_order_projection (ConvexOrderProjectionUtils.py) without a lower bound: subgradient
+    steps tau/(i+1) on the dual of the convex-order projection of Y, and the running average of the
+    iterates, whose change below tol stops the run. The diagram of an iterate has the rescaled iterate
+    as generators, as in their code. callback(i, Z, error) after each iterate; returning True stops.
+    Returns the last iterate Z, the number of iterations, the status and the last change error."""
+    Z = np.array(Z, dtype=float, copy=True)
+    Zavg = Z.copy()
+    k, status, error = 0, "max iterations", np.inf
+    for i in range(niter):
+        Zrescale = (Z - np.min(Z) + .02) / (np.max(Z) - np.min(Z) + .02) * lengthscale
+        Zcluster, masses, cluster_map = cluster(Zrescale, masses0, tolcluster)
+        ot = OptimalTransport(domain=domain, positions=Zcluster, masses=masses, weights=np.zeros(len(masses)),
+                              verbosity=0, linear_solver='Scipy')
+        ot.adjust_weights()
+        COUNTERS.add(ot)
+        if np.linalg.norm(ot.pd.integrals() - masses) > 1e-6:
+            status = "OT error"
+            break
+        B = cluster_map.T @ ot.get_centroids()
+        minusgrad = -Z + Y - B
+        Z = Z + tau / (i + 1) * minusgrad
+        Zavgold = Zavg.copy()
+        Zavg = (Zavg * (i + 2) * (i + 1) + 2 * Z * (i + 2)) / (i + 2) / (i + 3)
+        error = np.linalg.norm(Zavgold - Zavg)
+        k = i + 1
+        if callback is not None and callback(i, Z, error):
+            status = "stopped"
+            break
+        if error < tol:
+            status = "converged"
+            break
+    return Z, k, status, error

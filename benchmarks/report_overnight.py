@@ -58,6 +58,8 @@ LOG_FIELDS = ["case", "method", "converged", "stoppedBy", "iterations", "seconds
 SYNTHETIC_FIELDS = ["n", "noise", "volumes", "seed"]
 RULE_3 = "rule 3: volume and shift residuals of H (eq. results-termination)"
 RULE_1 = "rule 1: SLSQP objective change <= tol |H(start)|, volumes within 0.1 % (Bourne 2025)"
+RULE_THEIRS = {"fw": "their rule: FW gap <= their tolerance (Bourne 2026)",
+               "subgrad": "their rule: change of the running average < 1e-5 (Bourne 2026)"}
 
 
 def write_log(path, rows, extra=()):
@@ -76,10 +78,13 @@ def synthetic_log(d):
         rows.append(dict(r, method="our H", converged=ok, stoppedBy="rule 3" if ok else r.get("status"),
                          rule=RULE_3, tolerance=float(TOL)))
     for r in read_csv(os.path.join(sd, "theirs.csv")):
-        rule = r.get("stoppingRule")
-        rows.append(dict(r, method="their SLSQP" if r.get("method") == "slsqp" else "their FW (t = 100)",
-                         converged=r.get("stopped") == rule, stoppedBy=r.get("stopped"),
-                         rule=RULE_1 if rule == "rule 1" else RULE_3, tolerance=float(TOL),
+        m = r.get("method")
+        if m == "slsqp":
+            name, rule, converged, tol = "their SLSQP", RULE_1, r.get("stopped") == "rule 1", float(TOL)
+        else:
+            name = "their FW (t = 100)" if m == "fw" else "their subgradient (t = 100)"
+            rule, converged, tol = RULE_THEIRS[m], r.get("stopped") == "their rule", float(r["theirRuleTol"])
+        rows.append(dict(r, method=name, converged=converged, stoppedBy=r.get("stopped"), rule=rule, tolerance=tol,
                          volumeResidual=r.get("finalVolumeResidual"), shiftResidual=r.get("finalShiftResidual")))
     write_log(os.path.join(d, "log-synthetic.csv"), rows, SYNTHETIC_FIELDS)
 
