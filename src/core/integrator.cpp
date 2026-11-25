@@ -56,7 +56,7 @@ Integrator::_Prepare(const ParticleState& in, ParticleState& out, Result& res) c
     out._positions = in._positions;
     return fill(in._velocities, dim * n, out._velocities, "velocities") and
            fill(in._shifts, dim * n, out._shifts, "shifts") and fill(in._weights, n, out._weights, "weights") and
-           fill(in._pressures, n, out._pressures, "pressures");
+           fill(in._pressures, n, out._pressures, "pressures") and fill(in._forces, dim * n, out._forces, "forces");
 }
 
 void

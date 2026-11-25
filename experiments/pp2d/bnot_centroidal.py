@@ -52,7 +52,16 @@ def four_vortices(x, scale=0.1):
     return scale * np.c_[np.sin(a) * np.sin(b), np.cos(a) * np.cos(b)]
 
 
-FIELDS = {"4vortices": four_vortices}
+def one_vortex(x, scale=0.1):
+    """The one-vortex field of the original code (pp2, Sim::add_1vortex_vel in SimInit.cpp) added to
+    particles at rest: u = s sin^2(a) sin(2 b), v = -s sin^2(b) sin(2 a), a = pi (x - 1/2), b = pi (y - 1/2),
+    with the default scale s = 0.1 of its dialog (Window.cpp). On [-1/2, 1/2]^2 it is a single
+    divergence-free vortex about the centre, tangent to the walls."""
+    a, b = np.pi * (x[:, 0] - 0.5), np.pi * (x[:, 1] - 0.5)
+    return scale * np.c_[np.sin(a) ** 2 * np.sin(2 * b), -np.sin(b) ** 2 * np.sin(2 * a)]
+
+
+FIELDS = {"4vortices": four_vortices, "1vortex": one_vortex}
 BOX = (-0.5, -0.5, 0.5, 0.5)  # square.line of the yesweights inputs
 DIAM = np.hypot(BOX[2] - BOX[0], BOX[3] - BOX[1])
 

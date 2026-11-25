@@ -29,9 +29,11 @@ public:
     const char* GetName() const override { return "Constrained"; }
     Result Initialize(ParticleState& state) const override;
     Result Step(ParticleState& state, double dt) const override;
+    // kappa Phi, Phi = Q + R (exact for the quantization potential; the other potentials are
+    // reported with the same expression).
     double GetPotential(double quantization, double centroidResidual) const override
     {
-        return quantization + centroidResidual;
+        return _options._stiffness * (quantization + centroidResidual);
     }
 
     // The gauge (dilation s, translation t, branch dilations s_B) of the last

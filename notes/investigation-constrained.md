@@ -95,3 +95,7 @@ integrator are those of a static H solve on the same particles, up to a
 homothety), and the cut-cell detection (Hopcroft-Tarjan, b - 1 sides).
 Stale velocities in the first BNOT inputs made the breakdown 8 times earlier
 (fixed: bnot_centroidal.py --velocity 4vortices).
+
+## Overnight report (2026-11-25)
+
+See experiments/pp2d/report/REPORT.md: the explicit scheme with the softened potential does not work; Newmark (theta = 1/4) runs at dt = 0.01 until t ~ 1 (four-vortex, corner flips) or 1.5-3 (one-vortex, Newton stalls).

@@ -139,26 +139,90 @@ ConstrainedIntegrator::StepWithGauge(ParticleState& state, double dt) const
         res._startMeasures = _Measure(current, start);
     }
 
-    // Prediction of eq:flow-shake-step-pred with the potential scaled by kappa = _stiffness. Its
-    // force kappa (q - p) is taken at the current generators p, so that the gauge only corrects
-    // the remainder (s - kappa dt^2 along p): the same discrete equation, with a prediction close
-    // to its solution instead of one dilated by kappa dt^2.
+    // Prediction of eq:flow-shake-step-pred with the potential scaled by kappa = _stiffness, and the
+    // force f of IntegratorOptions::_constrainedPotential:
+    //   quantization  f = q - p at the current generators p, so that the gauge only corrects the
+    //                 remainder (s - kappa dt^2 along p): the same discrete equation, with a
+    //                 prediction close to its solution instead of one dilated by kappa dt^2;
+    //   volume        f = c0 - q, with c0 the centroids of the particles' own diagram;
+    //   softened      f = -(1 + 1/alpha) u_alpha, the shifts of G_alpha with sites and targets at q.
+    // With theta = _newmarkTheta > 0 (quantization only), the prediction holds the explicit part
+    // (1 - 2 theta) f + theta f_prev of the force, and the implicit part theta kappa dt^2 (q+ - p+),
+    // with p+ = q + u, folds into G_alpha: the new particles are a - u / alpha - gauge, with
+    // targets a = (pred - beta q) / (1 - beta) and 1 / alpha = beta / (1 - beta), beta = theta kappa dt^2.
+    using Potential = IntegratorOptions::ConstrainedPotential;
     const double kappa = _options._stiffness;
+    const double theta = _options._newmarkTheta;
+    std::vector<double> weights = lambda;
+    std::vector<double> force(m);
+    auto fail = [&](const DualSolver::Result& r) {
+        res._solve = r;
+        res._status = DualSolver::GetStatusString(r._status);
+        res._error = r._error;
+        return res;
+    };
+    if (theta > 0.0 and _options._constrainedPotential != Potential::Quantization) {
+        res._error = "The Newmark weight needs the quantization potential.";
+        return res;
+    }
+    if (_options._constrainedPotential == Potential::Volume) {
+        VolumeSolver volumeSolver(_params._solver);
+        const DualSolver::Result vr = volumeSolver.Solve(_domain, q, _volumes, weights);
+        if (not vr.HasConverged()) {
+            return fail(vr);
+        }
+        const std::vector<double>& c0 = vr._diagram.GetCells()._centroids;
+        for (size_t k = 0; k < m; ++k) {
+            force[k] = c0[k] - q[k];
+        }
+    } else if (_options._constrainedPotential == Potential::Softened) {
+        std::vector<double> us, ws = lambda;
+        DualSolver::Result sr = MakeJointStart(_domain, q, q, _volumes, 0.0, us, ws);
+        if (sr.HasConverged()) {
+            sr = SoftenedSolver(_params._solver).Solve(_domain, q, q, _volumes, _options._alpha, us, ws);
+        }
+        if (not sr.HasConverged()) {
+            return fail(sr);
+        }
+        for (size_t k = 0; k < m; ++k) {
+            force[k] = -(1.0 + 1.0 / _options._alpha) * us[k];
+        }
+    } else {
+        for (size_t k = 0; k < m; ++k) {
+            force[k] = q[k] - generators[k];
+        }
+    }
+    const std::vector<double>& previous = cur._forces;
     std::vector<double> predicted(m);
     for (size_t k = 0; k < m; ++k) {
-        predicted[k] = q[k] + dt * cur._velocities[k] + kappa * dt * dt * (q[k] - generators[k]);
+        predicted[k] = q[k] + dt * cur._velocities[k] +
+                       kappa * dt * dt * ((1.0 - 2.0 * theta) * force[k] + theta * previous[k]);
+    }
+    const double beta = theta * kappa * dt * dt;
+    if (beta >= 1.0) {
+        res._error = "The Newmark step needs theta kappa dt^2 < 1.";
+        return res;
+    }
+    const double invAlpha = beta / (1.0 - beta);
+    std::vector<double> targets = predicted;
+    if (theta > 0.0) {
+        for (size_t k = 0; k < m; ++k) {
+            targets[k] = (predicted[k] - beta * q[k]) / (1.0 - beta);
+        }
     }
 
     std::vector<double> shifts;
-    std::vector<double> weights = lambda;
-    res._solve = MakeJointStart(_domain, q, predicted, _volumes, 0.0, shifts, weights);
+    res._solve = MakeJointStart(_domain, q, targets, _volumes, 0.0, shifts, weights);
     res._status = DualSolver::GetStatusString(res._solve._status);
     if (not res._solve.HasConverged()) {
         res._error = res._solve._error;
         return res;
     }
     ConstrainedJointSolver solver(_params._solver);
-    res._solve = solver.Solve(_domain, q, predicted, _volumes, generators, sides, shifts, weights, res._gauge);
+    if (theta > 0.0) {
+        solver.SetSoftening(1.0 / invAlpha);
+    }
+    res._solve = solver.Solve(_domain, q, targets, _volumes, generators, sides, shifts, weights, res._gauge);
     res._status = DualSolver::GetStatusString(res._solve._status);
     res._iterations = res._solve._iterations;
     if (not res._solve.HasConverged()) {
@@ -195,15 +259,16 @@ ConstrainedIntegrator::StepWithGauge(ParticleState& state, double dt) const
     next._positions.resize(m);
     next._velocities.resize(m);
     next._pressures = cur._pressures;
+    next._forces = force;
     std::vector<double> nextGenerators(m), nextLambda(weights.size());
     for (size_t i = 0; i < weights.size(); ++i) {
         double l = weights[i];
         for (int c = 0; c < dim; ++c) {
             const size_t k = size_t(dim) * i + size_t(c);
-            next._positions[k] = predicted[k] - s * generators[k] - t[c] - arms[k];
+            next._positions[k] = targets[k] - invAlpha * shifts[k] - s * generators[k] - t[c] - arms[k];
             next._velocities[k] = (next._positions[k] - q[k]) / dt;
             nextGenerators[k] = q[k] + shifts[k];
-            l += shifts[k] * shifts[k] + 2.0 * shifts[k] * (q[k] - predicted[k]);
+            l += shifts[k] * shifts[k] + 2.0 * shifts[k] * (q[k] - targets[k]);
         }
         nextLambda[i] = l;
     }

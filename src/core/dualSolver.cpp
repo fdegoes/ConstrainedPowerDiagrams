@@ -785,7 +785,7 @@ ConstrainedJointSolver::Solve(
             }
         }
     }
-    JointDual dual(domain, sites, targets, volumes, HUGE_VAL, JointDual::Unknowns::ShiftsAndWeights);
+    JointDual dual(domain, sites, targets, volumes, _alpha, JointDual::Unknowns::ShiftsAndWeights);
     Vector z = _PackInitial(dual, shifts, weights);
     _BuildConstraints(dual, direction, sides);
 

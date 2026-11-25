@@ -27,6 +27,9 @@ struct ParticleState
     // Power Particles only: the pressures of the previous step (unused by
     // the other integrators).
     std::vector<double> _pressures;
+    // Constrained with IntegratorOptions::_newmarkTheta > 0: the force f = q - p of the
+    // potential at the previous step (dim per particle), unscaled by kappa.
+    std::vector<double> _forces;
 };
 
 // Energy and momentum of a particle fluid, to monitor a simulation over
@@ -94,6 +97,31 @@ struct IntegratorOptions
         EveryStep
     };
     VelocityProjection _velocityProjection = VelocityProjection::None;
+    // Constrained: the potential of the Lagrangian sum V |dq/dt|^2 - kappa Phi, scaled by kappa =
+    // _stiffness. Quantization: Phi of latex/flow.tex (eq:flow-centroid-potential), whose force
+    // kappa (q - p) acts through the generators p of the constrained diagram and is stiff along its
+    // soft generator modes. Volume: the potential max_w F of the volume dual at the particles (the
+    // potential of Gallouet & Merigot, the limit alpha -> 0 of the softened potential), whose force
+    // kappa (c0 - q), with c0 the centroids of the particles' own diagram with the prescribed volumes,
+    // has a Hessian bounded by 2 kappa Vbar; kappa = 1 / dt^2 makes the prediction c0 + dt v, the site
+    // update of Power Particles.
+    // Softened: the potential max G_alpha of latex/flow.tex (eq:flow-softened-potential), with
+    // alpha = _alpha and sites and targets at the particles, whose force -(1 + 1/alpha) u_alpha
+    // has a Hessian bounded by 2 kappa (1 + alpha) Vbar.
+    enum class ConstrainedPotential
+    {
+        Quantization,
+        Volume,
+        Softened
+    };
+    ConstrainedPotential _constrainedPotential = ConstrainedPotential::Quantization;
+    // Constrained, quantization potential: weight theta of the force at the new step in
+    //   q+ - 2 q + q- = dt^2 kappa (theta f+ + (1 - 2 theta) f + theta f-) - gauge,
+    // with f = q - p: 0 is Stormer-Verlet (eq:flow-discrete), 1/4 the average-acceleration
+    // Newmark scheme (unconditionally stable on linear modes, variational: Kane et al. 2000), 1 the
+    // force at the new step only (dissipative). For theta > 0 the implicit term folds into the
+    // maximization of G_alpha with 1/alpha = beta / (1 - beta), beta = theta kappa dt^2 < 1.
+    double _newmarkTheta = 0.0;
 };
 
 // One time step of a particle fluid whose particles carry the prescribed

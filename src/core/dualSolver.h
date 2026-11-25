@@ -417,6 +417,7 @@ public:
     // sides      the cut cells of the dual graph of the direction and their
     //            sides; empty when it has none
     // gauge      (s, t, s_B) of the last Newton step on return
+    // With SetSoftening(alpha), the objective is G_alpha (eq:regularized-dual) instead of G.
     Result Solve(
         const Domain& domain,
         const std::vector<double>& sites,
@@ -441,6 +442,9 @@ public:
         return Solve(domain, sites, targets, volumes, direction, {}, shifts, weights, gauge);
     }
 
+    // Stiffness alpha of the softened objective G_alpha, HUGE_VAL (the default) for G.
+    void SetSoftening(double alpha) { _alpha = alpha; }
+
 protected:
     // Sets the border rows of the damped steps, and the gauge from the
     // least-squares multipliers of the stationarity condition.
@@ -456,6 +460,7 @@ private:
 
     std::vector<Vector> _rows;
     Gauge               _gauge;
+    double              _alpha = HUGE_VAL;
 };
 
 // Maximizes the volume dual F (latex/background.tex, eq:volume-dual) over the

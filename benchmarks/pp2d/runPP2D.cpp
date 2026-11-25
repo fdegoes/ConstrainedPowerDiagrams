@@ -280,7 +280,7 @@ _Usage()
     std::cerr << "usage: runPP2D <domain.line> <particles.pp|.dat> <param.txt> <out_dir> "
                  "[--integrator powerparticles|constrained|softened|gm] [--frames N] [--every K] "
                  "[--alpha A] [--stiffness k] [--maxiter N] [--volumetol T] [--lloydtol T] [--lloyditers N] "
-                 "[--velocity-projection none|initial|every] [--no-csv] [--no-energy] [--log]"
+                 "[--velocity-projection none|initial|every] [--potential quantization|volume|softened] [--theta T] [--retry N] [--stretchlimit S] [--pairreg R] [--no-csv] [--no-energy] [--log]"
               << std::endl;
     return 2;
 }
@@ -295,7 +295,7 @@ main(int argc, char** argv)
     }
     const std::string linePath = argv[1], particlesPath = argv[2], paramPath = argv[3], out = argv[4];
     std::string kindName = "powerparticles";
-    int frames = 100, every = 1;
+    int frames = 100, every = 1, retries = 0;
     bool writeFrames = true, writeEnergy = true;
     PP::IntegratorOptions options;
     Integrator::Parameters params;
@@ -321,6 +321,8 @@ main(int argc, char** argv)
             kindName = v;
         } else if (a == "--frames") {
             frames = std::stoi(v);
+        } else if (a == "--retry") {
+            retries = std::max(0, std::stoi(v));  // halvings of a failed step before giving up
         } else if (a == "--every") {
             every = std::max(1, std::stoi(v));
         } else if (a == "--alpha") {
@@ -344,6 +346,23 @@ main(int argc, char** argv)
                 return _Usage();
             }
             options._velocityProjection = modes.at(v);
+        } else if (a == "--potential") {
+            // Constrained: quantization (latex/flow.tex) or volume (the force kappa (c0 - q)).
+            if (v == "quantization") {
+                options._constrainedPotential = PP::IntegratorOptions::ConstrainedPotential::Quantization;
+            } else if (v == "volume") {
+                options._constrainedPotential = PP::IntegratorOptions::ConstrainedPotential::Volume;
+            } else if (v == "softened") {
+                options._constrainedPotential = PP::IntegratorOptions::ConstrainedPotential::Softened;
+            } else {
+                return _Usage();
+            }
+        } else if (a == "--theta") {
+            options._newmarkTheta = std::stod(v);  // constrained: weight of the force at the new step
+        } else if (a == "--stretchlimit") {
+            params._solver._stretchLimit = std::stod(v);  // 0 disables the fraction-to-the-boundary rule
+        } else if (a == "--pairreg") {
+            params._solver._pairRegularizationRadius = std::stod(v);  // 0 disables the pair regularization
         } else if (a == "--volumetol") {
             params._solver._volumeTolerance = params._solver._shiftTolerance = std::stod(v);
         } else {
@@ -500,6 +519,13 @@ main(int argc, char** argv)
                 }
                 h = std::min(h, pp._dt - done);
                 r = integrator->Step(state, h);
+                // A failed step leaves the state unchanged; retry it with half the step.
+                for (int k = 0; k < retries and not r.HasConverged(); ++k) {
+                    h *= 0.5;
+                    std::cerr << "frame " << frame << ": step failed (" << r._status << "), retrying with dt " << h
+                              << std::endl;
+                    r = integrator->Step(state, h);
+                }
                 if (r.HasConverged() and pending._active) {
                     log(pending._frame, pending._t, pending._substeps, pending._iterations, pending._res,
                         r._startMeasures);
