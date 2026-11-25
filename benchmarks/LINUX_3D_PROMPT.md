@@ -1,7 +1,7 @@
 # Prompt: 3D synthetic runs of our G on the Linux machine
 
 For the user, before pasting: commit and push this file first, so that
-`git pull` on the Linux machine gets it. Run it after the Table 1 run
+`git pull` on the Linux machine gets it. The results come back by `git pull`. Run it after the Table 1 run
 (`benchmarks/LINUX_TABLE1_PROMPT.md`) has finished, never at the same time.
 
 Paste everything below the line into a Claude Code session on the Linux
@@ -150,20 +150,22 @@ Report to the user:
 - the hardware: CPU model (`lscpu | grep 'Model name'`), `nproc`, and RAM
   (`free -g`).
 
-Package the CSV, logs and case files for the user's Mac. The per-case
-`ours.json` files hold trajectories and are large, so leave them out:
+Commit the CSV and the logs (a few hundred kB; the case files and the per-case
+`ours.json` files stay on the machine). The folder is ignored, so add the files
+with `-f`, and commit only them:
 
 ```sh
-tar czf "$(basename "$OUT").tar.gz" --exclude='ours.json' -C benchmarks/synthetic "$(basename "$OUT")"
-ls -la "$(basename "$OUT").tar.gz"
+git add -f "$OUT/ours.csv" "$OUT/run.log" "$OUT/generate.log" "$OUT/load-start.txt" "$OUT/load-end.txt"
+git commit -m "3D synthetic benchmark of our G on the Linux machine" -- "$OUT"
+git push
 ```
 
-Report the path and the size of the tar file. Keep `$OUT` on the machine
-until the user confirms the copy.
+If the push fails (no credentials or no network), stop and tell the user;
+leave the commit in place. Keep `$OUT` on the machine.
 
 ---
 
-## On the Mac, after copying the tar file back
+## On the Mac, after `git pull`
 
-Unpack it into `benchmarks/synthetic/`. The figure and the statistics for the
-paper are made from `results3d-linux-<date>/ours.csv`.
+The figure and the statistics for the paper are made from
+`benchmarks/synthetic/results3d-linux-<date>/ours.csv`.
