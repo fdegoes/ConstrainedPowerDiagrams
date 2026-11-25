@@ -14,7 +14,9 @@ iterations of the centroidal start (linear convergence).
 Output: a copy of the input .pp with the <pos> records replaced and the <weight> records set to the
 weights of the new positions (solved to 1e-13 in the volumes), so that integrators that start from
 the loaded weights (Power Particles, pp2) start from the cells with the prescribed volumes.
-Velocities, masses and targetVol are unchanged. --maxiter 0 only rewrites the weights.
+Masses and targetVol are unchanged. The velocities are unchanged too, unless --velocity names a
+closed-form field, which is then evaluated at the new positions (the stored velocities were sampled
+at the old ones). --maxiter 0 keeps the positions and only rewrites the weights (and velocities).
 
 Usage (from the repository root):
   external/bourne/.venv/bin/python experiments/pp2d/bnot_centroidal.py
@@ -39,6 +41,18 @@ import bourne_ref as ref  # noqa: E402
 POS = re.compile(r"<pos\s+([-\d.eE+]+)\s+([-\d.eE+]+)\s*/>")
 TARGET = re.compile(r"<targetVol\s+([-\d.eE+]+)\s*/>")
 WEIGHT = re.compile(r"<weight\s+([-\d.eE+]+)\s*/>")
+VEL = re.compile(r"<vel\s+([-\d.eE+]+)\s+([-\d.eE+]+)\s*/>")
+
+
+def four_vortices(x, scale=0.1):
+    """The four-vortex field of the original code (pp2, Sim::add_4vortices_vel in SimInit.cpp) added to
+    particles at rest: u = s sin(2 pi x) sin(2 pi (y - 1/4)), v = s cos(2 pi x) cos(2 pi (y - 1/4)), with
+    the default scale s = 0.1 of its dialog (Window.cpp)."""
+    a, b = 2 * np.pi * x[:, 0], 2 * np.pi * (x[:, 1] - 0.25)
+    return scale * np.c_[np.sin(a) * np.sin(b), np.cos(a) * np.cos(b)]
+
+
+FIELDS = {"4vortices": four_vortices}
 BOX = (-0.5, -0.5, 0.5, 0.5)  # square.line of the yesweights inputs
 DIAM = np.hypot(BOX[2] - BOX[0], BOX[3] - BOX[1])
 
@@ -74,6 +88,8 @@ def main():
     ap.add_argument("input")
     ap.add_argument("--out", default=None)
     ap.add_argument("--maxiter", type=int, default=2000)
+    ap.add_argument("--velocity", choices=list(FIELDS), default=None,
+                    help="evaluate this closed-form velocity at the new positions")
     args = ap.parse_args()
     out = args.out or os.path.splitext(args.input)[0] + "_centroidal.pp"
 
@@ -111,6 +127,13 @@ def main():
     text = POS.sub(lambda m: "<pos %.10g %.10g />" % tuple(next(it)), text)
     iw = iter(w.tolist())
     text = WEIGHT.sub(lambda m: "<weight %.17g />" % next(iw), text)
+    if args.velocity:
+        old = np.array(VEL.findall(text), float)
+        vel = FIELDS[args.velocity](x)
+        print("velocities: %s at the new positions, max change %.2e (max speed %.3f)"
+              % (args.velocity, np.abs(vel - old).max(), np.linalg.norm(vel, axis=1).max()), flush=True)
+        iv = iter(vel.tolist())
+        text = VEL.sub(lambda m: "<vel %.17g %.17g />" % tuple(next(iv)), text)
     with open(out, "w") as f_out:
         f_out.write(text)
     print("wrote", out, flush=True)
