@@ -43,18 +43,49 @@ is that the regularization acts faster than the flow shears the particles,
 1/sqrt(kappa) < h / v, which suggests kappa ~ (v / h)^2 (here (0.1 / 0.014)^2
 ~ 50; kappa = 100 works, 1 does not). To be checked.
 
+## The second missing element: a stiff soft mode
+
+Both the late failure and the step-size limit are one instability. Before the
+failure at t ~ 0.236 (kappa = 100, dt = 0.001), the generator offsets grow as a
+global anisotropic strain of the generators, u ~ S q (S11 - S22 dominant; the
+dilation, rotation and translation stay negligible), which alternates in sign
+every step and grows by a factor 1.09 (step 227) to 1.74 (step 236): the
+signature of Stormer-Verlet beyond its stability bound.
+
+This strain is a soft mode of the centroid map: at step 226 the generator
+strain swings by 3.8e-3 per step while the particle strain changes by about
+dt x 9e-5 = 9e-8, an amplification A ~ 4e4. Through the force kappa (q - p) of
+the potential, the particles feel a stiffness omega^2 ~ kappa A, and Verlet is
+stable only for dt omega < 2:
+
+| kappa | dt | dt sqrt(kappa A) | observed |
+|---|---|---|---|
+| 100 | 0.001 | ~ 2 | stable until A grows, then the alternating mode |
+| 100 | 0.002 | ~ 4 | fails at step 4 |
+| 1 | 0.01 | ~ 2 | fails at steps 2-3 |
+| 1 | 0.001 | ~ 0.2 | stable, but u drifts (weak potential) until t ~ 0.02 |
+
+So the constrained system is stiff: a weak potential lets the generators
+drift, a strong one makes the soft generator modes stiff for the particles.
+Candidate fixes, both symplectic:
+1. treat the potential implicitly (implicit midpoint, or a symplectic
+   splitting with the stiff part solved exactly), which removes the dt bound
+   for linear stiff modes; each step is already a nonlinear solve;
+2. remove the soft modes from the force, as the homotheties are removed by
+   the gauge, if they can be characterized (the anisotropic strain here).
+
 ## Open problems
 
-1. The jump at t ~ 0.236. Not the depth-first root of FindCutCellSides (cell 0
-   is in the main block, every side is a single corner cell). A cut cell at the
-   top-left corner disappears around step 229; the jump comes 6 steps later.
-   Next: log the solver and the gauge (s, t, s_B) over steps 225-237.
-2. The step size. With kappa = 100, dt = 0.002 fails at step 4 and 0.005 at
-   step 1; with kappa = 1, dt = 0.01 fails at step 3 at n = 5000. The SHAKE
-   correction moves along the old generators p^k, which turn fast (the
-   generators move ~10-200 times faster than the particles), so the line misses
-   the constraint set. The failures depend on kappa dt^2 and on dt.
-3. The scaling of the required kappa with n and v.
+1. The scaling of A with n, the flow and the domain, and whether the soft
+   modes are only the affine strains.
+2. The required kappa (regularization faster than the shear time h / v).
+3. Which fix keeps the scheme variational and cheap.
+
+Correction: an earlier facet script dropped the facets dual to convex-hull
+edges of the generators (their cells are unbounded before clipping), and
+reported corner cells with a single interior facet and cut cells next to them.
+They do not exist: the integrator's dual graph has no cut cells in these runs
+(sides 0 at every step), and the corner cells have two facets of about h.
 
 ## Ruled out earlier (with kappa = 1)
 

@@ -168,6 +168,18 @@ ConstrainedIntegrator::StepWithGauge(ParticleState& state, double dt) const
 
     const double s = res._gauge._dilation;
     const std::vector<double>& t = res._gauge._translation;
+    if (_params._solver._log != nullptr) {
+        *_params._solver._log << "  gauge: dilation " << s << "  translation";
+        for (double x : t) {
+            *_params._solver._log << " " << x;
+        }
+        *_params._solver._log << "  sides " << sides.size();
+        for (size_t l = 0; l < sides.size(); ++l) {
+            *_params._solver._log << "  (cut " << sides[l]._cut << ", " << sides[l]._side.size() << " cells, s_B "
+                                  << res._gauge._arms[l] << ")";
+        }
+        *_params._solver._log << std::endl;
+    }
     // Arm term of the correction: s_B (p_i - p_{c_B}) for i in B_B.
     std::vector<double> arms(m, 0.0);
     for (size_t l = 0; l < sides.size(); ++l) {
