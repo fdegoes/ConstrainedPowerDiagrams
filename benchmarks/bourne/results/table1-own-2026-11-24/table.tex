@@ -1,0 +1,16 @@
+% benchmarks/bourne/run_table1.py: rows of tab:realizable, generated 2026-11-24 16:16 on inhuman
+% columns: benchmark & method & iterations & time (s) & volume & centroid & met
+% time: wall seconds, excluding the evaluations of rule 3; residuals of rule 3 at the last iterate;
+% met: both residuals <= 1e-8
+    Voronoi                & our $\jointdual$                           & 7 & 0.0123 & $9.7{\times}10^{-9}$ & $4.7{\times}10^{-9}$ & \cmark \\
+                           & Bourne 2025                                & 261 & 11.9 & $5.8{\times}10^{-15}$ & $6.8{\times}10^{-4}$ & \xmark \\
+                           & Bourne 2026 FW                             & 558 & 6.06 & $5.1{\times}10^{-13}$ & $3.5{\times}10^{-3}$ & \xmark \\
+    % Voronoi subgrad: stopped by its iteration cap
+                           & Bourne 2026 subgrad.                       & 600 & 7.57 & $1.1{\times}10^{-12}$ & $2.5{\times}10^{-1}$ & \xmark \\
+    cross                  & our $\jointdual$                           & 27 & 0.244 & $4.6{\times}10^{-12}$ & $3.1{\times}10^{-12}$ & \cmark \\
+    % cross slsqp: stopped by its time cap
+                           & Bourne 2025                                & 212 & 1805 & $2.1{\times}10^{-13}$ & $5.2{\times}10^{-1}$ & \xmark \\
+    % cross fw: stopped by its iteration cap
+                           & Bourne 2026 FW                             & 1000 & 57.7 & $1.5{\times}10^{-8}$ & $4.8{\times}10^{-1}$ & \xmark \\
+    % cross subgrad: stopped by its iteration cap
+                           & Bourne 2026 subgrad.                       & 600 & 27.7 & $2.5{\times}10^{-12}$ & $4.9{\times}10^{-1}$ & \xmark \\

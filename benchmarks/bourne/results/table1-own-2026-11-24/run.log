@@ -1,0 +1,27 @@
+== voronoi ours (cap 1800 s, load 0.62)
+voronoi  ours     rule 3               7 it    0.012 s  residuals 9.66e-09 / 4.72e-09
+== voronoi slsqp (cap 1800 s, load 0.62)
+voronoi  slsqp    own rule           261 it   11.857 s  residuals 5.78e-15 / 6.76e-04
+== voronoi fw (cap 1800 s, load 5.17)
+voronoi  fw       own rule           558 it    6.062 s  residuals 5.14e-13 / 3.49e-03
+== voronoi subgrad (cap 1800 s, load 4.53)
+voronoi  subgrad  iteration cap      600 it    7.572 s  residuals 1.06e-12 / 2.49e-01
+== cross ours (cap 1800 s, load 4.14)
+cross    ours     rule 3              27 it    0.244 s  residuals 4.59e-12 / 3.07e-12
+== cross slsqp (cap 1800 s, load 4.14)
+cross    slsqp    time cap           212 it 1805.088 s  residuals 2.11e-13 / 5.23e-01
+== cross fw (cap 1800 s, load 3.21)
+cross    fw       iteration cap     1000 it   57.668 s  residuals 1.47e-08 / 4.78e-01
+== cross subgrad (cap 1800 s, load 3.84)
+cross    subgrad  iteration cap      600 it   27.724 s  residuals 2.47e-12 / 4.93e-01
+total 2011 s
+voronoi  ours     rule 3                  7 it       13 solves      0.012 s  vol 9.66e-09  cen 4.72e-09  own rule -
+voronoi  slsqp    own rule              261 it      530 solves     11.857 s  vol 5.78e-15  cen 6.76e-04  own rule it 261
+voronoi  fw       own rule              558 it      559 solves      6.062 s  vol 5.14e-13  cen 3.49e-03  own rule it 558
+voronoi  subgrad  iteration cap         600 it      600 solves      7.572 s  vol 1.06e-12  cen 2.49e-01  own rule not met
+cross    ours     rule 3                 27 it       32 solves      0.244 s  vol 4.59e-12  cen 3.07e-12  own rule -
+cross    slsqp    time cap              212 it      438 solves   1805.088 s  vol 2.11e-13  cen 5.23e-01  own rule not met
+cross    fw       iteration cap        1000 it     1001 solves     57.668 s  vol 1.47e-08  cen 4.78e-01  own rule not met
+cross    subgrad  iteration cap         600 it      600 solves     27.724 s  vol 2.47e-12  cen 4.93e-01  own rule not met
+wrote /pixar/ws/users/fernando/ConstrainedPowerDiagrams/benchmarks/bourne/results/table1-own-2026-11-24/results.csv and table.tex
+exit 0 wall 2012s
