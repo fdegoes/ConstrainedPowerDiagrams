@@ -70,6 +70,8 @@ struct IntegratorOptions
     // the softened integrator, 1 + alpha the strength of its centroid
     // residual (latex/flow.tex, Link to Gallouet & Merigot), 1 / eps^2 the
     // stiffness of Gallouet & Merigot (2018).
+    // Constrained: scale kappa of the potential (the Lagrangian sum V |dq/dt|^2 - kappa Phi), whose
+    // force kappa (q - p) pulls the particles towards their generators; 1 is latex/flow.tex.
     double _stiffness = 1.0;
     // Power Particles: fraction beta of the move to the centroid in the
     // advection (0.5 in the 2015 code), Newton steps of the weights

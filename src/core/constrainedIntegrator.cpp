@@ -139,9 +139,14 @@ ConstrainedIntegrator::StepWithGauge(ParticleState& state, double dt) const
         res._startMeasures = _Measure(current, start);
     }
 
+    // Prediction of eq:flow-shake-step-pred with the potential scaled by kappa = _stiffness. Its
+    // force kappa (q - p) is taken at the current generators p, so that the gauge only corrects
+    // the remainder (s - kappa dt^2 along p): the same discrete equation, with a prediction close
+    // to its solution instead of one dilated by kappa dt^2.
+    const double kappa = _options._stiffness;
     std::vector<double> predicted(m);
     for (size_t k = 0; k < m; ++k) {
-        predicted[k] = (1.0 + dt * dt) * q[k] + dt * cur._velocities[k];
+        predicted[k] = q[k] + dt * cur._velocities[k] + kappa * dt * dt * (q[k] - generators[k]);
     }
 
     std::vector<double> shifts;
