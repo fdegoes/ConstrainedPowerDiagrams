@@ -11,6 +11,9 @@ Axes:
             uniform the spacing
   volumes   uniform: all 1 / n
             voronoi: the Voronoi cell volumes of Y (zero weights)
+            lognormal50, lognormal100: lognormal volumes with a coefficient of
+              variation of 0.5 or 1, at random over the generators (stress set,
+              not in the default cases; written to volumes.txt)
   seed      of the generators
 
 The targets are the volumes and centroids of the power diagram of Y with the
@@ -39,6 +42,9 @@ MAKE = os.path.join(ROOT, "build", "makeSynthetic")
 NOISE = (0, 1, 2)
 NOISE_SPACING = (0.8, 0.5, 0.25)  # minimum distance of the generators per noise level, in cell sizes h
 VOLUMES = ("uniform", "voronoi")
+# Stress set (not in the default 600 cases): lognormal volumes, the usual model of grain sizes,
+# with these coefficients of variation, assigned to the generators at random.
+LOGNORMAL = {"lognormal50": 0.5, "lognormal100": 1.0}
 
 
 def dart_throwing(n, rng, spacing=None, max_tries_per_point=1000, dim=2):
@@ -89,6 +95,16 @@ def generators(n, noise, seed, dim=2):
     return dart_throwing(n, rng, spacing=lambda p: np.full(np.shape(p)[:-1], r), dim=dim)
 
 
+def lognormal_volumes(n, volumes, seed, dim=2):
+    """n volumes with a lognormal distribution of coefficient of variation LOGNORMAL[volumes]
+    (sigma^2 = log(1 + cv^2)), normalized to sum 1 (makeSynthetic normalizes too); their own
+    random stream, so that the generators are those of the uniform and Voronoi cases."""
+    cv = LOGNORMAL[volumes]
+    rng = np.random.default_rng([seed, n, dim, int(round(100 * cv)), 7])
+    v = rng.lognormal(0.0, math.sqrt(math.log(1.0 + cv * cv)), n)
+    return v / v.sum()
+
+
 def case_name(n, noise, volumes, seed):
     return "noise%d-%s-%d-%d" % (noise, volumes, n, seed)
 
@@ -114,7 +130,12 @@ def make_case(root, n, noise, volumes, seed, force=False, dim=2):
         with open(os.path.join(d, "generators.txt"), "w") as f:
             f.write("%d\n" % n if dim == 2 else "%d %d\n" % (n, dim))
             f.write(" ".join(repr(float(x)) for x in Y.ravel()) + "\n")
-        subprocess.run([MAKE, os.path.join(d, "generators.txt"), volumes, data], check=True,
+        mode = volumes
+        if volumes in LOGNORMAL:
+            mode = os.path.join(d, "volumes.txt")
+            with open(mode, "w") as f:
+                f.write("%d\n" % n + " ".join(repr(float(x)) for x in lognormal_volumes(n, volumes, seed, dim)) + "\n")
+        subprocess.run([MAKE, os.path.join(d, "generators.txt"), mode, data], check=True,
                        stdout=subprocess.DEVNULL)
         c = read_data(data)
         json.dump({"n": n, "dim": dim, "noise": noise, "volumes": volumes, "seed": seed,
