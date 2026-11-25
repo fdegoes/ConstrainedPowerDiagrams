@@ -5,11 +5,19 @@ results, ideally built on Sec. 4 (the joint dual G and the softened dual G_alpha
 were tested: (A) the explicit constrained integrator of Sec. 5.2 with the softened potential of
 Sec. 5.3, and (B) a Newmark time discretization of the constrained integrator.
 
-**Summary.** (A) does not work. (B) works at PP's time step, dt = 0.01, and conserves energy
-better than PP and GM while keeping volumes and centroids exact, but it breaks down at a finite
-time (t ~ 1 on the four-vortex case, 1.5-3 on the one-vortex case), set by the flow and not by
-the time step or the resolution. The breakdowns have two causes, diagnosed below: a singular
-generator excursion at flips next to strained corners, and Newton stalls whose origin is open.
+**Summary.**
+- (A) does not work: the explicit correction itself fails at dt = 0.01 (even with no
+  potential), and at small dt the bounded softened force cannot hold the generators.
+- (B) Newmark (theta = 1/4) is the right time discretization: variational, stable at PP's
+  dt = 0.01, each step one concave G_alpha maximization with the gauge constraints of Sec. 5.2.
+  It conserves energy better than PP and GM and keeps volumes and centroids exact.
+- But its scale kappa of the potential faces a trade-off. With kappa <= 100 the generators
+  drift and runs break down (t ~ 0.8-2 on the squares, ~1 on a corner-free disk). With
+  kappa >= 1000 they survive (disk and one-vortex to T = 3) but 15-50 % of the kinetic energy
+  moves into kappa Phi, which acts as a shear elasticity of the cells (PP keeps 99.5 %). At
+  strained corners (four-vortex) every kappa breaks down at t ~ 1.
+- This is GM's dilemma in another form: a conservative regularization stores energy, PP's
+  dissipative one does not. See "The trade-off behind all the failures" and "Next options".
 
 ## Setup
 
