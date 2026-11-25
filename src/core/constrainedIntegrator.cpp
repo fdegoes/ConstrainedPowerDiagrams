@@ -213,6 +213,14 @@ ConstrainedIntegrator::StepWithGauge(ParticleState& state, double dt) const
 
     std::vector<double> shifts;
     res._solve = MakeJointStart(_domain, q, targets, _volumes, 0.0, shifts, weights);
+    if (not res._solve.HasConverged()) {
+        // The warm start, the shifted weights of the generators p, may leave empty cells at the
+        // sites q when p and q differ; start the volume solve again from zero weights (the
+        // Voronoi cells of q, none empty).
+        weights.clear();
+        shifts.clear();
+        res._solve = MakeJointStart(_domain, q, targets, _volumes, 0.0, shifts, weights);
+    }
     res._status = DualSolver::GetStatusString(res._solve._status);
     if (not res._solve.HasConverged()) {
         res._error = res._solve._error;

@@ -135,6 +135,63 @@ diagrams show the same deformation; the constrained cells are the most regular. 
    identical one-vortex runs, two failed at step 173 and one at step 14 ("damping failed"),
    with trajectories that agreed to 1e-11 at step 10. Failure times have a random component.
 
+## Second round: a disk, larger kappa, a cold start
+
+**A cold-start fallback.** On the disk, some steps failed in the volume solve that sets up the
+start (at the particles, warm-started from the shifted weights of the generators, which can
+leave empty cells at the particles). The step now restarts that solve from zero weights (the
+Voronoi cells of the particles) when the warm start fails.
+
+**A disk without corners** (experiments/pp2d/disk/make_disk.py: a 128-gon of radius 1/2, 1958
+particles relaxed by Lloyd, the differential rotation v_theta = 4 U (r/R)(1 - r^2/R^2), peak 0.1;
+shear everywhere, no stagnation corner), dt = 0.01, T = 3, `--retry 3`:
+
+| run | result | K/K0 [min] | energy drift | closest pair | max \|u\| |
+|---|---|---|---|---|---|
+| PP | T = 3 | 0.993 | 7.3e-3 | 0.75 h | - |
+| GM, eps = 3 dt | T = 3, unstable (K peaks at 24 K0) | 1.17 | 1.3e-1 | 0.50 h | 0.13 h |
+| Newmark, kappa 10, 30 | fail within 10 steps | | | | |
+| Newmark, kappa 100 | fails at t ~ 1.0-1.1 | | | | |
+| Newmark, kappa 300 | fails at t ~ 2.9 | 0.877 | 6.5e-4 | 0.71 h | 1.96 h |
+| Newmark, kappa 1000 | T = 3 | 0.842 [0.822] | 1.1e-3 | 0.73 h | 0.35 h |
+| Newmark, kappa 3000 | T = 3 | 0.863 [0.778] | 1.7e-4 | 0.75 h | 0.14 h |
+| theta = 1, kappa 1000 | T = 3 | 0.831 [0.818] | 2.9e-3 | 0.73 h | 0.13 h |
+
+So the corners are not the only cause: with kappa <= 100 the disk breaks too (the failing steps
+show the residual stuck while the objective creeps up, as in the one-vortex stalls).
+
+**Larger kappa on the squares** (dt = 0.01, `--retry 3`):
+
+| run | four-vortex | one-vortex (K/K0 at T = 3) |
+|---|---|---|
+| Newmark, kappa 1000 | fails at t ~ 0.9-1.0 | T = 3 (0.708) |
+| Newmark, kappa 3000 | fails at t ~ 1.0-1.1 | T = 3 (0.474) |
+| theta = 1, kappa 1000 | fails at t ~ 0.9-1.0 | T = 3 (0.683) |
+| PP | T = 2 | T = 3 (0.995) |
+
+## The trade-off behind all the failures
+
+- **Small kappa (<= 100):** the generators drift from the particles and the correction cannot
+  reach the realizable set. A variational step of this Lagrangian must correct along the
+  current normal p^k (this follows from the discrete kinetic energy |c^{k+1} - c^k|^2: written in
+  generator coordinates p, with c = c(p) always realizable, its discrete Euler-Lagrange equations
+  are exactly eq. 32), and the normals of the realizable set turn fast (amplification A ~ 4e4).
+  Newmark relaxes the correction only by u / alpha with 1/alpha ~ theta kappa dt^2.
+- **Large kappa (>= 1000):** the runs survive (disk, one-vortex to T = 3) but 15-50 % of the
+  kinetic energy moves into kappa Phi. Phi is the quantization error, a measure of the cell
+  shapes, so kappa Phi acts as a shear elasticity: the flow shears the cells, Q grows, and the
+  energy comes from the flow. Little drain needs kappa dQ << K, i.e. kappa << K / Q ~ 0.005 / 3e-5
+  ~ 150 here; holding the generators needs kappa >~ 300-1000. There is no window at n = 5000,
+  and both bounds scale like n (Q ~ h^2), so refining does not open one.
+- **Strained corners (four-vortex):** fail at t ~ 1 for every kappa.
+
+This is GM's dilemma in another form: a conservative scheme that keeps the particle
+arrangement regular stores the regularization energy, and that energy behaves like a shear
+elasticity. PP keeps the arrangement regular by discarding that energy (the Lloyd step and the
+projection that drops the Lloyd velocity), which no symplectic scheme can do. The exact-centroid
+constraint stores no energy, but alone it does not keep the arrangement regular (kappa = 0
+breaks down at t ~ 0.02).
+
 ## Conclusions
 
 - The time discretization is settled: Newmark (theta = 1/4) is variational, unconditionally
@@ -150,13 +207,20 @@ diagrams show the same deformation; the constrained cells are the most regular. 
 
 ## Next options
 
-1. Test the corner hypothesis without corners: a periodic square (Taylor-Green is periodic on
-   [-1/2, 1/2]^2) or a disk. If the constrained Newmark scheme then runs like PP, the fix is a
-   boundary treatment, e.g. mirrored generators across the walls, which turns boundary flips
-   into interior ones.
-2. At a stalled step, locate the residual (cells and constraint rows) and check whether the
+0. Decide whether the goal should allow the regularization to be non-conservative only on the
+   particle-scale modes (as PP does), with the flow-scale dynamics variational; or keep it fully
+   conservative and accept a shear elasticity kappa Phi (then choose kappa for the drain, and
+   study when the breakdown happens).
+
+1. A variational integrator in generator coordinates with a midpoint discrete kinetic energy
+   (the centroid Jacobian dc/dp, from the blocks of the Hessian of G, at the midpoint): its
+   correction follows the normal at the midpoint rather than at q^k, and there is no line to
+   miss. Each step is a Newton solve in p.
+2. Mirrored generators across the walls, which turn the boundary flips at the strained corners
+   into interior ones (the disk test shows this alone is not enough at small kappa).
+3. At a stalled step, locate the residual (cells and constraint rows) and check whether the
    constrained maximizer of G_alpha is in the valid region.
-3. If the stalls are a solver issue, accept a step whose residual has stalled below a looser
+4. If the stalls are a solver issue, accept a step whose residual has stalled below a looser
    bound (1e-3 of the cell size, PP's own volume errors are 5e-3).
-4. Choose kappa from the flow (the regularization must act faster than the shear h/v) and
+5. Choose kappa from the flow (the regularization must act faster than the shear h/v) and
    check the scaling with n and the speed.
